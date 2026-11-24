@@ -987,6 +987,7 @@
 - [在 Windows + DSH agent 环境下用 PowerShell 脚本通过 COM 调用 Microsoft Word（New-Object -Com](contrib/在-windows-dsh-agent-环境下用-powershell-脚本通过-com-调用-microsoft.md) | windows | "windows", "dsh", "agent" | intake-5203
 - [在 Windows 上把一个符号链接提交进 git 仓，而这个链接的目标里写的是**未展开的变量**（例如字面量 "$HOME/.hermes/skills/x](contrib/在-windows-上把一个符号链接提交进-git.md) | windows | "windows", "git", "home" | intake-4184
 - [在 Windows 上由 Node.js/进程管理器 spawn 裸 `python` 命令，报 exit code 9009（或 ENOENT），但手动在终端](contrib/在-windows-上由-nodejs进程管理器-spawn-裸-python-命令报-exit-code-9009或.md) | windows | "python", "py", "where" | intake-5068
+- [在 Windows（中文系统）用 Node 子进程调 WinRAR UnRAR.exe 列目录（`lb`）拿到文件名，再用该文件名调 `p` 提](contrib/在-windows中文系统用-node-子进程调-winrar-unrarexe.md) | windows | "lb", "windows", "node" | intake-5702
 - [地图标注只加不删 + 取景没算浮层遮挡（起终点残留、路线被卡片挡住）](contrib/地图标注只加不删-取景没算浮层遮挡起终点残留路线被卡片挡住.md) | mobile | "amap", "ios", "annotation", "remove-stale", "edge-padding", "camera-fit" | intake-4145
 - [复用组件的可选闭包回调最容易漏传：不传也能编译，运行时静默无效](contrib/复用组件的可选闭包回调最容易漏传不传也能编译运行时静默无效.md) | mobile | "swiftui", "ios", "optional-closure", "silent-failure", "reusable-component", "callback" | intake-4148
 - [多文件 swiftc 编译：顶层代码必须放 main.swift，否则 statements are not allowed at the top level](contrib/多文件-swiftc-编译顶层代码必须放-mainswift否则-statements-are-not-allowed.md) | mobile | "swift", "swiftc", "main-swift", "cli", "testing", "compile-error" | intake-4159
@@ -1079,6 +1080,7 @@
 - [识别规则照「应该怎么命名」写正则，横扫真实语料时漏检与误报一起爆发](contrib/识别规则照应该怎么命名写正则横扫真实语料时漏检与误报一起爆发.md) | development | "regex", "false-positive", "corpus-scan" | intake-3223
 - [读屏幕上的局部区域做 OCR 时，出现「明明有字，却一个字都读不出来」的现象，而且**换个大一点的裁剪框就正常**。实测：裁剪框高 **22 p](contrib/读屏幕上的局部区域做-ocr.md) | mcp | "ocr" | intake-5231
 - [起始 SOC 只在 start() 采一次：那一刻电池没连上就永远是 nil，电量消耗永远显示 --](contrib/起始-soc-只在-start-采一次那一刻电池没连上就永远是-nil电量消耗永远显示.md) | mobile | "ios", "ride-session", "soc", "nil-state", "self-heal", "backfill", "data-integrity" | intake-4164
+- [迁移工具链工作目录（如把两个 git 工作副本 + 语料目录合并进一个分类目录）后跑批量引用修复，.py 里的硬编码绝对路径都改对了，STALE](contrib/迁移工具链工作目录如把两个-git-工作副本.md) | mcp | "r-path", "git", "py" | intake-5704
 - [进导航后相机跳到北京天安门：视图创建时还没有定位，lastKnown 只在导航中才赋值](contrib/进导航后相机跳到北京天安门视图创建时还没有定位lastknown-只在导航中才赋值.md) | mobile | "amap", "ios", "navigation", "camera", "view-lifecycle", "last-known-location" | intake-4169
 - [重建一个含中文目录/文件名（如 图片和附件\xxx.png）的 zip 交付物时两处翻车：① Python zipfile 默认把中文条目名写成 UTF-8+U](contrib/重建一个含中文目录文件名如-图片和附件xxxpng的-zip-交付物时两处翻车1.md) | windows | "xxx", "png", "zip" | intake-5196
 - [重新生成 .xcodeproj 会丢 DEVELOPMENT_TEAM：之后 xcodebuild 装不了真机](contrib/重新生成-xcodeproj-会丢-development-team之后-xcodebuild-装不了真机.md) | mobile | "xcode", "xcodeproj", "code-signing", "development-team", "generated-project", "ios" | intake-4160
