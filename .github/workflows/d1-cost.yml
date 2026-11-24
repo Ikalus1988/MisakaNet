@@ -57,6 +57,15 @@ jobs:
           CF_ANALYTICS_TOKEN: ${{ secrets.CF_ANALYTICS_TOKEN }}
         run: |
           set +e
+          # Named here rather than only inside the script: `test_workflow_env_is_used.py` fails a step
+          # that declares an env key its own text never mentions (a rename that landed on one side).
+          if [ -z "${CF_ANALYTICS_TOKEN:-}" ]; then
+            echo "::error title=D1 cost watch has no credential::CF_ANALYTICS_TOKEN is not set."
+            echo "::error::The report cannot read Cloudflare's analytics API without it, and a watch"
+            echo "::error::that goes quiet is indistinguishable from a quiet month."
+            echo "exit=2" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           python3 scripts/d1_cost_report.py --days 1 --markdown d1-cost.md --check
           RC=$?
           echo "exit=$RC" >> "$GITHUB_OUTPUT"
