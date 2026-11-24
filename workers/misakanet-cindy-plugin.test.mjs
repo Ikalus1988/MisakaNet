@@ -1150,7 +1150,11 @@ test('a failed tool call is remembered, and the next turn is told to search firs
   assert.doesNotMatch(verdict.context, /\/home\/user\/secret/);
 });
 
-test('a failure with no corpus hit offers a one-click lesson card, and the click publishes it', async () => {
+test('a failure with no corpus hit arms a draft, and the agent submit carries the confirm card', async () => {
+  // 宿主的卡只渲染「挂在一次真实工具调用上」的卡（card-update 必须带一个在途调用号）。
+  // 轮末没有任何调用可挂 → 合成 callId 的卡会被宿主以 unknown-call 拒掉（真机上就这么空转过）。
+  // 所以：轮末备一份**已脱敏的草稿**并通知用户；下一轮装配上下文时让 agent 去调真工具——
+  // 那次真实调用自带确认卡，用户点「确认提交」才公开。
   const load = await loadPlugin({ respond: () => ({ results: [], no_match: true }) });
   await load.stub.handler({
     type: 'event',
@@ -1169,18 +1173,47 @@ test('a failure with no corpus hit offers a one-click lesson card, and the click
   });
   await new Promise((resolve) => setTimeout(resolve, 80));
 
-  const card = load.sent.filter((m) => m.type === 'card-update' && /要不要沉淀/.test(m.html || ''));
-  assert.equal(card.length, 1, 'a card offering the lesson must be supplied');
-  const cardCallId = card[0].callId;
-  assert.match(card[0].html, /确认沉淀/);
-  // 卡上写的就是将要公开的原文（公开前看得见）。
+  // 轮末没有供任何卡（没有调用可挂）。
+  const cards = load.sent.filter((m) => m.type === 'card-update');
+  assert.equal(cards.length, 0, 'a card without a real call behind it would be rejected by the host');
+
+  // 下一轮装配：上下文里要出现「要沉淀就调 submit_intake」的指示，并带上那份原文。
+  const hooks = [];
+  const originalSend = load.stub.send;
+  load.stub.send = async (payload) => {
+    if (payload && payload.type === 'event-verdict') hooks.push(payload);
+    return originalSend(payload);
+  };
+  await load.stub.handler({
+    type: 'event',
+    name: 'will-compose-context',
+    hookId: 'h-auto',
+    data: { sessionId: 's-auto', text: '继续' },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  const verdict = hooks.find((h) => h.hookId === 'h-auto');
+  assert.ok(verdict, 'the hook must be answered');
+  assert.equal(verdict.action, 'context');
+  assert.match(verdict.context, /misakanet_submit_intake/);
+  assert.match(verdict.context, /connection refused/);
+
+  // agent 照着调真工具 → 这次真实调用上挂出确认卡（卡上写的就是将要公开的原文）。
+  await callTool(load, 'misakanet_submit_intake', {
+    problem: '工具调用失败：connection refused while dialing the upstream service',
+    error: 'connection refused while dialing the upstream service',
+    user_confirmed: true,
+  }, { autoClick: false });   // 不自动点：下面那一次点击必须是唯一一次
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  const card = load.sent.filter((m) => m.type === 'card-update' && /确认提交/.test(m.html || ''));
+  assert.equal(card.length, 1, 'the confirm card must ride on the real tool call');
   assert.match(card[0].html, /connection refused/);
 
+  // 点「确认提交」→ 只发一次，且用新的在途调用号。
   const before = load.requests.length;
   await load.stub.handler({
     type: 'event',
     name: 'card-action',
-    callId: cardCallId,
+    callId: card[0].callId,
     actionId: 'intake-submit',
     spawnCallId: 'spawn-auto',
     sessionId: 's-auto',
@@ -1191,7 +1224,7 @@ test('a failure with no corpus hit offers a one-click lesson card, and the click
   const body = JSON.parse(load.requests[before].body);
   assert.equal(body.params.name, 'misakanet_submit_intake');
   assert.match(body.params.arguments.problem, /connection refused/);
-  assert.notEqual(load.requests[before].callId, cardCallId, 'a finished call id must not be reused');
+  assert.notEqual(body.callId, card[0].callId, 'a finished call id must not be reused');
 });
 
 test('a search in this session silences the reminder', async () => {
@@ -1271,7 +1304,13 @@ test('a real-shaped tool_result is recognised, and the failure carries the comma
   await new Promise((resolve) => setTimeout(resolve, 20));
   const verdict = hooks.find((h) => h.hookId === 'h-real');
   assert.ok(verdict, 'the hook must be answered');
-  assert.equal(verdict.action, 'allow', 'a session that already searched must not be nagged');
+  // agent 自己查过了 → 不该再被催「先查一次」（那份「语料没命中」的沉淀草稿仍可给）。
+  if (verdict.action === 'context') {
+    assert.doesNotMatch(verdict.context, /misakanet_search\(query=/,
+      'a session that already searched must not be nagged to search again');
+  } else {
+    assert.equal(verdict.action, 'allow');
+  }
 });
 
 test('the state file is written once per turn, not once per tool event', async () => {
