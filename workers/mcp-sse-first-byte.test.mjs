@@ -79,6 +79,25 @@ test('a handler that returns non-JSON still yields a parseable frame', async () 
   assert.match(body.error.message, /did not return JSON/);
 });
 
+test('an answer with no body (202 / 204) sends no frame at all', async () => {
+  // #5694: a notification's answer is `202 Accepted` with an empty body. Re-framing that "nothing"
+  // used to produce `-32603 internal error: the handler did not return JSON`, i.e. one invented
+  // failure per client, right after `notifications/initialized`.
+  for (const status of [202, 204]) {
+    const response = mcpSseStreamedResponse(async () => new Response(null, { status }));
+    const all = (await chunks(response, 8)).join('');
+    assert.ok(all.startsWith(': '), 'the comment is still the first bytes');
+    assert.ok(!all.includes('event: message'), `status ${status} must not invent a message frame`);
+    assert.ok(!all.includes('-32603'), 'and certainly not an error frame');
+  }
+});
+
+test('an empty body is silence, not a parse failure', async () => {
+  const response = mcpSseStreamedResponse(async () => new Response(''));
+  const all = (await chunks(response, 8)).join('');
+  assert.ok(!all.includes('event: message'), all.slice(-200));
+});
+
 test('the stream closes after the frame', async () => {
   const response = mcpSseStreamedResponse(async () => jsonResponse({ jsonrpc: '2.0', id: 2, result: {} }));
   const reader = response.body.getReader();
