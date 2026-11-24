@@ -1333,6 +1333,36 @@ test('a later, different failure is searched again', async () => {
   assert.match(lastQuery, /cargo build second/, 'the second search must carry the second failure');
 });
 
+test('a search the agent did itself stops the plugin from searching again', async () => {
+  // 「agent 自己查过」与「插件代查过」必须分开：agent 查过 → 插件不再重复查；
+  // 但老版本把这两个含义塞进同一个 searched 标记，导致老会话之后再失败也永远查不到。
+  const load = await loadPlugin({ respond: () => ({ results: [] }) });
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-tool-execution',
+    data: {
+      sessionId: 's-agent',
+      eventType: 'tool_use',
+      payload: { toolName: 'misakanet_search', input: { query: 'x' } },
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-tool-execution',
+    data: {
+      sessionId: 's-agent',
+      eventType: 'tool_result',
+      payload: { summary: 'exit code 1', toolUseIds: ['call_agent'] },
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  await load.stub.handler({ type: 'event', name: 'did-turn-end', data: { sessionId: 's-agent' } });
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  const searches = load.requests.filter((r) => JSON.parse(r.body).params.name === 'misakanet_search');
+  assert.equal(searches.length, 0, 'the agent already searched → the plugin must not search again');
+});
+
 test('the generated community package loads and answers too', async () => {
   // The community package is built from this one by a script. If the script ever produces
   // something the host cannot run, the marketplace would ship a broken package — so load it.

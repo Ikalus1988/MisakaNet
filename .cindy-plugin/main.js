@@ -1118,7 +1118,13 @@ async function handleToolExecution(msg) {
   if (eventType === 'tool_use') {
     // 看到自己被调用过 search，就记住「这一段已经查过」。
     const name = toolNameFrom(payload);
-    if (name === 'misakanet_search') session.searched = true;
+    if (name === 'misakanet_search') {
+      session.searched = true;
+      // 新标记：agent 自己查过 → 插件不必再代查一遍。
+      // 老版本只有 searched 一个标记，而插件代查时也会把它置真 → 老会话之后再失败也永远查不到。
+      // 这两个含义必须分开。
+      session.agentSearched = true;
+    }
     // 记住这次调用（工具名 + 输入），好让随后的 tool_result 能配上它——真机的 tool_result
     // 里既没有工具名也没有退出码，只有 summary；不配上就只有 "exit code 7" 这种没法查的碎片。
     rememberToolUse(session, payload);
@@ -1275,7 +1281,8 @@ async function handleComposeContext(msg) {
   // - session.autoSearched：插件自己已经替这条失败查过的条数（新的失败才值得再查一次）。
   const autoSearched = Number((session && session.autoSearched) || 0);
   const unsearched = failures.length > autoSearched;
-  if (!failures.length || session.searched === true || !unsearched) {
+  const agentSearched = (session && session.agentSearched) === true;
+  if (!failures.length || agentSearched || !unsearched) {
     void Promise.resolve(cindy.send({ type: 'event-verdict', hookId, action: 'allow' })).catch(() => {});
     return;
   }
@@ -1347,8 +1354,9 @@ async function handleTurnEnd(msg) {
 async function handleFailuresAfterTurn(sessionId, session) {
   const failures = (session && session.failures) || [];
   if (!failures.length) return;
-  // agent 自己查过就别再查一遍。
-  if (session.searched === true) return;
+  // agent 自己查过就别再查一遍（只看新标记 agentSearched：老版本那个 searched 标记
+  // 插件自己代查时也会置真，拿它抑制会让老会话之后再失败也永远查不到）。
+  if (session.agentSearched === true) return;
   // **每条新失败查一次**（不是整个会话只查一次）：会话很长、后面又失败时，
   // 之前那次搜索已经对不上这次的报错了。
   const alreadySearched = Number(session.autoSearched) || 0;
