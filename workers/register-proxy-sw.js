@@ -7690,10 +7690,8 @@ async function handleContributionLadder(request, env) {
   let lessonAuthorCount = null;
   try {
     await ensureLessonAuthorsTable(d1);
-    const join = "JOIN lesson_authors la ON la.path = ss.top_id OR la.lesson_id = ss.top_id OR la.slug = ss.top_id";
-    const usedSql = sinceSql
-      ? `SELECT la.node_id AS node_id, COUNT(*) AS n, MAX(ss.created_at) AS last FROM search_signals ss ${join} WHERE ss.created_at >= ?1 GROUP BY la.node_id`
-      : `SELECT la.node_id AS node_id, COUNT(*) AS n, MAX(ss.created_at) AS last FROM search_signals ss ${join} GROUP BY la.node_id`;
+    // See `ladderUsedSql`: three indexed joins, not one OR across three columns (2026-11-23).
+    const usedSql = ladderUsedSql(Boolean(sinceSql));
     const usedStmt = d1.prepare(usedSql);
     const usedResult = sinceSql ? await usedStmt.bind(sinceSql).all() : await usedStmt.all();
     for (const row of (usedResult && usedResult.results) || []) {
@@ -8156,6 +8154,30 @@ let lessonAuthorsTableReady = false;
  * has an author. The author comes from the merged PR that *added* the file (the sweep in
  * `.github/workflows/lesson-authors.yml`), never from the lesson body, which is data.
  */
+//: The ladder's "someone else fetched your lesson" read, as **three indexed joins**.
+//:
+//: Measured 2026-11-23 in Cloudflare's D1 analytics over 2026-10-25…11-23: the previous form —
+//: `ON la.path = ss.top_id OR la.lesson_id = ss.top_id OR la.slug = ss.top_id` — cannot use any
+//: index, so every call scanned `lesson_authors × search_signals`: **1,873 calls read 19.56 billion
+//: rows**, 90% of every row this account read in a month, at ~10.4M rows per call.
+//:
+//: The three columns exist because `search_signals.top_id` is sometimes a lesson id, sometimes a
+//: path, sometimes a basename — measured 2026-11-13 across 16k signals. So each becomes its own
+//: indexed join, and `UNION` (not `UNION ALL`) collapses a signal that matches two columns of the
+//: same author row. Exported so `workers/ladder-join-is-indexed.test.mjs` can run it through
+//: `node:sqlite` and compare it with the old form, rather than keeping a second copy of the SQL.
+function ladderUsedSql(filtered) {
+  const branch = (column) => `
+        SELECT ss.id AS sid, la.node_id AS node_id, ss.created_at AS at
+          FROM lesson_authors la
+          JOIN search_signals ss ON ss.top_id = la.${column}
+         WHERE la.${column} IS NOT NULL${filtered ? " AND ss.created_at >= ?1" : ""}`;
+  const union = ["path", "lesson_id", "slug"].map(branch).join("\n        UNION");
+  return `WITH matched AS (${union})
+        SELECT node_id AS node_id, COUNT(*) AS n, MAX(at) AS last
+          FROM matched GROUP BY node_id`;
+}
+
 async function ensureLessonAuthorsTable(d1) {
   if (lessonAuthorsTableReady) return;
   await d1.prepare(
@@ -8171,6 +8193,13 @@ async function ensureLessonAuthorsTable(d1) {
   await d1.prepare(
     "CREATE INDEX IF NOT EXISTS idx_lesson_authors_node ON lesson_authors(node_id)"
   ).run();
+  // The ladder's join tries each of these three columns against `search_signals.top_id`; without an
+  // index on the two non-key ones, two of the three branches are a full scan of `lesson_authors`.
+  for (const column of ["lesson_id", "slug"]) {
+    await d1.prepare(
+      `CREATE INDEX IF NOT EXISTS idx_lesson_authors_${column} ON lesson_authors(${column})`
+    ).run();
+  }
   // `search_signals.top_id` is sometimes a lesson's own `id`, sometimes the file path, sometimes the
   // basename — measured 2026-11-13 across 16k signals. The extra columns let the join match whichever
   // shape that row used; they are added here for tables created before this change.
@@ -8284,6 +8313,16 @@ async function ensureSearchSignalsTable(d1) {
     // signal itself is a trust signal, and losing it because an index could not be created would
     // be a worse outcome than reading a few thousand rows.
     logInternal("[search-signals] the client_hint index could not be created", error);
+  }
+  // The ladder's join matches `search_signals.top_id` against three `lesson_authors` columns, so it
+  // needs an index on this side too — otherwise the plan drives from the 16k-row signals table and
+  // looks up authors one by one. Added with the join rewrite (2026-11-23).
+  try {
+    await d1.prepare(
+      "CREATE INDEX IF NOT EXISTS idx_search_signals_top ON search_signals(top_id)"
+    ).run();
+  } catch (error) {
+    logInternal("[search-signals] the top_id index could not be created", error);
   }
   searchSignalsTableReady = true;
 }
@@ -11550,6 +11589,10 @@ function findCoveringLesson(problemText, errorText, lessons) {
 
 
 export {
+  // Exported for workers/ladder-join-is-indexed.test.mjs: the ladder's used-by-node read is three
+  // indexed joins, and the test runs that exact SQL through `node:sqlite` to check both its counts
+  // and its plan (an OR across three columns read 19.56B rows in a month; see the builder's comment).
+  ladderUsedSql,
   queueAnswerNoticeImpl,
   confirmAnswerNoticeImpl,
   deliverAnswerNoticesImpl,
