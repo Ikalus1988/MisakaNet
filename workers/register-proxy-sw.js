@@ -4344,6 +4344,35 @@ function analyticsLessonId({ id, path } = {}) {
   return /^[a-z0-9][a-z0-9._-]{0,79}$/i.test(slug) ? slug : "";
 }
 
+//: How soon after registering a first successful tool call still counts as *activation*. Wide enough
+//: for a real session (register → tools/list → the first call), narrow enough that the claim key
+//: below never becomes a per-token history.
+const ACTIVATION_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * `funnel.activate_24h` — a node whose **first** successful tool call landed inside 24 h of its own
+ * `registered_at` (2026-11-24).
+ *
+ * This is the number the repository has been missing: 500–1,000 nodes are created a day, and nothing
+ * could say how many of them were ever used. It is a day-level count and nothing else — no node id, no
+ * token, no client id reaches `counters`. The claim key exists only so a busy client counts once, and
+ * it expires with the window it measures (two days), so no per-token record outlives the question.
+ *
+ * A refused call is not activation (`result.error`), and an anonymous call has no token to claim with.
+ */
+async function recordActivation(env, token, result) {
+  if (!token || (result && result.error)) return false;
+  const data = await storeGet(env, `mcp_token:${token}`, "json");
+  const registeredAt = data && data.registered_at ? Date.parse(data.registered_at) : NaN;
+  const age = Date.now() - registeredAt;
+  if (!Number.isFinite(age) || age < 0 || age > ACTIVATION_WINDOW_MS) return false;
+  const claimed = await claimOnce(env, `activate:${hashString(token)}`, "1",
+                                  { expirationTtl: 86400 * 2 });
+  if (!claimed) return false;
+  await bumpCounter(env, "funnel", "activate_24h", new Date().toISOString().slice(0, 10), 1);
+  return true;
+}
+
 async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, identityVerified = false, request = null) {
   const callerBucket = analyticsCallerBucket(request);
   if (toolName === "misakanet_register") {
@@ -4537,10 +4566,22 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
     //
     // Best-effort, exactly like the referral above: a counter that cannot be written must not cost
     // the caller the node it just created, and it must not change the response.
-    const registerCounted = await bumpCounter(
-      env, "funnel", "register", new Date().toISOString().slice(0, 10), 1,
-    );
+    const today = new Date().toISOString().slice(0, 10);
+    const registerCounted = await bumpCounter(env, "funnel", "register", today, 1);
     if (registerCounted === null) logInternal("funnel register counter failed", kvWriteStats.last_error);
+
+    // `funnel.register_named` (2026-11-24) — a registration that presented a `client_id` versus one
+    // that did not. The difference is the whole difference between a client and churn: without a name
+    // every call creates a node (the tool description says so), so `register` alone counts automation
+    // and reads like growth. The *decision* sits above the call; the bucket is a literal, and no
+    // caller-supplied value reaches `counters` (the property `tests/test_funnel_event_names.py` owns).
+    if (typeof args.client_id === "string" && args.client_id.trim()) {
+      // One write site, so the gate that counts write sites per event stays meaningful
+      // (`tests/test_funnel_event_names.py` refused a second one on 2026-11-24, correctly).
+      const namedCount = bumpCounter(env, "funnel", "register_named", today, 1).catch(() => {});
+      if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(namedCount);
+      else await namedCount;
+    }
 
     return {
       node_id: nodeId,
@@ -6468,6 +6509,12 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
       // see what the caller presented; `authed` separately, because only a *verified* token may
       // exempt a call from the anonymous burst window (#2939).
       const result = await handleMcpToolCall(env, toolName, args, token, clientIp, ctx, identityVerified, request);
+
+      // Activation, measured without anything that outlives the window (see `recordActivation`).
+      // Best-effort and off the response path: a counter must never cost the caller its answer.
+      if (token && ctx && typeof ctx.waitUntil === "function") {
+        ctx.waitUntil(recordActivation(env, token, result).catch(() => {}));
+      }
 
       // Log tool call result at debug level 2
       debugLog(env, 2, "MCP tool result", {
@@ -8894,7 +8941,8 @@ async function readTrafficBreakdown(env, day) {
 // `misakanet-web` from `docs/` and never reach here, so `visit` must never be presented as "visitors
 // to misakanet.org". `tests/test_funnel_event_names.py` pins the closed event set, the absence of any
 // caller-supplied value at a write site, and that the doc and this list name the same five things.
-const FUNNEL_EVENTS = Object.freeze(["visit", "register", "authorize", "pair", "search"]);
+const FUNNEL_EVENTS = Object.freeze(["visit", "register", "register_named", "authorize", "pair",
+                                      "search", "activate_24h"]);
 
 /** One day of funnel counters, D1 first and the `counters:` KV key as the fallback.
  *
