@@ -66,7 +66,7 @@
 
 | 层 | 状态 |
 |---|---|
-| L2 `JOIN…ON…OR` lint | **已落地**（本文件同 PR 的 `tests/test_worker_join_is_indexable.py`），并用"真实上线过的那段 SQL"验证它确实会红 |
-| L2 JOIN 声明表 | 未做（`workers/sql-joins.json` 的抽取需要按 SQL 字面干净地把 JOIN 挑出来，本轮试过两版抽取器都不够干净，宁可先只做 lint） |
-| L1 运行时计量 | 未做，建议下一轮第一批就做 `/mcp` 热路径 |
-| L3 夜间报告 | 未做，需要一个 CF API token 进 secret |
+| L2 `JOIN…ON…OR` lint | **已落地**（`tests/test_worker_join_is_indexable.py`），并用"真实上线过的那段 SQL"验证它确实会红 |
+| L1 运行时计量 | **第一批已落地**：`workers/lib/d1-cost.js` 包在 `d1Binding()` / `opsD1()` 这一处，所以 **70 个调用点一个都不用改**；每个结果读 `D1Meta.rows_read`/`rows_written` 累加到语句哈希；15 分钟 cron 把超过 5,000 行/次的前 25 条写进 `counters(scope='query_cost')`（`:calls` / `:rows` 两行，原子加法，多 isolate 会累加而不是覆盖）；`GET /api/insights/query-cost`（维护者 token）返回本 isolate 的 top 25。**已知盲区**写在模块头注释里：`first()`/`raw()` 不返回 `meta`（只计调用不计行），以及新 isolate 从零开始 |
+| L2 JOIN 声明表 | 未做（`workers/sql-joins.json` 的抽取需要按 SQL 字面干净地把 JOIN 挑出来；试过两版抽取器都不够干净，宁可先只留形状门） |
+| L3 夜间报告 | **已落地**：`scripts/d1_cost_report.py` + `.github/workflows/d1-cost.yml`（每天 05:17Z；报 rows/call、总量、**新出现的语句**；exit 2 = 读不到，workflow 会为它单独写一句话）。需要仓库 secret `CF_ANALYTICS_TOKEN`（**Account Analytics: Read**）—— 已配置 2026-11-24 |

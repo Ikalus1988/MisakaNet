@@ -5,6 +5,7 @@
 
 // Imported modules — loaded at startup via dynamic import (ESM compatible)
 const crypto = globalThis.crypto || (await import("node:crypto")).webcrypto;
+const _d1cost = await import("./lib/d1-cost.js");
 const _utils = await import("./lib/utils.js");
 const {
   CORS_HEADERS, timingSafeEqual, sanitizeIdentifier,
@@ -6645,13 +6646,15 @@ async function fetchFromGitHub(token, path, ref) {
 
 // SELECT binding from env; wrangler injects D1 as env.MISAKANET_D1.
 function d1Binding(env) {
-  return env?.MISAKANET_D1 || null;
+  // Metered here, not at the 70 call sites: a statement cannot bypass the meter by being written
+  // somewhere new (see `lib/d1-cost.js` for the two incidents that made this necessary).
+  return _d1cost.meterD1(env?.MISAKANET_D1 || null);
 }
 
 /** Ops/telemetry DB. Falls back to the serving DB when the binding is absent, so a deployment
  *  that has not applied the new binding keeps the old behavior instead of losing rows. */
 function opsD1(env) {
-  return env?.MISAKANET_OPS_D1 || d1Binding(env);
+  return _d1cost.meterD1(env?.MISAKANET_OPS_D1 || null) || d1Binding(env);
 }
 
 // Fetch lesson rows from D1 as the same array shape used by the GitHub
@@ -10943,6 +10946,23 @@ export default {
     if (request.method === "GET" && url.pathname === "/api/insights/lesson-coverage") {
       return handleLessonCoverage(env);
     }
+    // GET /api/insights/query-cost — which D1 statement this isolate has paid for (2026-11-24).
+    // Maintainer-only: the payload is our own SQL, but a public list of our query shapes is a map of
+    // where to look for the next hole, and the aggregate answer is already public-safe in
+    // `scripts/d1_cost_report.py`'s daily issue.
+    if (request.method === "GET" && url.pathname === "/api/insights/query-cost") {
+      if (!isMaintainerRequest(request, env)) {
+        return jsonResponse({ error: "maintainer token required" }, 403);
+      }
+      return jsonResponse({
+        generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
+        source: "in-isolate meter over D1Meta.rows_read",
+        note: "One isolate's totals since it started; `counters(scope='query_cost')` is the durable "
+            + "copy, flushed by the 15-minute cron. `rows_per_call` is the number that separates a bad "
+            + "shape from a busy query.",
+        statements: _d1cost.costSnapshot(25),
+      }, 200, { "Cache-Control": "no-store" });
+    }
     // GET /api/insights/reputation-leaderboard — public points leaderboard (#908)
     if (request.method === "GET" && url.pathname === "/api/insights/reputation-leaderboard") {
       return handleReputationLeaderboard(request, env);
@@ -11538,6 +11558,13 @@ async function getCode() {
       ctx.waitUntil(aggregateDailyTraffic(env).catch(e =>
         console.error("[traffic-aggregation] failed", e.message)
       ));
+      // What each statement cost this isolate, into `counters(scope='query_cost')`. Persisted rather
+      // than kept in memory because an isolate is short-lived and a meter nobody can read later is
+      // not a meter (2026-11-24: one statement read 90% of the account's rows for a month).
+      ctx.waitUntil(_d1cost.flushQueryCost(
+        (scope, bucket, period, delta) => bumpCounter(env, scope, bucket, period, delta),
+        new Date().toISOString().slice(0, 10),
+      ).catch(e => console.error("[query-cost] flush failed", e && e.message)));
     }
     // Durable-store housekeeping: expire what KV used to expire (2026-09-23, #2117).
     ctx.waitUntil(sweepExpiredStore(env).then((reclaimed) => {
