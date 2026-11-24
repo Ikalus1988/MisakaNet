@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-11-23T13:14:14.454086+00:00",
+  "generated_at": "2026-11-24T02:24:17.499985+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(lessons): the batch's one lesson, on a branch that reports (supersedes #5597)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5617",
-      "timestamp": "2026-11-23T11:21:44Z",
+      "title": "docs(cindy): 待办清单补 1.5.14（failure 模式那版）与看护任务",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5672",
+      "timestamp": "2026-11-24T02:13:35Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "test: the suite runs on a machine that has a proxy and a token",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5615",
-      "timestamp": "2026-11-23T09:54:01Z",
+      "title": "fix(worker): the ladder's used-read scans 10.4M rows per call — three indexed joins instead",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5670",
+      "timestamp": "2026-11-24T01:59:04Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(deps-dev): bump wrangler from 4.161.0 to 4.165.0 in the npm group across 1 directory",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5592",
-      "timestamp": "2026-11-23T08:29:05Z",
+      "title": "feat(cindy-plugin): 补上仓库钩子那套 failure 模式——动手前先查、查不到就供一张沉淀卡",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5669",
+      "timestamp": "2026-11-24T01:41:13Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(deps): update mkdocs-material requirement from >=9.8.1 to >=9.8.2 in the pip group",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5593",
-      "timestamp": "2026-11-23T08:13:18Z",
+      "title": "feat(ci): a contributor's generator-only conflict is now a mechanical rebuild, not a bounce",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5667",
+      "timestamp": "2026-11-24T01:19:48Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): vol 45 addendum — the release, the counting unit, and five populations",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5613",
-      "timestamp": "2026-11-23T06:42:26Z",
+      "title": "docs(cindy): 1.5.13 已提审",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5665",
+      "timestamp": "2026-11-24T01:01:16Z",
       "source": "github"
     },
     {
