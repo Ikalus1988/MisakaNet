@@ -1216,6 +1216,84 @@ test('a search in this session silences the reminder', async () => {
   assert.equal(card.length, 0, 'a session that already searched must not be nagged');
 });
 
+test('a real-shaped tool_result is recognised, and the failure carries the command', async () => {
+  // 真机实测的宿主载荷（2026-11-24）：
+  //   tool_use    → {"toolUseId":"call_…","toolName":"bash","input":{"command":"…"}}
+  //   tool_result → {"summary":"done","toolUseIds":["call_…"]}
+  // tool_result 里既没有 error 字段，也没有退出码，也没有工具名——只有 summary。
+  // 之前的桩载荷字段更多（带 error/toolName），所以用例是绿的、真机是哑的。这里用真形状。
+  const load = await loadPlugin({ respond: () => ({ results: [] }) });
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-tool-execution',
+    data: {
+      sessionId: 's-real',
+      eventType: 'tool_use',
+      payload: { toolUseId: 'call_real', toolName: 'bash', input: { command: 'npm run build' } },
+    },
+  });
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-tool-execution',
+    data: {
+      sessionId: 's-real',
+      eventType: 'tool_result',
+      payload: { summary: 'exit code 7', toolUseIds: ['call_real'] },
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  await load.stub.handler({ type: 'event', name: 'did-turn-end', data: { sessionId: 's-real' } });
+  await new Promise((resolve) => setTimeout(resolve, 80));
+
+  // 失败必须被认出来，而且认出来的那段文字要能拿去查（带上工具名与命令行）。
+  const search = load.requests.find((r) => JSON.parse(r.body).params.name === 'misakanet_search');
+  assert.ok(search, 'the turn end must search the corpus');
+  const query = JSON.parse(search.body).params.arguments.query;
+  assert.match(query, /npm run build/, 'the query must carry the failing command');
+  assert.match(query, /exit code 7/, 'the query must carry the failure text');
+
+  // 查过了就不再啰嗦：装配消息时宿主应收到 allow（而不是再提一次「先查」）。
+  const hooks = [];
+  const originalSend = load.stub.send;
+  load.stub.send = async (payload) => {
+    if (payload && payload.type === 'event-verdict') hooks.push(payload);
+    return originalSend(payload);
+  };
+  await load.stub.handler({
+    type: 'event',
+    name: 'will-compose-context',
+    hookId: 'h-real',
+    data: { sessionId: 's-real', text: '继续' },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  const verdict = hooks.find((h) => h.hookId === 'h-real');
+  assert.ok(verdict, 'the hook must be answered');
+  assert.equal(verdict.action, 'allow', 'a session that already searched must not be nagged');
+});
+
+test('the state file is written once per turn, not once per tool event', async () => {
+  // 轮里几十次工具调用就是几十次写盘——而且读者可能读到写了一半的文件。
+  const load = await loadPlugin({ respond: () => ({ results: [] }) });
+  for (let i = 0; i < 6; i += 1) {
+    await load.stub.handler({
+      type: 'event',
+      name: 'did-tool-execution',
+      data: {
+        sessionId: 's-writes',
+        eventType: 'tool_use',
+        payload: { toolUseId: `call_${i}`, toolName: 'bash', input: { command: `echo ${i}` } },
+      },
+    });
+  }
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  const writesBefore = load.writeAttempts;
+  await load.stub.handler({ type: 'event', name: 'did-turn-end', data: { sessionId: 's-writes' } });
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  const writesAfter = load.writeAttempts;
+  assert.ok(writesAfter - writesBefore <= 2,
+    `six tool events must not mean six state writes (got ${writesAfter - writesBefore})`);
+});
+
 test('the generated community package loads and answers too', async () => {
   // The community package is built from this one by a script. If the script ever produces
   // something the host cannot run, the marketplace would ship a broken package — so load it.

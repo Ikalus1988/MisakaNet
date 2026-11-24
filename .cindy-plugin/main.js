@@ -1107,27 +1107,99 @@ async function handleToolExecution(msg) {
 
   const eventType = asString(data.eventType);
   const payload = data.payload;
+  // 自观测：宿主到底送来什么形状、我们认没认出来。状态文件在自己的私有目录里，
+  // 读它就能回答「为什么没记下失败」，不必猜。
+  session.toolEvents = (Number(session.toolEvents) || 0) + 1;
+  session.lastToolEvent = {
+    type: eventType,
+    truncated: data.truncated === true,
+    payload: clipFragment(JSON.stringify(payload == null ? null : payload), 300),
+  };
   if (eventType === 'tool_use') {
     // 看到自己被调用过 search，就记住「这一段已经查过」。
     const name = toolNameFrom(payload);
     if (name === 'misakanet_search') session.searched = true;
-    await writeCheckpointState(state);
+    // 记住这次调用（工具名 + 输入），好让随后的 tool_result 能配上它——真机的 tool_result
+    // 里既没有工具名也没有退出码，只有 summary；不配上就只有 "exit code 7" 这种没法查的碎片。
+    rememberToolUse(session, payload);
+    // 这里**不写盘**：一轮里几十次工具调用就是几十次写状态文件（而且读者可能读到写了一半的）。
+    // 状态在轮末统一落盘（handleTurnEnd 里那一次），期间内存里的对象就是最新的。
     return;
   }
 
   const text = failureTextFrom(payload);
   const failed = eventType === 'error' || (eventType === 'tool_result' && looksLikeFailure(payload));
   if (failed && text) {
-    rememberFailure(session, toolNameFrom(payload) || 'tool', text);
-    await writeCheckpointState(state);
+    const paired = pairWithToolUse(session, payload);
+    rememberFailure(
+      session,
+      paired.name || toolNameFrom(payload) || 'tool',
+      paired.text || text,
+    );
   }
+}
+
+/** 记住一次工具调用（工具名 + 输入片段），按调用 id 索引。 */
+function rememberToolUse(session, payload) {
+  if (!payload || typeof payload !== 'object') return;
+  const id = asString(payload.toolUseId || payload.tool_use_id || payload.id);
+  if (!id) return;
+  const name = toolNameFrom(payload);
+  const input = payload.input || payload.tool_input || payload.toolInput;
+  let excerpt = '';
+  if (input && typeof input === 'object') {
+    for (const key of ['command', 'cmd', 'file_path', 'path', 'pattern', 'query', 'url']) {
+      if (typeof input[key] === 'string' && input[key].trim()) {
+        excerpt = input[key].trim();
+        break;
+      }
+    }
+    if (!excerpt) excerpt = clipFragment(JSON.stringify(input), 160);
+  } else if (typeof input === 'string') {
+    excerpt = input.trim();
+  }
+  session.toolUses = session.toolUses || {};
+  session.toolUses[id] = { name, excerpt: clipFragment(excerpt, 200) };
+  const ids = Object.keys(session.toolUses);
+  if (ids.length > 8) {
+    for (const stale of ids.slice(0, ids.length - 8)) delete session.toolUses[stale];
+  }
+}
+
+/**
+ * 把 tool_result 配上它对应的 tool_use：工具名 + 命令片段 + 结果摘要。
+ * 配不上就用结果摘要本身（宁可信息少，也不要错配）。
+ */
+function pairWithToolUse(session, payload) {
+  const result = { name: '', text: '' };
+  if (!payload || typeof payload !== 'object') return result;
+  const ids = Array.isArray(payload.toolUseIds)
+    ? payload.toolUseIds
+    : (payload.toolUseId ? [payload.toolUseId] : []);
+  const uses = session.toolUses || {};
+  for (const raw of ids) {
+    const id = asString(raw);
+    const use = id ? uses[id] : null;
+    if (!use) continue;
+    result.name = use.name || result.name;
+    const summary = asString(payload.summary).trim();
+    const parts = [];
+    if (use.name) parts.push(use.name);
+    if (use.excerpt) parts.push(use.excerpt);
+    if (summary) parts.push(summary);
+    result.text = parts.join(' — ');
+    break;
+  }
+  return result;
 }
 
 /** 从引擎给的各种形状里挖出「像错误文本」的那一段。 */
 function failureTextFrom(payload) {
   if (typeof payload === 'string') return payload.trim();
   if (!payload || typeof payload !== 'object') return '';
-  const errorKeys = ['error', 'output', 'stderr', 'stdout', 'message', 'result', 'text', 'content'];
+  // 宿主的 tool_result 载荷实测只有 {summary, toolUseIds} —— 失败与否、以及失败的那段文本，
+  // 都在 summary 里。summary 优先：它是宿主已经替我们总结过的那一段。
+  const errorKeys = ['summary', 'error', 'output', 'stderr', 'stdout', 'message', 'result', 'text', 'content'];
   const commandKeys = ['command', 'cmd', 'tool_input', 'toolInput', 'input'];
   for (const key of [...errorKeys, ...commandKeys]) {
     const value = payload[key];
@@ -1149,7 +1221,22 @@ function looksLikeFailure(payload) {
   if (payload.status === 'error' || payload.status === 'failed') return true;
   const error = payload.error;
   if (error && typeof error === 'object') return true;
-  return typeof error === 'string' && error.trim().length > 0;
+  if (typeof error === 'string' && error.trim().length > 0) return true;
+  // 非零退出码也是失败：命令跑完但返回码非 0（编译错、测试红、脚本 exit 3）——这类是真正的
+  // 「重试之前先查」场景，不能只看显式的 error 字段。
+  for (const key of ['exit_code', 'exitCode', 'returncode', 'returnCode', 'code', 'statusCode']) {
+    const value = payload[key];
+    if (typeof value === 'number' && value !== 0) return true;
+  }
+  // 有的引擎把失败记成字符串状态。
+  const status = payload.status;
+  if (typeof status === 'string' && /fail|error|denied|reject/i.test(status)) return true;
+  // 宿主的 tool_result 只有 summary：失败与否得从总结文本里认（"exit code 7"、"failed"…）。
+  const summary = asString(payload.summary).trim();
+  if (summary && /exit code\s*[1-9]\d*|\bfailed\b|\berror\b|\bdenied\b|\brejected\b|非零|失败/i.test(summary)) {
+    return true;
+  }
+  return false;
 }
 
 function toolNameFrom(payload) {
