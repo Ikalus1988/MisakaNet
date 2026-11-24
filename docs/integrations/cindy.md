@@ -44,7 +44,7 @@ npx @misaka-net/misakanet-setup --only cindy
 
 插件源码在本仓库 [`.cindy-plugin/`](https://github.com/Ikalus1988/MisakaNet/tree/main/.cindy-plugin)：
 `ghost.json`（清单）、`main.js`（电子脑）、`locales/en.json` 与 `locales/zh-CN.json`（文案）、
-`manual/misakanet/MANUAL.md`（随包手册）、`assets/icon.png`。市场里发布的就是本仓库这个包（提审期间市场可能仍显示上一版），仓库已到 **1.6.5**（市场评审后同步：三态外发、CSPRNG client id、`detail="full"` 透传正文、提醒计数以内存为准、四个读工具带 `trust_notice`、移除未用的 `network` 声明、清单默认描述与 zh-CN 对齐、`me_inbox` 拒绝同时给两个查询编号、domain 过滤零命中单独标记、首轮公告带版本号与更新办法、自报通道头 `X-MisakaNet-Channel`、透传端点带回的 `plugin_version` 并在落后时说出口、只读重试与确认卡闸门并进唯一真身）；
+`manual/misakanet/MANUAL.md`（随包手册）、`assets/icon.png`。市场里发布的就是本仓库这个包（提审期间市场可能仍显示上一版），仓库已到 **1.6.6**（市场评审后同步：三态外发、CSPRNG client id、`detail="full"` 透传正文、提醒计数以内存为准、四个读工具带 `trust_notice`、移除未用的 `network` 声明、清单默认描述与 zh-CN 对齐、`me_inbox` 拒绝同时给两个查询编号、domain 过滤零命中单独标记、首轮公告带版本号与更新办法、自报通道头 `X-MisakaNet-Channel`、透传端点带回的 `plugin_version` 并在落后时说出口、只读重试与确认卡闸门并进唯一真身）；
 审核通过后，仓库这与市场里的包内容一致。
 
 ### 1.1 社区通道的变体（`.cindy-plugin-community/`）
@@ -53,7 +53,7 @@ npx @misaka-net/misakanet-setup --only cindy
 **用同一份实现**。两份包只在三处不同：通道标记（`X-MisakaNet-Channel`）、版本号、更新说明。
 
 唯一真身在 [`.cindy-plugin/`](https://github.com/Ikalus1988/MisakaNet/tree/main/.cindy-plugin)
-（当前版本 1.6.5）；社区那份由 `scripts/build_cindy_plugin_community_variant.py` 从它**生成**
+（当前版本 1.6.6）；社区那份由 `scripts/build_cindy_plugin_community_variant.py` 从它**生成**
 （当前版本 1.5.12）。两个版本号刻意错开，免得互相占掉对方的版本位。
 
 社区变体**不是**另一份 fork：它是官方真身的薄壳。2026-11-11 之前两条通道是**双向分叉**的——
@@ -202,9 +202,12 @@ npx @misaka-net/misakanet-setup --only cindy --verify
   （`card-update` 必须带那个在途调用号，宿主会核对）。所以：
   ①轮末那次「自动沉淀卡」用的是合成 callId → 被宿主以 `unknown-call` 拒掉，**卡片从来没出现过**
   （真机上只剩一句 toast）；现在改成「轮末备草稿 + 下一轮请 agent 调一次真工具」（源仓 #5687 ✅ 已合并）。
-  ②经 **MCP 桥**发起的工具调用不是宿主侧 agent 的原生调用 → 卡挂在一个聊天不认识的调用上，也不渲染；
-  这条路上插件会走降级路径直发（回执里注明「本次未经过点击确认」）——**等于没有点击闸门**，
-  所以这条路的验证必须在**宿主侧原生聊天**里做。
+  ②经 **MCP 桥**发起的工具调用不是宿主侧 agent 的原生调用 → 卡挂在一个聊天不认识的调用上，也不渲染。
+- **卡供不出来时插件停止发送**（维护者 2026-11-24 审核 1.5.15 的意见）：回执 `CARD_UNAVAILABLE` +
+  `delivery="not_sent"`，远端没有任何记录；提交必须先取得**用户对具体内容的明确授权**。
+  于是流程变成：插件总结并把原文交给 agent → **agent 问用户** → 用户明确同意 → agent 调
+  `misakanet_submit_intake`（带 `user_confirmed=true`）→ 插件供确认卡 → 用户点「确认提交」→ 发布。
+  插件**不得**替用户预置那个确认标记。
 - - 触达老用户的三处文案（源仓 #5674 ✅ 已合并，**已上线**）：插件安装页 `integrations/cindy` §1、
   `quickstart` 的 Cindy 段、社区包更新说明（市场详情页）。文档站在
   `https://ikalus1988.github.io/MisakaNet/`（**不在 misakanet.org 上**——主站没有 cindy 页）。

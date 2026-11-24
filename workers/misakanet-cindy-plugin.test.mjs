@@ -42,7 +42,7 @@ const COMMUNITY_PACKAGE = resolve(dirname(fileURLToPath(import.meta.url)), '..',
  */
 let loads = 0;
 
-async function loadPlugin({ respond, fetchResult, packageDir = PACKAGE, failWrites = false } = {}) {
+async function loadPlugin({ respond, fetchResult, packageDir = PACKAGE, failWrites = false, failCards = false } = {}) {
   const sent = [];
   const requests = [];
   const dataDir = new Map();
@@ -66,6 +66,8 @@ async function loadPlugin({ respond, fetchResult, packageDir = PACKAGE, failWrit
         }
       }
       sent.push(payload);
+      // 宿主供不出交互卡时它会拒绝（真机上就是 unknown-call）→ 插件必须停止发送，不能直发。
+      if (failCards && payload.type === 'card-update') return { ok: false, errorCode: 'UNKNOWN_CALL' };
       return { ok: true };
     },
     async fetch(req) {
@@ -1400,6 +1402,59 @@ test('a search the agent did itself stops the plugin from searching again', asyn
   await new Promise((resolve) => setTimeout(resolve, 60));
   const searches = load.requests.filter((r) => JSON.parse(r.body).params.name === 'misakanet_search');
   assert.equal(searches.length, 0, 'the agent already searched → the plugin must not search again');
+});
+
+test('when the host cannot show the card, nothing is published', async () => {
+  // 维护者 2026-11-24 的审核意见：确认卡不可用或出错时**停止发送**——
+  // 不能因为供不出卡就把内容发到公开仓库（那等于没有确认闸门）。
+  const load = await loadPlugin({ respond: () => ({ results: [] }), failCards: true });
+  const answer = await callTool(load, 'misakanet_submit_intake', {
+    problem: '一次真实故障的描述',
+    error: 'boom',
+    user_confirmed: true,
+  }, { autoClick: false });
+  assert.equal(answer.ok, false, 'the call must fail');
+  assert.equal(answer.errorCode, 'CARD_UNAVAILABLE');
+  assert.equal(answer.delivery, 'not_sent', 'nothing may have been sent');
+  const posts = load.requests.filter((r) => JSON.parse(r.body).params.name === 'misakanet_submit_intake');
+  assert.equal(posts.length, 0, 'no intake may be published without a card');
+});
+
+test('the draft never pre-sets the user confirmation', async () => {
+  // 审核意见：移除预置确认。插件可以把「语料没命中、这份原文值得沉淀」告诉 agent，
+  // 但**不能**替用户把 user_confirmed=true 填好——那是用户的授权，不是 agent 的判断。
+  const load = await loadPlugin({ respond: () => ({ results: [], no_match: true }) });
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-tool-execution',
+    data: {
+      sessionId: 's-draft',
+      eventType: 'error',
+      payload: { message: 'connection refused while dialing the upstream service' },
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  await load.stub.handler({ type: 'event', name: 'did-turn-end', data: { sessionId: 's-draft' } });
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  const hooks = [];
+  const originalSend = load.stub.send;
+  load.stub.send = async (payload) => {
+    if (payload && payload.type === 'event-verdict') hooks.push(payload);
+    return originalSend(payload);
+  };
+  await load.stub.handler({
+    type: 'event',
+    name: 'will-compose-context',
+    hookId: 'h-draft',
+    data: { sessionId: 's-draft', text: '继续' },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  const verdict = hooks.find((h) => h.hookId === 'h-draft');
+  assert.ok(verdict, 'the hook must be answered');
+  assert.equal(verdict.action, 'context');
+  assert.match(verdict.context, /问用户|用户明确同意/, 'the agent must be told to ask the user');
+  assert.doesNotMatch(verdict.context, /user_confirmed=true/,
+    'the confirmation must never be pre-set for the agent');
 });
 
 test('the generated community package loads and answers too', async () => {
