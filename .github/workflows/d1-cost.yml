@@ -1,0 +1,120 @@
+name: D1 Cost Watch
+
+# Which D1 statement is reading the most rows, once a day, before the bill says so.
+#
+# This repository has fixed the same class of bug twice. 2026-10-21: a prefix enumeration scanned
+# 68,892 rows per call; the answer was `tests/test_d1_read_hotspots.py`, a replica test hand-written
+# for that one query. 2026-11-24: a three-column `OR` join in the contribution ladder read
+# **19,561,754,663 rows in a month** — 10.4M per call, 90% of every row the account read — and nothing
+# in the repository could see it, because a test per query only covers the queries someone thought of.
+#
+# The failure is silent by construction: correct answers, ordinary latency, no error, and a number that
+# only appears on a vendor dashboard weeks later. So the instrument has to be a schedule, not a test.
+#
+# What it reads: Cloudflare's own `d1QueriesAdaptiveGroups` — the dataset that carries a `query`
+# dimension, which is why `wrangler d1 insights` is not needed. What it reports: rows **per call**
+# (the number that separates a bad shape from a busy query), the total, and whatever is **new**
+# compared with the previous window so one chronic offender does not fill the list forever.
+#
+# The whole analysis, including why a plan assertion is *not* the right gate (the same SQL produced two
+# different plans on two SQLite versions, both linear), is in `docs/maintainer/d1-cost.md`.
+on:
+  schedule:
+    # After the UTC day closes, before the maintainer's morning. GitHub drops scheduled events under
+    # load (this repository measured it: `approval-watch.yml` ran once in ~9 hours against a two-per-hour
+    # cron), so a missed slot costs one day rather than the instrument — `workflow_dispatch` is the
+    # backstop, and the threshold is deliberately about a *day*, not an hour.
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write      # the report is one issue, reopened while the condition holds and closed after
+
+concurrency:
+  group: d1-cost-watch
+  cancel-in-progress: false   # a cancelled report is a day nobody looked
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ secrets.SHELDON_PAT || github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7
+        with:
+          python-version: "3.12"
+
+      # The token has to be a real Cloudflare API token with **Account Analytics: Read** — the
+      # observability MCP's OAuth token does not carry it (measured 2026-11-23), and `wrangler` is not
+      # installed here on purpose: the job must not hold a deploy-capable credential to read a graph.
+      - name: Read yesterday's per-query cost
+        id: cost
+        env:
+          CF_ANALYTICS_TOKEN: ${{ secrets.CF_ANALYTICS_TOKEN }}
+        run: |
+          set +e
+          # Named here rather than only inside the script: `test_workflow_env_is_used.py` fails a step
+          # that declares an env key its own text never mentions (a rename that landed on one side).
+          if [ -z "${CF_ANALYTICS_TOKEN:-}" ]; then
+            echo "::error title=D1 cost watch has no credential::CF_ANALYTICS_TOKEN is not set."
+            echo "::error::The report cannot read Cloudflare's analytics API without it, and a watch"
+            echo "::error::that goes quiet is indistinguishable from a quiet month."
+            echo "exit=2" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          python3 scripts/d1_cost_report.py --days 1 --markdown d1-cost.md --check
+          RC=$?
+          echo "exit=$RC" >> "$GITHUB_OUTPUT"
+          case "$RC" in
+            0) echo "under the threshold" ;;
+            1) echo "::warning title=D1 cost::a statement is over the rows/call threshold or is new" ;;
+            *) echo "::error title=D1 cost could not be read::the analytics API refused or was unreachable; this is NOT 'all fine'"
+               echo "exit=2" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Publish the report as one issue
+        if: always()
+        env:
+          EXIT: ${{ steps.cost.outputs.exit }}
+        run: |
+          set -euo pipefail
+          TITLE="[d1-cost] a D1 statement is over the rows/call threshold"
+          EXISTING=$(gh issue list --repo "$GITHUB_REPOSITORY" --state all --limit 50 \
+                     --search '"[d1-cost]" in:title' --json number,state \
+                     --jq '[.[] | select(.state == "OPEN")] | .[0].number // empty')
+
+          if [ "${EXIT:-2}" = "2" ]; then
+            BODY="The D1 cost report could not be read. **That is not the same answer as 'all fine'** —
+            it means nobody is watching the read volume today.
+
+            \`\`\`
+            $( [ -f d1-cost.md ] && head -40 d1-cost.md || echo 'no report file was produced' )
+            \`\`\`
+
+            Usual causes: \`CF_ANALYTICS_TOKEN\` is missing or lacks *Account Analytics: Read*, or the
+            analytics API was unreachable. Fix the credential, then re-run the workflow."
+          elif [ "${EXIT:-2}" = "1" ]; then
+            BODY="$(cat d1-cost.md)
+
+            Threshold: rows **per call**, because a busy query and a badly-shaped one look identical in
+            a total. Fixing one is usually an index or a join rewrite, not a cache."
+          else
+            BODY=""
+          fi
+
+          if [ -n "$BODY" ]; then
+            if [ -n "$EXISTING" ]; then
+              gh issue comment "$EXISTING" --repo "$GITHUB_REPOSITORY" --body "$BODY"
+              gh issue reopen "$EXISTING" --repo "$GITHUB_REPOSITORY" || true
+            else
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body "$BODY"
+            fi
+          elif [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --repo "$GITHUB_REPOSITORY" \
+              --body "Back under the threshold — closing. The latest report is attached to the previous comment."
+            gh issue close "$EXISTING" --repo "$GITHUB_REPOSITORY" --reason completed
+          fi
