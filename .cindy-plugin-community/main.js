@@ -21,7 +21,7 @@ const FETCH_TIMEOUT_MS = 45000;
 // 它按不可逆外发处理，不确定态只能提示先核对远端状态。
 const READ_TIMEOUT_MS = 20000;
 const READ_RETRY_BACKOFF_MS = 400;
-const PLUGIN_VERSION = '1.5.15';
+const PLUGIN_VERSION = '1.5.16';
 
 /* 客户端标识：每台机器一个稳定 id。
  * 端点会把 X-MisakaNet-Client salt-hash 进 search_signals.client_hint，而 client_hint 是
@@ -1252,10 +1252,12 @@ async function handleComposeContext(msg) {
   }
   if (wantOffer) {
     offer.injected = true;
-    lines.push('  刚才那次失败**语料里没有命中**——这类失败值得沉淀成一条教训。');
-    lines.push('  要沉淀就调用：misakanet_submit_intake(problem=' + JSON.stringify(offerText) +
-      ', error=' + JSON.stringify(offerText) + ', source="cindy", user_confirmed=true)');
-    lines.push('  （它会先给你一张确认卡，**用户点「确认提交」才会公开**；不想沉淀就别调用。）');
+    lines.push('  刚才那次失败**语料里没有命中**——这类失败通常值得沉淀成一条教训。');
+    lines.push('  **要不要沉淀由你来问用户**：把下面这段原文整理成一句问题描述给用户看，');
+    lines.push('  **用户明确同意之后**再调用 misakanet_submit_intake（要带哪个「用户已同意」的标记，看那个工具自己的说明）。');
+    lines.push('  **在用户明确同意之前不要调用**——发布到公开仓库是用户的授权，不是你的判断。');
+    lines.push('  （调用后会先出一张确认卡，用户点「确认提交」才公开。）');
+    lines.push('  失败原文（已脱敏）：' + offerText);
   }
   const hit = (session && session.hit) || null;
   if (hit && hit.id) {
@@ -1494,16 +1496,27 @@ async function handleToolCall(msg) {
           });
         }
       }
-      // 降级：宿主供不出交互卡（老客户端/移动端）或调用方明确走 direct → 回到 user_confirmed 直发路径。
+      // 调用方明确走 direct：它在声明「用户已经明确要求上报这次内容」，这时才发。
+      // 维护者 2026-11-24 的审核意见：**确认卡不可用或出错时停止发送**——不能因为供不出卡
+      // 就把内容发到公开仓库（那等于没有确认闸门）。
+      if (confirmMode !== 'direct') {
+        return await fail(
+          callId,
+          'CARD_UNAVAILABLE',
+          '当前宿主供不出交互确认卡，所以**没有提交任何内容**（远端也没有任何记录）。' +
+          '要提交的话：先把要公开的内容给用户看，用户明确同意之后，再用 confirm="direct" 重新调用' +
+          '（并带 user_confirmed=true）。',
+          'not_sent',
+        );
+      }
       irreversibleCall = true;
       const payload = await callHostedTool(TOOLS.misakanet_submit_intake, intakeArgs, callId, {
         irreversible: true,
       });
       const shaped = shapeIntake(payload);
       shaped.note =
-        '本次未经过点击确认（' +
-        (confirmMode === 'direct' ? '调用方明确选择了 direct' : '当前宿主供不出交互卡') +
-        '，已回退到 user_confirmed 路径）。' + shaped.note;
+        '本次未经过点击确认（调用方明确选择了 direct，即它声明用户已经明确要求上报）——' +
+        '内容在公开仓库里，发出后不可撤回。' + shaped.note;
       return await sendResult(callId, true, shaped);
     }
 

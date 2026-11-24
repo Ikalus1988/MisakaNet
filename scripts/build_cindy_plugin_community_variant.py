@@ -46,10 +46,18 @@ TARGET = REPO / ".cindy-plugin-community"
 #: The community channel's version line. Deliberately offset from the official one (1.6.x) so the
 #: two channels never take the same version slot on the same plugin id. Bump it when the community
 #: package is published; keep it below the official line.
-COMMUNITY_VERSION = "1.5.15"  # 1.5.14 在售（1.5.12→1.5.13→1.5.14 已连续上架）→ 这一版走 1.5.15
+COMMUNITY_VERSION = "1.5.16"  # 1.5.15 被审核退回（版本号已烧掉）→ 这一版走 1.5.16
 
 #: The community channel's own release story. The official package carries the official one.
 COMMUNITY_RELEASE_NOTES = (
+    "这一版按审核意见改两处真问题（1.5.15 被退回的同一件事）："
+    "一是**不再替用户预置确认**：失败语料里没命中时，插件把「原文值得沉淀」和原文交给 agent，"
+    "但**不预填任何「用户已同意」的标记**——要不要沉淀由 agent 去问用户，用户明确同意之后才提交。"
+    "二是**确认卡供不出来或出错时停止发送**：回执是 CARD_UNAVAILABLE + delivery=\"not_sent\"，"
+    "远端不会留下任何记录；要提交必须先取得用户对这次内容的明确授权。"
+    "上一版（1.5.15）还改了三处 failure 模式的真问题：失败文本把报错摘要排在前面（否则 120 字上限"
+    "会把最有信息量的那段截掉，查询词就查不中）、每条新失败都再查一次、"
+    "「你自己查过」与「插件替你查过」分成两个记号。"
     "这一版把 failure 模式的三处真问题修掉（都是真机上量出来的，行为用例此前是绿的）："
     "一是**失败文本的顺序**：整段会被截到 120 字，而它就是拿去查语料的查询词——"
     "原来「工具名 — 命令行 — 报错摘要」的顺序会让最有信息量的报错摘要被截掉，查询词只剩半截命令行，查不中；"
