@@ -46,10 +46,18 @@ TARGET = REPO / ".cindy-plugin-community"
 #: The community channel's version line. Deliberately offset from the official one (1.6.x) so the
 #: two channels never take the same version slot on the same plugin id. Bump it when the community
 #: package is published; keep it below the official line.
-COMMUNITY_VERSION = "1.5.14"  # 1.5.12 在售、1.5.13 待审（四处修复那版）→ 这一版只能走 1.5.14
+COMMUNITY_VERSION = "1.5.15"  # 1.5.14 在售（1.5.12→1.5.13→1.5.14 已连续上架）→ 这一版走 1.5.15
 
 #: The community channel's own release story. The official package carries the official one.
 COMMUNITY_RELEASE_NOTES = (
+    "这一版把 failure 模式的三处真问题修掉（都是真机上量出来的，行为用例此前是绿的）："
+    "一是**失败文本的顺序**：整段会被截到 120 字，而它就是拿去查语料的查询词——"
+    "原来「工具名 — 命令行 — 报错摘要」的顺序会让最有信息量的报错摘要被截掉，查询词只剩半截命令行，查不中；"
+    "现在改成「工具名 | 报错摘要 | 命令行片段」。"
+    "二是**每条新失败都会再查一次**：原来一个会话只查一次，会话很长、后面又失败时，"
+    "上一次查到的教训对不上这次的报错。"
+    "三是**「你自己查过」与「插件替你查过」分成两个记号**：老版本把这两个含义塞进同一个标记，"
+    "于是插件代查过一次之后，这个会话里再失败也永远不再查。"
     "这一版补上仓库钩子在 Claude Code 侧那套 failure 模式（失败→先查→查不到就沉淀）："
     "插件现在订阅宿主的**工具执行**主题（第一次能看见哪个工具失败了、报了什么），"
     "一轮结束时在后台拿错误原文查一次语料——命中就通知你并把命中带进**下一轮**的上下文，"
