@@ -947,6 +947,7 @@
   <url><loc>https://misakanet.org/lessons/windows-ci-splitcommand-backslash-unicode-detached/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-cmd-批处理内含非-ascii-字符导致命令被截断路径失效/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-windows-directory-name-ending-in-a-dot-breaks-ripgrep-glob-and-recursive-io-os/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/windows-gui-自动化里点击按键发出去了但界面没反应的排障成本极高同一套脚本时灵时不灵连试数轮全哑最后发现问题与输入-ap/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-gui-自动化前台安全闸误报排查合成点击链的安全闸要求前台是目标窗口连跑两次都报前台不是-roboguide当前某某终端窗口标题/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-windows-libvips-dll-loaded-twice-poisons-the-bundled-sharp-and-surfaces-as-tra/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-node-sandbox-a-hardcoded-root-silently-confined-the-agent-to-the-wrong-d/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

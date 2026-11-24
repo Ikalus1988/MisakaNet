@@ -6,7 +6,7 @@
 "exists to prevent — write the lesson generically instead."
 ],
 "generated_from": "data/lessons.json + lessons/**/*.md",
-"corpus_rows": 1145,
+"corpus_rows": 1146,
 "corpus": [
 "a+b+c",
 "a-",
@@ -13406,6 +13406,7 @@
 "intake-5603",
 "intake-5607",
 "intake-5616",
+"intake-5671",
 "intake-issue-1196",
 "intake-issue-1298",
 "intake-issue-1305",
@@ -13826,6 +13827,7 @@
 "isvalidsignoffuser",
 "isvisible",
 "isvocative",
+"iswindowenabled",
 "iswindows",
 "it",
 "it-passed-because-it-never-looked-552l",
@@ -30361,6 +30363,8 @@
 "windows-dsh-agent-",
 "windows-form",
 "windows-gui",
+"windows-gui-5671",
+"windows-gui-5671.md",
 "windows-gui.md",
 "windows-latest",
 "windows-libvips-double-load-masquerades-",
