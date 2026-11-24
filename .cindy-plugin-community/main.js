@@ -1119,6 +1119,9 @@ async function handleToolExecution(msg) {
     // 看到自己被调用过 search，就记住「这一段已经查过」。
     const name = toolNameFrom(payload);
     if (name === 'misakanet_search') session.searched = true;
+    // 记住这次调用（工具名 + 输入），好让随后的 tool_result 能配上它——真机的 tool_result
+    // 里既没有工具名也没有退出码，只有 summary；不配上就只有 "exit code 7" 这种没法查的碎片。
+    rememberToolUse(session, payload);
     // 这里**不写盘**：一轮里几十次工具调用就是几十次写状态文件（而且读者可能读到写了一半的）。
     // 状态在轮末统一落盘（handleTurnEnd 里那一次），期间内存里的对象就是最新的。
     return;
@@ -1127,8 +1130,67 @@ async function handleToolExecution(msg) {
   const text = failureTextFrom(payload);
   const failed = eventType === 'error' || (eventType === 'tool_result' && looksLikeFailure(payload));
   if (failed && text) {
-    rememberFailure(session, toolNameFrom(payload) || 'tool', text);
+    const paired = pairWithToolUse(session, payload);
+    rememberFailure(
+      session,
+      paired.name || toolNameFrom(payload) || 'tool',
+      paired.text || text,
+    );
   }
+}
+
+/** 记住一次工具调用（工具名 + 输入片段），按调用 id 索引。 */
+function rememberToolUse(session, payload) {
+  if (!payload || typeof payload !== 'object') return;
+  const id = asString(payload.toolUseId || payload.tool_use_id || payload.id);
+  if (!id) return;
+  const name = toolNameFrom(payload);
+  const input = payload.input || payload.tool_input || payload.toolInput;
+  let excerpt = '';
+  if (input && typeof input === 'object') {
+    for (const key of ['command', 'cmd', 'file_path', 'path', 'pattern', 'query', 'url']) {
+      if (typeof input[key] === 'string' && input[key].trim()) {
+        excerpt = input[key].trim();
+        break;
+      }
+    }
+    if (!excerpt) excerpt = clipFragment(JSON.stringify(input), 160);
+  } else if (typeof input === 'string') {
+    excerpt = input.trim();
+  }
+  session.toolUses = session.toolUses || {};
+  session.toolUses[id] = { name, excerpt: clipFragment(excerpt, 200) };
+  const ids = Object.keys(session.toolUses);
+  if (ids.length > 8) {
+    for (const stale of ids.slice(0, ids.length - 8)) delete session.toolUses[stale];
+  }
+}
+
+/**
+ * 把 tool_result 配上它对应的 tool_use：工具名 + 命令片段 + 结果摘要。
+ * 配不上就用结果摘要本身（宁可信息少，也不要错配）。
+ */
+function pairWithToolUse(session, payload) {
+  const result = { name: '', text: '' };
+  if (!payload || typeof payload !== 'object') return result;
+  const ids = Array.isArray(payload.toolUseIds)
+    ? payload.toolUseIds
+    : (payload.toolUseId ? [payload.toolUseId] : []);
+  const uses = session.toolUses || {};
+  for (const raw of ids) {
+    const id = asString(raw);
+    const use = id ? uses[id] : null;
+    if (!use) continue;
+    result.name = use.name || result.name;
+    const summary = asString(payload.summary).trim();
+    const parts = [];
+    if (use.name) parts.push(use.name);
+    if (use.excerpt) parts.push(use.excerpt);
+    if (summary) parts.push(summary);
+    result.text = parts.join(' — ');
+    break;
+  }
+  return result;
 }
 
 /** 从引擎给的各种形状里挖出「像错误文本」的那一段。 */
