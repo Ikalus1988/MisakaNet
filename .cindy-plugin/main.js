@@ -1183,11 +1183,13 @@ function pairWithToolUse(session, payload) {
     if (!use) continue;
     result.name = use.name || result.name;
     const summary = asString(payload.summary).trim();
+    // 顺序很重要：整段失败文本会被 rememberFailure 截到 120 字，**summary 必须排在前面**——
+    // 它是宿主替我们总结的「哪儿错了」；命令行片段放后面，超长就让它先被截掉。
     const parts = [];
     if (use.name) parts.push(use.name);
-    if (use.excerpt) parts.push(use.excerpt);
     if (summary) parts.push(summary);
-    result.text = parts.join(' — ');
+    if (use.excerpt) parts.push(clipFragment(use.excerpt, 70));
+    result.text = parts.join(' | ');
     break;
   }
   return result;
@@ -1268,7 +1270,12 @@ async function handleComposeContext(msg) {
   const state = await readCheckpointState();
   const session = state.sessions[sessionId];
   const failures = (session && session.failures) || [];
-  if (!failures.length || session.searched === true) {
+  // 只有「有还没查过的失败」才啰嗦：
+  // - session.searched：agent 自己调用过 misakanet_search（粘住，别重复催）；
+  // - session.autoSearched：插件自己已经替这条失败查过的条数（新的失败才值得再查一次）。
+  const autoSearched = Number((session && session.autoSearched) || 0);
+  const unsearched = failures.length > autoSearched;
+  if (!failures.length || session.searched === true || !unsearched) {
     void Promise.resolve(cindy.send({ type: 'event-verdict', hookId, action: 'allow' })).catch(() => {});
     return;
   }
@@ -1340,14 +1347,19 @@ async function handleTurnEnd(msg) {
 async function handleFailuresAfterTurn(sessionId, session) {
   const failures = (session && session.failures) || [];
   if (!failures.length) return;
+  // agent 自己查过就别再查一遍。
   if (session.searched === true) return;
+  // **每条新失败查一次**（不是整个会话只查一次）：会话很长、后面又失败时，
+  // 之前那次搜索已经对不上这次的报错了。
+  const alreadySearched = Number(session.autoSearched) || 0;
+  if (failures.length <= alreadySearched) return;
   const fragment = failures[failures.length - 1].text;
   if (!fragment || fragment.length < 8) return;
 
-  session.searched = true;
+  session.autoSearched = failures.length;
   const state = await readCheckpointState();
   const live = state.sessions[sessionId] || session;
-  live.searched = true;
+  live.autoSearched = failures.length;
   await writeCheckpointState(state);
 
   let hit = null;
