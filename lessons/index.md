@@ -564,6 +564,7 @@
 - [OpenClaw 重装教训 — 删除前先停服务清残留](contrib/openclaw-reinstall-lesson.md) | openclaw | "openclaw", "reinstall", "lesson" | bootstrap
 - [OpenClaw 8.2 — session_nodes entry_valid stays 0 after manual sqlite edit](contrib/openclaw-session-row-entry-updatedat-mismatch.md) | devops | "openclaw", "sqlite", "session_nodes", "canonical-key", "repair", "entry_valid" | incident-2026-09-09
 - [OpenCode CLI on native Windows lists zero models: WSL-style `file://` paths break plugin loading](contrib/opencode-cli-native-windows-install-shows-zero-models-from-o.md) | windows | "opencode", "windows", "file-url", "plugin-loading", "model-list", "ollama", "npm-package", "wsl-path" | intake-3800
+- [openpyxl read_only 加载 xlsx（WPS 或部分 Mac Excel 产出）时 ws.max_row=1 / max_col=1，但文件实际](contrib/openpyxl-read-only-加载-xlsxwps-或部分-mac-excel-产出时-wsmax-row1.md) | mcp | "openpyxl", "t-s", "read" | intake-5693
 - [Opire Bounty 实战经验 — 认领、收款与信任分级](contrib/opire-bounty-hunting.md) | crypto-ops | "opire", "bounty", "crypto", "stripe", "claim", "rewards" | 
 - [ops_bash 连续两次报 EXECUTOR_UNAVAILABLE：`the restricted Bash runtime could not be pr](contrib/ops-bash-连续两次报-executor-unavailablethe-restricted-bash.md) | windows | "python", "job_kill", "git" | intake-5603
 - [Claiming an OSS issue is an investment: a six-step gate before the /claim comment](contrib/oss-issue-claim-six-step-gate-before-claiming.md) | github | "oss", "issue-claim", "due-diligence", "auto-close-bot", "competing-pr" | claim audit 2026-09-07 (5 claims, 4 wasted), policy distilled from it
@@ -953,6 +954,7 @@
 - [三个导入入口喂进的文件集合不同，同一份备份判定不同：空输入必须报错](contrib/三个导入入口喂进的文件集合不同同一份备份判定不同空输入必须报错.md) | development | "entry-parity", "empty-input", "architecture-migration" | intake-3191
 - [两个独立进程并发写同一个 SQLite 数据库（WAL 模式已开），一个进程写批量事务期间另一个进程 INSERT 报 `database is locked`](contrib/两个独立进程并发写同一个-sqlite-数据库wal.md) | dsh | "database", "sqlite", "wal" | intake-5069
 - [两处「各自写死间距」导致右列数字差几像素：共享常量 + 量像素验收](contrib/两处各自写死间距导致右列数字差几像素共享常量-量像素验收.md) | mobile | "swiftui", "ios", "layout", "alignment", "pixel-measurement", "shared-constant", "padding", "design-qa" | intake-4182
+- [两条 agent 线并行维护同一套共享台账（判据编号表、文档章节号、协作 issue 编号），各自从同一空位自增编号（两线都从 F20 起编、都](contrib/两条-agent-线并行维护同一套共享台账判据编号表文档章节号协作-issue.md) | mcp | "agent", "f20" | intake-5696
 - [中文 Windows 环境 Python 脚本用 subprocess.run(..., capture_output=True, text=True) 捕获子](contrib/中文-windows-环境-python-脚本用-subprocessrun-capture-outputtrue.md) | windows | "python-gbk-encoding-error", "windows", "python" | intake-5445
 - [中文路径下的 UTF-8 批处理：cmd 把变量名咬成半截，报 DK_HOME is not recognized](contrib/中文路径下的-utf-8-批处理cmd-把变量名咬成半截报-dk-home-is-not-recognized.md) | devops | "windows", "cmd", "batch", "encoding", "utf8" | intake-4452
 - [中文路径粘贴变八进制转义 + tar czf 在本环境被回滚：改用纯英文路径与 Python tarfile](contrib/中文路径粘贴变八进制转义-tar-czf-在本环境被回滚改用纯英文路径与-python-tarfile.md) | devops | "bash", "encoding", "chinese-path", "tar", "rollback", "python-tarfile", "nas" | intake-4162

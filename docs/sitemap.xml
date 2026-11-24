@@ -617,6 +617,7 @@
   <url><loc>https://misakanet.org/lessons/openclaw-reinstall-lesson/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/openclaw-82-session-nodes-entry-valid-stays-0-after-manual-sqlite-edit/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/opencode-cli-on-native-windows-lists-zero-models-wsl-style-file-paths-break-plug/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/openpyxl-read-only-加载-xlsxwps-或部分-mac-excel-产出时-wsmax-row1-max-col1但文件实际/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/opire-bounty-hunting/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ops-bash-连续两次报-executor-unavailablethe-restricted-bash-runtime-could-not-be-pr/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/claiming-an-oss-issue-is-an-investment-a-six-step-gate-before-the-claim-comment/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -999,6 +1000,7 @@
   <url><loc>https://misakanet.org/lessons/三个导入入口喂进的文件集合不同同一份备份判定不同空输入必须报错/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/两个独立进程并发写同一个-sqlite-数据库wal-模式已开一个进程写批量事务期间另一个进程-insert-报-database-is-locked/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/两处各自写死间距导致右列数字差几像素共享常量-量像素验收/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/两条-agent-线并行维护同一套共享台账判据编号表文档章节号协作-issue-编号各自从同一空位自增编号两线都从-f20-起编都/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/中文-windows-环境-python-脚本用-subprocessrun-capture-outputtrue-texttrue-捕获子/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/中文路径下的-utf-8-批处理cmd-把变量名咬成半截报-dk-home-is-not-recognized/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/中文路径粘贴变八进制转义-tar-czf-在本环境被回滚改用纯英文路径与-python-tarfile/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
