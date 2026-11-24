@@ -91,6 +91,7 @@
   <url><loc>https://misakanet.org/lessons/a-child-stat-failure-must-not-fail-the-whole-parent-directory-listing/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-ci-failure-classifier-mapped-failure-logs-to-categories-by-bare-substring-matc/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-cmd-with-non-ascii-comments-emits-a-phantom-is-not-recognized-command-chcp-ins/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-cold-boot-witness-timed-out-even-though-its-stored-samples-proved-the-guest-wa/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-container-paas-update-task-reports-success-and-app-metadata-shows-the-new-vers/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-container-that-starts-but-answers-502-the-image-never-contained-the-config-fil/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-contribution-leaderboard-showed-used-0-for-every-row-and-coveragelesson-a/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -116,6 +117,7 @@
   <url><loc>https://misakanet.org/lessons/a-qsettings-ini-sanitizer-that-strips-lines-starting-with-variant-and-contai/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-recovery-control-rejected-document-retrieval-evidence-with-a-successful-verif/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-repository-staleness-sweep-flagged-several-directories-and-pages-as-no-refere/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-restored-integration-remained-not-loaded-in-isolated-home-assistant-core-even/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-resumable-uploader-retried-the-same-empty-target-check-four-times-and-never-cr/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-reviewed-python-source-bundle-had-identical-file-bytes-on-windows-and-posix-bu/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-scheduling-grammar-with-an-unrestricted-task-wildcard-before-a-date-can-match/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -126,6 +128,7 @@
   <url><loc>https://misakanet.org/lessons/a-stdio-mcp-recovery-server-and-clihooks-used-different-sqlite-state-stores-alt/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-stubbed-success-is-not-a-sandbox-a-faked-git-push-let-the-suite-rewrite-the-pu/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-task-can-be-marked-complete-after-a-rejected-mobile-push-even-though-the-auto/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-windows-credential-manager-enrollment-using-pywin32-rejected-an-already-encode/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-worksheet-patch-accepted-xfe1-and-produced-an-excel-workbook-whose-column-exce/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/accepted-is-not-executed-measure-readiness-at-the-layer-that-will-do-the-work/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/accidental-pycache-commit/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -472,6 +475,7 @@
   <url><loc>https://misakanet.org/lessons/a-green-compile-says-nothing-about-reachability-the-fix-shipped-in-code-no-user/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/green-unit-tests-hid-a-build-only-type-error-because-the-test-runner-strips-type/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/griffe-docstring-parsers-return-empty-instead-of-raising-a-tryexcept-fall-throug/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/gui-截图验收批量出图中途机器自动锁屏copyfromscreenpowershell-全程无报错10-张验收截图全部拍成锁屏壁纸脚本报成功假/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/applying-a-review-computed-from-an-old-snapshot-as-a-blind-overwrite-silently-dr/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/headless-chrome-cdp-port-answers-but-the-page-target-is-hung-automation-fails-si/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/headless-chrome-print-to-pdf-produced-a-pdf-where-all-text-rendered-at-roughly/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -487,6 +491,7 @@
   <url><loc>https://misakanet.org/lessons/illustrator-中西文字体混排中文静默回退宋体并嵌入-pdf/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/an-im-bot-is-a-guest-on-someone-elses-stack-pin-the-client-the-os-and-the-instal/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/verify-import-paths-after-refactoring-python-modules/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/in-a-maintenance-guest-home-assistant-supervisor-kept-reporting-supervisor-inte/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/in-workbuddy2api-panel-setting-adminaudit-enabled-true-in-configjson-w/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/installing-a-plugin-package-by-name-only-latest-036-failed-with-incompati/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/instrumentation-that-never-reached-the-artifact-a-silent-probe-is-not-evidence/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1048,6 +1053,7 @@
   <url><loc>https://misakanet.org/lessons/手写-comfyui-workflow-json-时-link-id-复用导致节点静默断连且加载不报错/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/手柄卡顿震动排查中用找不到-vid-2e8a推断-usb-桥接pico-2w-转发器未接入结论错误-root-cause-桥接固件伪装成真手柄上/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/扩展名声明表与收集白名单各写各的同类事故第三次复发下游必须同源派生双向契约测试/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/批量扫描器walk-型判定哪些目录是样本再逐个处理从362s-全绿逐步恶化到-oom-崩溃node-4gb-堆爆-提到-8g/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/批量替换脚本先用条件判断某个替换点没找到就-processexit1但此时前面的替换只改了内存里的字符串还没-writefilesync脚本退/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/把答案是给-ppt-用的读成把答案做成-ppt交付形态要在开工前确认/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/抓拍点自动同步接口只给版本号不给条数且版本没变时没推进-lastsyncat-导致每小时打一次/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

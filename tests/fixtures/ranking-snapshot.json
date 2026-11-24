@@ -42,8 +42,8 @@
     }
   ],
   "corpus": {
-    "lesson_count": 1151,
-    "fingerprint": "sha256:ccd1397a3729d6592337b4fa62900289c022d214e2b9f2b9e95ae88da59fa908"
+    "lesson_count": 1157,
+    "fingerprint": "sha256:ee0fe020a22f8f08ea1467e4237b10c645aea1be4e561cee3f453cc8703f49ff"
   },
   "queries": [
     {
@@ -56,39 +56,39 @@
         },
         {
           "path": "lessons/contrib/hermes-model-switch-ccswitch.md",
-          "score": 0.739016
+          "score": 0.738952
         },
         {
           "path": "lessons/contrib/v100-strata-moe-sm70-kernels-cpu-prefill-iq3-xxs.md",
-          "score": 0.569732
+          "score": 0.569472
         },
         {
           "path": "lessons/contrib/rag-three-channel-llm-disaster-recovery.md",
-          "score": 0.559682
+          "score": 0.559471
         },
         {
           "path": "lessons/contrib/rag-cross-encoder-cpu-bottleneck.md",
-          "score": 0.514063
+          "score": 0.513877
         },
         {
           "path": "lessons/contrib/git-clean-branch-after-merged-pr-ru.md",
-          "score": 0.48459
+          "score": 0.484452
         },
         {
           "path": "lessons/contrib/suggested-lesson-title-the-preset-switch-was-on-the-users.md",
-          "score": 0.479826
+          "score": 0.479668
         },
         {
           "path": "lessons/contrib/fanuc-dcs-safety-configuration.md",
-          "score": 0.476213
+          "score": 0.475902
         },
         {
           "path": "lessons/core/search-first-roadmap-loop.md",
-          "score": 0.424639
+          "score": 0.424584
         },
         {
           "path": "lessons/contrib/llm-cost-telemetry-undercount.md",
-          "score": 0.387998
+          "score": 0.388125
         }
       ]
     },
@@ -102,39 +102,39 @@
         },
         {
           "path": "lessons/contrib/wxauto-windows-python-not-wsl.md",
-          "score": 0.713354
+          "score": 0.713442
         },
         {
           "path": "lessons/contrib/pip-install-本地-wheel-报-is-invalid-实为多线程下载坏块.md",
-          "score": 0.694441
+          "score": 0.694464
         },
         {
           "path": "lessons/contrib/python-venv-tiktoken-module-not-found.md",
-          "score": 0.645467
+          "score": 0.645572
         },
         {
           "path": "lessons/contrib/cli-hub-install-name-fails-on-windows-when-githubcom-is.md",
-          "score": 0.641247
+          "score": 0.641339
         },
         {
           "path": "lessons/contrib/pip-install-proxy-timeout.md",
-          "score": 0.619111
+          "score": 0.6191
         },
         {
           "path": "lessons/contrib/lesson-08-pip-https-proxy-clash.md",
-          "score": 0.592845
+          "score": 0.592775
         },
         {
           "path": "lessons/core/auto-merge-ci-pipeline.md",
-          "score": 0.530464
+          "score": 0.53034
         },
         {
           "path": "lessons/contrib/agent-manual-update-timeout.md",
-          "score": 0.519569
+          "score": 0.519631
         },
         {
           "path": "lessons/contrib/pt-br/instalacao-pip-timeout-proxy.md",
-          "score": 0.51567
+          "score": 0.515652
         }
       ]
     },
@@ -148,39 +148,39 @@
         },
         {
           "path": "lessons/contrib/pip-install-proxy-timeout.md",
-          "score": 0.803584
+          "score": 0.803637
         },
         {
           "path": "lessons/contrib/lesson-08-pip-https-proxy-clash.md",
-          "score": 0.769206
+          "score": 0.769167
         },
         {
           "path": "lessons/contrib/pt-br/instalacao-pip-timeout-proxy.md",
-          "score": 0.700472
+          "score": 0.700514
         },
         {
           "path": "lessons/core/auto-merge-ci-pipeline.md",
-          "score": 0.672113
+          "score": 0.671838
         },
         {
           "path": "lessons/contrib/agent-web-access-toolchain-selection.md",
-          "score": 0.668309
+          "score": 0.668242
         },
         {
           "path": "lessons/contrib/wxauto-windows-python-not-wsl.md",
-          "score": 0.633777
+          "score": 0.633717
         },
         {
           "path": "lessons/contrib/cli-hub-install-name-fails-on-windows-when-githubcom-is.md",
-          "score": 0.625959
+          "score": 0.625843
         },
         {
           "path": "lessons/contrib/fehler-python-modul-nicht-gefunden.md",
-          "score": 0.611536
+          "score": 0.611378
         },
         {
           "path": "lessons/contrib/macos-homebrew-python-pip-install-blocked-by-pep-668-externa.md",
-          "score": 0.606993
+          "score": 0.606817
         }
       ]
     },
@@ -194,39 +194,39 @@
         },
         {
           "path": "lessons/contrib/lesson-template-network.md",
-          "score": 0.725772
+          "score": 0.725714
         },
         {
           "path": "lessons/contrib/urllib-raises-ssl-unexpected-eof-while-reading-on-some.md",
-          "score": 0.711515
+          "score": 0.711362
         },
         {
           "path": "lessons/contrib/es/proxy-corporativo-curl-timeout.md",
-          "score": 0.708603
+          "score": 0.708555
         },
         {
           "path": "lessons/contrib/pip-install-proxy-timeout.md",
-          "score": 0.707511
+          "score": 0.707447
         },
         {
           "path": "lessons/contrib/python-smtplib-ssl-certificate-verify-failed-fix.md",
-          "score": 0.681548
+          "score": 0.681447
         },
         {
           "path": "lessons/contrib/npmjs-registry-unreachable-pin-a-mirror-never-disable-tls.md",
-          "score": 0.65868
+          "score": 0.658506
         },
         {
           "path": "lessons/contrib/pip-install-timeout-ssl.md",
-          "score": 0.641111
+          "score": 0.640647
         },
         {
           "path": "lessons/contrib/git-tls-handshake-failure.md",
-          "score": 0.617688
+          "score": 0.617543
         },
         {
           "path": "lessons/contrib/npm-e403-forbidden-three-layers.md",
-          "score": 0.602611
+          "score": 0.602147
         }
       ]
     },
@@ -240,27 +240,27 @@
         },
         {
           "path": "lessons/en/disk-full-agent-tmp-gc.md",
-          "score": 0.708204
+          "score": 0.708559
         },
         {
           "path": "lessons/contrib/sizes-on-an-embedded-file-device-are-metadata-not-bytes.md",
-          "score": 0.688283
+          "score": 0.688376
         },
         {
           "path": "lessons/contrib/path-corporationnvidia-app-占-4-gb需清理-root-cause.md",
-          "score": 0.548182
+          "score": 0.548248
         },
         {
           "path": "lessons/contrib/桌面自动化里并发执行gui.md",
-          "score": 0.54482
+          "score": 0.544855
         },
         {
           "path": "lessons/contrib/拟合结果与机理先验冲突时先查测量误报与度量口径最后才有资格挑战常.md",
-          "score": 0.531131
+          "score": 0.53113
         },
         {
           "path": "lessons/contrib/huggingface-mirror-is-unusable-for-faster-whisper-models-in.md",
-          "score": 0.521486
+          "score": 0.521569
         },
         {
           "path": "lessons/contrib/引导超时窗太短会伪造间歇楔死慢启动被误判并误杀-虚拟工位引导在.md",
@@ -268,11 +268,11 @@
         },
         {
           "path": "lessons/core/pr-cleanup-sop.md",
-          "score": 0.505009
+          "score": 0.504776
         },
         {
           "path": "lessons/contrib/agent-readfile-silent-truncation.md",
-          "score": 0.500589
+          "score": 0.500555
         }
       ]
     },
@@ -286,31 +286,31 @@
         },
         {
           "path": "lessons/contrib/permission-denial-removes-evidence-is-stop-signal.md",
-          "score": 0.594846
+          "score": 0.594699
         },
         {
           "path": "lessons/contrib/erreur-permission-docker-linux.md",
-          "score": 0.571249
+          "score": 0.571528
         },
         {
           "path": "lessons/contrib/lesson-06-git-push-credential-helper-403.md",
-          "score": 0.567179
+          "score": 0.567415
         },
         {
           "path": "lessons/contrib/mumu-su-kernelsu-ksud-system-xbin-dusk-busybox-su-app-root.md",
-          "score": 0.546757
+          "score": 0.546344
         },
         {
           "path": "lessons/contrib/npm-eacces-permission-error-linux.md",
-          "score": 0.516031
+          "score": 0.516213
         },
         {
           "path": "lessons/contrib/a-child-probe-failure-must-not-poison-the-parent-listing.md",
-          "score": 0.494175
+          "score": 0.494252
         },
         {
           "path": "lessons/contrib/受限环境下-adb-无法生成-adbkey预置一把私钥让它只读不写.md",
-          "score": 0.47539
+          "score": 0.475485
         },
         {
           "path": "lessons/contrib/dsh-workspace-write-denies-workspace-subdirectories.md",
@@ -318,7 +318,7 @@
         },
         {
           "path": "lessons/contrib/在-dsh-沙箱内启动-renodenet-程序报-但同一目录用-python-能删能建icacls.md",
-          "score": 0.446988
+          "score": 0.446647
         }
       ]
     },
@@ -332,39 +332,39 @@
         },
         {
           "path": "lessons/contrib/用-croncreate-建了每-15.md",
-          "score": 0.569685
+          "score": 0.569351
         },
         {
           "path": "lessons/core/cronjob-one-shot-race-condition-duplicate-execution.md",
-          "score": 0.558473
+          "score": 0.558688
         },
         {
           "path": "lessons/core/dco-auto-fix-workflow.md",
-          "score": 0.490665
+          "score": 0.490276
         },
         {
           "path": "lessons/contrib/js-dead-code-chain-break.md",
-          "score": 0.454968
+          "score": 0.454636
         },
         {
           "path": "lessons/core/github-actions-code-injection.md",
-          "score": 0.449041
+          "score": 0.448819
         },
         {
           "path": "lessons/contrib/双击-ps1-不会执行交付双击运行的脚本给用户可能一条都没跑.md",
-          "score": 0.446997
+          "score": 0.446698
         },
         {
           "path": "lessons/core/pr-cleanup-sop.md",
-          "score": 0.446768
-        },
-        {
-          "path": "lessons/contrib/shell-script-debugging.md",
-          "score": 0.446415
+          "score": 0.446547
         },
         {
           "path": "lessons/en/stdout-stderr-split-cron.md",
-          "score": 0.446167
+          "score": 0.446458
+        },
+        {
+          "path": "lessons/contrib/shell-script-debugging.md",
+          "score": 0.446122
         }
       ]
     },
@@ -378,39 +378,39 @@
         },
         {
           "path": "lessons/contrib/import-path-verification-after-refactor.md",
-          "score": 0.598162
+          "score": 0.598093
         },
         {
           "path": "lessons/core/pr-cleanup-sop.md",
-          "score": 0.58518
+          "score": 0.585108
         },
         {
           "path": "lessons/contrib/一个原本正常的-powershell-安装脚本含中文提示用-python.md",
-          "score": 0.574348
+          "score": 0.574412
         },
         {
           "path": "lessons/contrib/在-powershell-里用内联方式把-python-脚本传给解释器如-python-c-here-string.md",
-          "score": 0.561311
+          "score": 0.5614
         },
         {
           "path": "lessons/core/contributor-engagement-retention.md",
-          "score": 0.561081
+          "score": 0.561056
         },
         {
           "path": "lessons/contrib/stale-pr-verify-each-half-before-rebasing.md",
-          "score": 0.554349
+          "score": 0.554422
         },
         {
           "path": "lessons/contrib/重新生成-xcodeproj-会丢-development-team之后-xcodebuild-装不了真机.md",
-          "score": 0.54844
+          "score": 0.548651
         },
         {
           "path": "lessons/contrib/迁移工具链工作目录如把两个-git-工作副本.md",
-          "score": 0.538406
+          "score": 0.538385
         },
         {
           "path": "lessons/contrib/ui-automation-selector-contract-after-nav-change.md",
-          "score": 0.537038
+          "score": 0.53702
         }
       ]
     },
@@ -424,39 +424,39 @@
         },
         {
           "path": "lessons/core/allowlist-must-be-tested-against-the-corpus.md",
-          "score": 0.765197
+          "score": 0.764904
         },
         {
           "path": "lessons/contrib/tts-chinese-encoding-powershell.md",
-          "score": 0.763498
+          "score": 0.76347
         },
         {
           "path": "lessons/contrib/python-gbk-encoding-error.md",
-          "score": 0.759807
+          "score": 0.75977
         },
         {
           "path": "lessons/contrib/pythonu2194nodejs-bridge-on-windows-corrupts-chinese-paths.md",
-          "score": 0.758326
+          "score": 0.758272
         },
         {
           "path": "lessons/contrib/windows-a-utf8-path-list-decoded-as-cp936-loses-files-without-raising.md",
-          "score": 0.747544
+          "score": 0.747448
         },
         {
           "path": "lessons/contrib/powershell-set-content-utf8-bom-breaks-package-json.md",
-          "score": 0.743732
+          "score": 0.743609
         },
         {
           "path": "lessons/contrib/aider-windows-unicode-error.md",
-          "score": 0.740031
+          "score": 0.739991
         },
         {
           "path": "lessons/contrib/wsl-pip-gbk-hub-poller-crash.md",
-          "score": 0.727057
+          "score": 0.726986
         },
         {
           "path": "lessons/contrib/中文-windows-环境-python-脚本用-subprocessrun-capture-outputtrue.md",
-          "score": 0.710025
+          "score": 0.709893
         }
       ]
     },
@@ -470,39 +470,39 @@
         },
         {
           "path": "lessons/contrib/coopanion-的-gpt-sovits-语音扩展wocwangcortico-world-gpt-sovits.md",
-          "score": 0.625635
+          "score": 0.625461
         },
         {
           "path": "lessons/contrib/python-sandbox-path-isolation.md",
-          "score": 0.589647
+          "score": 0.589508
         },
         {
           "path": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
-          "score": 0.561928
+          "score": 0.56157
         },
         {
           "path": "lessons/contrib/tia-portal-openness-apiprojectsretrieveopen打开引用了未安装选件包的工程时抛.md",
-          "score": 0.55936
+          "score": 0.559751
         },
         {
           "path": "lessons/contrib/自签包的-cfbundledisplayname-必须是-ascii中文名签不了名同一个坑第二次又犯.md",
-          "score": 0.521257
+          "score": 0.521552
         },
         {
           "path": "lessons/contrib/dsh-profile-的-dshprofilebundles-要写包全名写裸名该插件静默不加载.md",
-          "score": 0.520827
+          "score": 0.521143
         },
         {
           "path": "lessons/contrib/dsh-桌面版插件只能应用内装或退出后装边跑边装会撞文件锁.md",
-          "score": 0.513389
+          "score": 0.513686
         },
         {
           "path": "lessons/contrib/api-catalog-version-drift-pinned-vs-upstream-head.md",
-          "score": 0.508953
+          "score": 0.509197
         },
         {
           "path": "lessons/contrib/testimonio-misakanet.md",
-          "score": 0.506073
+          "score": 0.505896
         }
       ]
     },
@@ -516,39 +516,39 @@
         },
         {
           "path": "lessons/contrib/feishu-websocket-404-error-http-webhook-required.md",
-          "score": 0.774257
+          "score": 0.774211
         },
         {
           "path": "lessons/contrib/feishu-setup-complete-cc-connect.md",
-          "score": 0.717313
+          "score": 0.717513
         },
         {
           "path": "lessons/contrib/hub-feishu-wsclient-start-never-called.md",
-          "score": 0.697668
+          "score": 0.697784
         },
         {
           "path": "lessons/contrib/registration-chain-worker-fallback.md",
-          "score": 0.658098
+          "score": 0.65789
         },
         {
           "path": "lessons/contrib/wxauto-im-feedback-collection-jsonl-queue.md",
-          "score": 0.654389
+          "score": 0.654232
         },
         {
           "path": "lessons/contrib/openclaw-gateway-dynamic-module-missing.md",
-          "score": 0.614531
+          "score": 0.614549
         },
         {
           "path": "lessons/contrib/feishu-display-optimization-cc-connect.md",
-          "score": 0.59827
+          "score": 0.598661
         },
         {
           "path": "lessons/contrib/用-croncreate-建了每-15.md",
-          "score": 0.595092
+          "score": 0.595167
         },
         {
           "path": "lessons/contrib/编译字节码pc嵌入式-p-code-类反汇编输出不可读大段-byte-噪音.md",
-          "score": 0.591995
+          "score": 0.591821
         }
       ]
     },
@@ -562,39 +562,39 @@
         },
         {
           "path": "lessons/contrib/finding-and-fixing-ghostty-s-largest-memory-leak.md",
-          "score": 0.724412
+          "score": 0.724159
         },
         {
           "path": "lessons/contrib/rag-build-strategy-batch.md",
-          "score": 0.598923
+          "score": 0.598681
         },
         {
           "path": "lessons/core/a-security-fix-that-turns-tests-red-is-the-fix-working.md",
-          "score": 0.590053
+          "score": 0.590359
         },
         {
           "path": "lessons/contrib/pr-comment-bodies-need-quoted-heredoc.md",
-          "score": 0.57861
+          "score": 0.579054
         },
         {
           "path": "lessons/contrib/docker-desktop-error-response-from-daemon-no-engine.md",
-          "score": 0.569578
+          "score": 0.56974
         },
         {
           "path": "lessons/contrib/lesson-08-pip-https-proxy-clash.md",
-          "score": 0.568969
+          "score": 0.569017
         },
         {
           "path": "lessons/contrib/permission-denied-fix.md",
-          "score": 0.5392
+          "score": 0.539704
         },
         {
           "path": "lessons/contrib/wsl-status-fails-but-docker-desktop-works.md",
-          "score": 0.537634
+          "score": 0.538125
         },
         {
           "path": "lessons/contrib/wsl-proxy-setup.md",
-          "score": 0.534439
+          "score": 0.534929
         }
       ]
     },
@@ -608,39 +608,39 @@
         },
         {
           "path": "lessons/contrib/docker-build-exit-137-multistage-oom.md",
-          "score": 0.705786
+          "score": 0.700999
         },
         {
           "path": "lessons/contrib/引导超时窗太短会伪造间歇楔死慢启动被误判并误杀-虚拟工位引导在.md",
-          "score": 0.61878
+          "score": 0.623364
         },
         {
           "path": "lessons/contrib/虚拟控制器冷启动要-5-7-分钟救援工具的引导等待窗只有-300s超时报.md",
-          "score": 0.561217
+          "score": 0.565164
         },
         {
           "path": "lessons/contrib/problem-把-fanuc-官方-lstp-编译器winolpc-工具链-maketpexe封装进-windows.md",
-          "score": 0.546179
+          "score": 0.54999
         },
         {
           "path": "lessons/contrib/杀进程前有安全校验用-queryfullprocessimagenamew-查镜像名与白名单比对防止.md",
-          "score": 0.533354
+          "score": 0.537048
         },
         {
           "path": "lessons/contrib/脱离父子关系的脚本仍随宿主退出被杀别指望等宿主关掉再干活.md",
-          "score": 0.532699
+          "score": 0.536344
+        },
+        {
+          "path": "lessons/contrib/批量扫描器walk-型判定哪些目录是样本再逐个处理从362s-全绿逐步恶化到.md",
+          "score": 0.529517
         },
         {
           "path": "lessons/contrib/symptom-一台机器上多个-agent-会话并行驱动不同-roboguide-工位时a.md",
-          "score": 0.520701
+          "score": 0.524255
         },
         {
           "path": "lessons/contrib/dism-startcomponentcleanup-卡死dismexe-和-tiworker-cpu-近-0cbs.md",
-          "score": 0.512554
-        },
-        {
-          "path": "lessons/contrib/windows-上跑虚拟控制器-gui-宿主类仿真宿主进程拉起-embedding.md",
-          "score": 0.510961
+          "score": 0.516103
         }
       ]
     },
@@ -650,7 +650,7 @@
       "results": [
         {
           "path": "lessons/core/dco-auto-fix-workflow.md",
-          "score": 0.954432
+          "score": 0.954333
         },
         {
           "path": "lessons/contrib/dco-signoff-force-push-pitfall.md",
@@ -658,35 +658,35 @@
         },
         {
           "path": "lessons/contrib/error-dco-signoff-windows.md",
-          "score": 0.761184
+          "score": 0.761068
         },
         {
           "path": "lessons/core/auto-merge-ci-pipeline.md",
-          "score": 0.620363
+          "score": 0.620344
         },
         {
           "path": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
-          "score": 0.599226
+          "score": 0.599066
         },
         {
           "path": "lessons/contrib/ci-github-token-push-does-not-trigger-workflows.md",
-          "score": 0.548846
+          "score": 0.548517
         },
         {
           "path": "lessons/en/ci-dco-fork-pr-signoff.md",
-          "score": 0.496418
+          "score": 0.496456
         },
         {
           "path": "lessons/core/pr-cleanup-sop.md",
-          "score": 0.436924
+          "score": 0.436798
         },
         {
           "path": "lessons/core/pull-request-welcome-trigger-trap.md",
-          "score": 0.4071
+          "score": 0.406986
         },
         {
           "path": "lessons/contrib/problem-writing-a-git-commit-message-that-quotes-a-command.md",
-          "score": 0.403822
+          "score": 0.403527
         }
       ]
     },
@@ -700,39 +700,39 @@
         },
         {
           "path": "lessons/contrib/websocket-onerror-logs-nothing-useful-handlers-that-print-er.md",
-          "score": 0.738196
+          "score": 0.738116
         },
         {
           "path": "lessons/core/node-sqlite-shim-undeclared-named-parameters.md",
-          "score": 0.670423
+          "score": 0.670264
         },
         {
           "path": "lessons/contrib/postgresql-connection-pool-exhaustion-ar.md",
-          "score": 0.638808
+          "score": 0.638853
         },
         {
           "path": "lessons/contrib/git-ls-remote-git-push-到-githubcom-间歇性挂起-2035-秒后失败报-recv.md",
-          "score": 0.600112
+          "score": 0.600041
         },
         {
           "path": "lessons/contrib/nodejs-missing-require-inside-try-catch.md",
-          "score": 0.586764
+          "score": 0.586705
         },
         {
           "path": "lessons/contrib/症状node-fetch-到某-cloudflare-workers-端点报-typeerror-fetch.md",
-          "score": 0.566787
+          "score": 0.566673
         },
         {
           "path": "lessons/contrib/nodejs-zstd-decompress-first-frame-only.md",
-          "score": 0.525713
+          "score": 0.525554
         },
         {
           "path": "lessons/core/js-regex-literal-dollar-vs-end-of-line-anchor.md",
-          "score": 0.512746
+          "score": 0.51285
         },
         {
           "path": "lessons/contrib/webcrypto-fallback-consistency-node-worker.md",
-          "score": 0.509068
+          "score": 0.509077
         }
       ]
     },
@@ -746,39 +746,39 @@
         },
         {
           "path": "lessons/contrib/npmjs-registry-unreachable-pin-a-mirror-never-disable-tls.md",
-          "score": 0.808477
+          "score": 0.808301
         },
         {
           "path": "lessons/contrib/corporate-proxy-curl-timeout.md",
-          "score": 0.742448
+          "score": 0.742467
         },
         {
           "path": "lessons/contrib/urllib-raises-ssl-unexpected-eof-while-reading-on-some.md",
-          "score": 0.677836
+          "score": 0.677753
         },
         {
           "path": "lessons/contrib/electron-builder-nsis-tls-reset-binary-mirror.md",
-          "score": 0.640325
+          "score": 0.640164
         },
         {
           "path": "lessons/contrib/git-push-without-shell-agent.md",
-          "score": 0.63576
+          "score": 0.635721
         },
         {
           "path": "lessons/contrib/es/proxy-corporativo-curl-timeout.md",
-          "score": 0.631683
+          "score": 0.631681
         },
         {
           "path": "lessons/contrib/python-smtplib-ssl-certificate-verify-failed-fix.md",
-          "score": 0.627855
+          "score": 0.627845
         },
         {
           "path": "lessons/contrib/gfw-tls-sni-block-pattern.md",
-          "score": 0.599747
+          "score": 0.59971
         },
         {
           "path": "lessons/contrib/gfw-tls-sni-blocking-tool-layer-ineffective.md",
-          "score": 0.595927
+          "score": 0.595884
         }
       ]
     },
@@ -792,39 +792,39 @@
         },
         {
           "path": "lessons/contrib/agent-memory-three-index-architecture.md",
-          "score": 0.734508
+          "score": 0.734458
         },
         {
           "path": "lessons/contrib/rag-alarm-code-mandatory-recall.md",
-          "score": 0.625034
+          "score": 0.625115
         },
         {
           "path": "lessons/contrib/bm25-chinese-sliding-window-tuning.md",
-          "score": 0.623351
+          "score": 0.623277
         },
         {
           "path": "lessons/contrib/search-evaluation-rank-tracking-bias.md",
-          "score": 0.60973
+          "score": 0.609786
         },
         {
           "path": "lessons/core/node-sqlite-shim-undeclared-named-parameters.md",
-          "score": 0.563036
+          "score": 0.562993
         },
         {
           "path": "lessons/contrib/retrieval-projection-truncation-caps-recall.md",
-          "score": 0.54167
+          "score": 0.541566
         },
         {
           "path": "lessons/contrib/rag-retrieval-six-layer-silent-degradation.md",
-          "score": 0.539577
+          "score": 0.539494
         },
         {
           "path": "lessons/contrib/rag-chinese-encoding-pymupdf.md",
-          "score": 0.528539
+          "score": 0.528574
         },
         {
           "path": "lessons/contrib/rag-cross-encoder-cpu-bottleneck.md",
-          "score": 0.48439
+          "score": 0.484267
         }
       ]
     },
@@ -838,7 +838,7 @@
         },
         {
           "path": "lessons/contrib/problem-仿真机器人控制器崩溃os-145power-off-controller-to.md",
-          "score": 0.539648
+          "score": 0.539653
         },
         {
           "path": "lessons/contrib/problem-4725.md",
@@ -846,31 +846,31 @@
         },
         {
           "path": "lessons/contrib/problem-从机器人-md.md",
-          "score": 0.533608
+          "score": 0.533595
         },
         {
           "path": "lessons/contrib/cross-sheet-name-merge-data-chaos.md",
-          "score": 0.528929
+          "score": 0.52894
         },
         {
           "path": "lessons/contrib/fanuc-机器人减速机rv.md",
-          "score": 0.519127
+          "score": 0.519085
         },
         {
           "path": "lessons/contrib/process-card-sequence-extraction-rules.md",
-          "score": 0.514833
+          "score": 0.514817
         },
         {
           "path": "lessons/contrib/wxauto-im-feedback-collection-jsonl-queue.md",
-          "score": 0.512135
+          "score": 0.512117
         },
         {
           "path": "lessons/contrib/problem-从-fanuc.md",
-          "score": 0.5044
+          "score": 0.504346
         },
         {
           "path": "lessons/contrib/wecom-robot-long-connect-no-ngrok.md",
-          "score": 0.500553
+          "score": 0.500516
         }
       ]
     },
@@ -884,39 +884,39 @@
         },
         {
           "path": "lessons/core/github-actions-code-injection.md",
-          "score": 0.626066
+          "score": 0.625832
         },
         {
           "path": "lessons/contrib/openclaw-prefer-cli-and-policy-over-direct-edit.md",
-          "score": 0.472978
+          "score": 0.472694
         },
         {
           "path": "lessons/core/dco-auto-fix-workflow.md",
-          "score": 0.458955
+          "score": 0.458726
         },
         {
           "path": "lessons/contrib/simaticml-lad-xml-tia-v16-uid-scoil-rcoil.md",
-          "score": 0.449633
+          "score": 0.449623
         },
         {
           "path": "lessons/core/pull-request-welcome-trigger-trap.md",
-          "score": 0.417218
+          "score": 0.417105
         },
         {
           "path": "lessons/contrib/扩展名声明表与收集白名单各写各的同类事故第三次复发下游必须同源派.md",
-          "score": 0.402512
+          "score": 0.402353
         },
         {
           "path": "lessons/contrib/在-powershell-里用内联方式把-python-脚本传给解释器如-python-c-here-string.md",
-          "score": 0.39723
+          "score": 0.397159
         },
         {
           "path": "lessons/core/pr-cleanup-sop.md",
-          "score": 0.393683
+          "score": 0.393661
         },
         {
           "path": "lessons/contrib/registration-chain-worker-fallback.md",
-          "score": 0.391336
+          "score": 0.391033
         }
       ]
     },
@@ -930,39 +930,39 @@
         },
         {
           "path": "lessons/contrib/multi-forum-scraping-architecture.md",
-          "score": 0.729983
+          "score": 0.72991
         },
         {
           "path": "lessons/contrib/browser-harness-cdp-browser-automation.md",
-          "score": 0.678211
+          "score": 0.678197
         },
         {
           "path": "lessons/contrib/headless-chrome-cdp-port-answers-but-the-page-target-is.md",
-          "score": 0.655344
+          "score": 0.655407
         },
         {
           "path": "lessons/contrib/agent-web-access-toolchain-selection.md",
-          "score": 0.645412
+          "score": 0.645234
         },
         {
           "path": "lessons/contrib/chrome-relay-browser-automation.md",
-          "score": 0.602819
+          "score": 0.602683
         },
         {
           "path": "lessons/en/user-agent-identify-bots.md",
-          "score": 0.598342
+          "score": 0.598423
         },
         {
           "path": "lessons/contrib/feishu-bitable-attachment-parent-type-file-token.md",
-          "score": 0.562187
+          "score": 0.561902
         },
         {
           "path": "lessons/contrib/key-injection-that-arrives-but-never-routes.md",
-          "score": 0.555334
+          "score": 0.55511
         },
         {
           "path": "lessons/contrib/openclaw-playwright-wsl-libnss3-libnspr4-snap-chromium.md",
-          "score": 0.547321
+          "score": 0.547232
         }
       ]
     },
@@ -972,7 +972,7 @@
       "results": [
         {
           "path": "lessons/core/dco-auto-fix-workflow.md",
-          "score": 0.954432
+          "score": 0.954333
         },
         {
           "path": "lessons/contrib/dco-signoff-force-push-pitfall.md",
@@ -980,35 +980,35 @@
         },
         {
           "path": "lessons/contrib/error-dco-signoff-windows.md",
-          "score": 0.761184
+          "score": 0.761068
         },
         {
           "path": "lessons/core/auto-merge-ci-pipeline.md",
-          "score": 0.620363
+          "score": 0.620344
         },
         {
           "path": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
-          "score": 0.599226
+          "score": 0.599066
         },
         {
           "path": "lessons/contrib/ci-github-token-push-does-not-trigger-workflows.md",
-          "score": 0.548846
+          "score": 0.548517
         },
         {
           "path": "lessons/en/ci-dco-fork-pr-signoff.md",
-          "score": 0.496418
+          "score": 0.496456
         },
         {
           "path": "lessons/core/pr-cleanup-sop.md",
-          "score": 0.436924
+          "score": 0.436798
         },
         {
           "path": "lessons/core/pull-request-welcome-trigger-trap.md",
-          "score": 0.4071
+          "score": 0.406986
         },
         {
           "path": "lessons/contrib/problem-writing-a-git-commit-message-that-quotes-a-command.md",
-          "score": 0.403822
+          "score": 0.403527
         }
       ]
     },
@@ -1018,7 +1018,7 @@
       "results": [
         {
           "path": "lessons/core/dco-auto-fix-workflow.md",
-          "score": 0.957683
+          "score": 0.957576
         },
         {
           "path": "lessons/contrib/dco-signoff-force-push-pitfall.md",
@@ -1026,35 +1026,35 @@
         },
         {
           "path": "lessons/contrib/error-dco-signoff-windows.md",
-          "score": 0.752902
+          "score": 0.752833
         },
         {
           "path": "lessons/contrib/ci-github-token-push-does-not-trigger-workflows.md",
-          "score": 0.629515
+          "score": 0.629241
         },
         {
           "path": "lessons/contrib/ci-dco-decouple-pythonpath-fork-pr.md",
-          "score": 0.625976
+          "score": 0.625789
         },
         {
           "path": "lessons/en/ci-dco-fork-pr-signoff.md",
-          "score": 0.618619
+          "score": 0.618707
         },
         {
           "path": "lessons/core/auto-merge-ci-pipeline.md",
-          "score": 0.59486
+          "score": 0.594825
         },
         {
           "path": "lessons/contrib/problem-writing-a-git-commit-message-that-quotes-a-command.md",
-          "score": 0.584322
+          "score": 0.584219
         },
         {
           "path": "lessons/contrib/git-checkout-discards-uncommitted-work.md",
-          "score": 0.534783
+          "score": 0.534755
         },
         {
           "path": "lessons/en/gh-pr-ready-checklist.md",
-          "score": 0.524884
+          "score": 0.525
         }
       ]
     },
@@ -1068,39 +1068,39 @@
         },
         {
           "path": "lessons/contrib/pip-install-timeout-ssl.md",
-          "score": 0.761245
+          "score": 0.761099
         },
         {
           "path": "lessons/contrib/pt-br/instalacao-pip-timeout-proxy.md",
-          "score": 0.749862
+          "score": 0.749848
         },
         {
           "path": "lessons/contrib/python-smtplib-ssl-certificate-verify-failed-fix.md",
-          "score": 0.71226
+          "score": 0.712162
         },
         {
           "path": "lessons/contrib/corporate-proxy-curl-timeout.md",
-          "score": 0.617884
+          "score": 0.617994
         },
         {
           "path": "lessons/contrib/agent-web-access-toolchain-selection.md",
-          "score": 0.608297
+          "score": 0.608258
         },
         {
           "path": "lessons/contrib/urllib-raises-ssl-unexpected-eof-while-reading-on-some.md",
-          "score": 0.569074
+          "score": 0.569073
         },
         {
           "path": "lessons/contrib/lesson-08-pip-https-proxy-clash.md",
-          "score": 0.553926
+          "score": 0.553886
         },
         {
           "path": "lessons/core/auto-merge-ci-pipeline.md",
-          "score": 0.535218
+          "score": 0.535044
         },
         {
           "path": "lessons/contrib/git-tls-handshake-failure.md",
-          "score": 0.53253
+          "score": 0.532333
         }
       ]
     },
@@ -1114,39 +1114,39 @@
         },
         {
           "path": "lessons/contrib/git-credential-helper-gh-path-mismatch.md",
-          "score": 0.782678
+          "score": 0.782221
         },
         {
           "path": "lessons/contrib/git-credentials-and-node-id-setup.md",
-          "score": 0.771129
+          "score": 0.770754
         },
         {
           "path": "lessons/core/a-security-fix-that-turns-tests-red-is-the-fix-working.md",
-          "score": 0.629657
+          "score": 0.628841
         },
         {
           "path": "lessons/contrib/github-sudo-email-otp-wrong-input-field.md",
-          "score": 0.626946
+          "score": 0.626479
         },
         {
           "path": "lessons/contrib/gh-auth-device-flow-times-out-command-line-does-not-inherit-system-proxy.md",
-          "score": 0.610193
+          "score": 0.610099
         },
         {
           "path": "lessons/core/an-error-code-that-says-retry-cannot-carry-a-not-found.md",
-          "score": 0.549484
+          "score": 0.548961
         },
         {
           "path": "lessons/contrib/github-cli-private-repository-api-returns-http404-while-gh.md",
-          "score": 0.533679
+          "score": 0.534665
         },
         {
           "path": "lessons/en/github-pat-scopes-minimum.md",
-          "score": 0.526458
+          "score": 0.527428
         },
         {
           "path": "lessons/contrib/git-credentials-automation.md",
-          "score": 0.525736
+          "score": 0.525049
         }
       ]
     },
@@ -1156,11 +1156,11 @@
       "results": [
         {
           "path": "lessons/core/hermes-state-database-lock-issues-cleanup-protocol.md",
-          "score": 0.981004
+          "score": 0.980646
         },
         {
           "path": "lessons/contrib/更正-issue-5069-的根因表述两个独立进程并发写同一个-sqlite-数据库wal.md",
-          "score": 0.894703
+          "score": 0.89433
         },
         {
           "path": "lessons/contrib/agent-state-database-lock-cleanup.md",
@@ -1168,31 +1168,31 @@
         },
         {
           "path": "lessons/contrib/两个独立进程并发写同一个-sqlite-数据库wal.md",
-          "score": 0.837835
+          "score": 0.837524
         },
         {
           "path": "lessons/contrib/wsl-ntfs-sqlite-update-100x-slower.md",
-          "score": 0.697515
+          "score": 0.699071
         },
         {
           "path": "lessons/core/node-sqlite-shim-undeclared-named-parameters.md",
-          "score": 0.670946
+          "score": 0.67201
         },
         {
           "path": "lessons/contrib/an-electron-apps-cookie-sqlite-cannot-be-read-while-it-runs.md",
-          "score": 0.606921
+          "score": 0.608307
         },
         {
           "path": "lessons/contrib/an-unlikely-database-migration.md",
-          "score": 0.579622
+          "score": 0.580677
         },
         {
           "path": "lessons/contrib/a-native-home-assistant-backup-can-fail-when-a-co-located.md",
-          "score": 0.560864
+          "score": 0.562033
         },
         {
           "path": "lessons/contrib/lesson-9-redis-postgresql-replacement.md",
-          "score": 0.551986
+          "score": 0.550833
         }
       ]
     },
@@ -1206,39 +1206,39 @@
         },
         {
           "path": "lessons/contrib/pythonu2194nodejs-bridge-on-windows-corrupts-chinese-paths.md",
-          "score": 0.766177
+          "score": 0.769672
         },
         {
           "path": "lessons/contrib/python-gbk-encoding-error.md",
-          "score": 0.730407
+          "score": 0.733626
         },
         {
           "path": "lessons/contrib/中文-windows-环境-python-脚本用-subprocessrun-capture-outputtrue.md",
-          "score": 0.655035
+          "score": 0.658025
         },
         {
           "path": "lessons/contrib/windows-non-ascii-username-pg0-initdb-utf8.md",
-          "score": 0.620296
+          "score": 0.622805
         },
         {
           "path": "lessons/contrib/wsl-pip-gbk-hub-poller-crash.md",
-          "score": 0.57968
+          "score": 0.582737
         },
         {
           "path": "lessons/contrib/一个原本正常的-powershell-安装脚本含中文提示用-python.md",
-          "score": 0.566413
+          "score": 0.56871
         },
         {
           "path": "lessons/core/allowlist-must-be-tested-against-the-corpus.md",
-          "score": 0.542648
+          "score": 0.541981
         },
         {
           "path": "lessons/contrib/tts-chinese-encoding-powershell.md",
-          "score": 0.511779
+          "score": 0.513817
         },
         {
           "path": "lessons/contrib/problem-on-windows-inline-python-c-python-eof-scripts.md",
-          "score": 0.510766
+          "score": 0.512686
         }
       ]
     },
@@ -1252,39 +1252,39 @@
         },
         {
           "path": "lessons/contrib/feishu-bitable-attachment-parent-type-file-token.md",
-          "score": 0.704183
+          "score": 0.704079
         },
         {
           "path": "lessons/contrib/feishu-setup-complete-cc-connect.md",
-          "score": 0.697602
+          "score": 0.697788
         },
         {
           "path": "lessons/contrib/feishu-block-batch-limit.md",
-          "score": 0.594839
+          "score": 0.595297
         },
         {
           "path": "lessons/contrib/feishu-mcp-server-deepseek-tui-setup.md",
-          "score": 0.572678
+          "score": 0.573038
         },
         {
           "path": "lessons/contrib/feishu-block-type-values-limits.md",
-          "score": 0.572398
+          "score": 0.572764
         },
         {
           "path": "lessons/contrib/problem-用-feishu-cli-的-docx-create-f-markdown-写入长文档400-块时响应.md",
-          "score": 0.529705
+          "score": 0.529976
         },
         {
           "path": "lessons/contrib/problem-用飞书文档-apidoc-update-doc-appendmarkdown-形式向-callout.md",
-          "score": 0.507746
+          "score": 0.507391
         },
         {
           "path": "lessons/contrib/feishu-kb-search-structured-first-not-wiki-home-box.md",
-          "score": 0.50659
+          "score": 0.506654
         },
         {
           "path": "lessons/contrib/lessons-md-fix-heading-block-type.md",
-          "score": 0.501882
+          "score": 0.501769
         }
       ]
     },
@@ -1298,39 +1298,39 @@
         },
         {
           "path": "lessons/contrib/fanuc-program-inspection-methodology.md",
-          "score": 0.626265
+          "score": 0.626139
         },
         {
           "path": "lessons/contrib/fanuc-intp-102-detect-joint-olp-whitespace.md",
-          "score": 0.561055
+          "score": 0.561028
         },
         {
           "path": "lessons/contrib/fanuc-mi-standard-software-instructions.md",
-          "score": 0.55261
+          "score": 0.552582
         },
         {
           "path": "lessons/contrib/fanuc-payload-estimation.md",
-          "score": 0.534068
+          "score": 0.534015
         },
         {
           "path": "lessons/core/fanuc-roboguide-handlingpro-plugin-unavailable.md",
-          "score": 0.495984
+          "score": 0.495991
         },
         {
           "path": "lessons/contrib/fanuc-backup-restore-guide.md",
-          "score": 0.487916
+          "score": 0.487935
         },
         {
           "path": "lessons/contrib/agent-readfile-silent-truncation.md",
-          "score": 0.477731
+          "score": 0.477555
         },
         {
           "path": "lessons/contrib/fanuc-blank-tp-0xff-not-parse-failure.md",
-          "score": 0.476112
+          "score": 0.476021
         },
         {
           "path": "lessons/contrib/an-instruction-policy-installer-succeeds-in-writing-a.md",
-          "score": 0.471552
+          "score": 0.471471
         }
       ]
     },
@@ -1344,39 +1344,39 @@
         },
         {
           "path": "lessons/contrib/ghidra-mcp-server-reverse-engineering.md",
-          "score": 0.733741
+          "score": 0.734047
         },
         {
           "path": "lessons/contrib/mcp-registry-readiness-requires-qa-before-promotion.md",
-          "score": 0.686343
+          "score": 0.686409
         },
         {
           "path": "lessons/contrib/feishu-mcp-server-deepseek-tui-setup.md",
-          "score": 0.680928
+          "score": 0.680303
         },
         {
           "path": "lessons/contrib/mcp-server-direct-handler-testing.md",
-          "score": 0.656837
+          "score": 0.65736
         },
         {
           "path": "lessons/contrib/llama-cpp-tools-plus-json-object-grammar-400.md",
-          "score": 0.617189
+          "score": 0.616876
         },
         {
           "path": "lessons/contrib/cloudflare-observability-mcp-oauth-separate-domain.md",
-          "score": 0.611777
+          "score": 0.612131
         },
         {
           "path": "lessons/contrib/lesson-17-segmentfault-mcp-standardization.md",
-          "score": 0.611003
+          "score": 0.611304
         },
         {
           "path": "lessons/contrib/mcp-context-mode-98-reduction.md",
-          "score": 0.598199
+          "score": 0.598448
         },
         {
           "path": "lessons/core/fanuc-roboguide-handlingpro-plugin-unavailable.md",
-          "score": 0.585044
+          "score": 0.584015
         }
       ]
     },
@@ -1390,39 +1390,39 @@
         },
         {
           "path": "lessons/core/github-actions-code-injection.md",
-          "score": 0.656224
+          "score": 0.656065
         },
         {
           "path": "lessons/core/agentcap-registry-secret-safe-validation-failure-metadata.md",
-          "score": 0.556143
+          "score": 0.556223
         },
         {
           "path": "lessons/contrib/agentcap-secret-safe-verification-failure.md",
-          "score": 0.503693
+          "score": 0.503718
         },
         {
           "path": "lessons/contrib/gitguardian-placeholder-url-credential-safe-form.md",
-          "score": 0.440034
+          "score": 0.439953
         },
         {
           "path": "lessons/contrib/using-a-newly-timestamped-appliance-completion-on-reconnect.md",
-          "score": 0.407609
+          "score": 0.407617
         },
         {
           "path": "lessons/en/log-redaction-secrets.md",
-          "score": 0.371893
+          "score": 0.371915
         },
         {
           "path": "lessons/contrib/heartbeat-scan-improvement.md",
-          "score": 0.36157
+          "score": 0.36158
         },
         {
           "path": "lessons/core/auto-merge-ci-pipeline.md",
-          "score": 0.361053
+          "score": 0.36099
         },
         {
           "path": "lessons/core/a-security-fix-that-turns-tests-red-is-the-fix-working.md",
-          "score": 0.355071
+          "score": 0.355
         }
       ]
     },
@@ -1436,39 +1436,39 @@
         },
         {
           "path": "lessons/contrib/permission-denied-fix.md",
-          "score": 0.710673
+          "score": 0.710685
         },
         {
           "path": "lessons/core/node-sqlite-shim-undeclared-named-parameters.md",
-          "score": 0.704721
+          "score": 0.704516
         },
         {
           "path": "lessons/contrib/wsl-proxy-setup.md",
-          "score": 0.61599
+          "score": 0.615998
         },
         {
           "path": "lessons/contrib/wsl-proxy-huggingface-external.md",
-          "score": 0.61061
+          "score": 0.610624
         },
         {
           "path": "lessons/contrib/lesson-08-pip-https-proxy-clash.md",
-          "score": 0.552672
+          "score": 0.552724
         },
         {
           "path": "lessons/contrib/wsl-pip-gbk-hub-poller-crash.md",
-          "score": 0.492447
+          "score": 0.492351
         },
         {
           "path": "lessons/contrib/openclaw-playwright-wsl-libnss3-libnspr4-snap-chromium.md",
-          "score": 0.491177
+          "score": 0.490913
         },
         {
           "path": "lessons/contrib/wsl-terminal-underscore-corruption.md",
-          "score": 0.489072
+          "score": 0.488978
         },
         {
           "path": "lessons/contrib/wsl2-memory-leak-fix.md",
-          "score": 0.480257
+          "score": 0.48014
         }
       ]
     }
