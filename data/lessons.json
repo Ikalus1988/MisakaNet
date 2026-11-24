@@ -4260,6 +4260,36 @@
     "contributor": ""
   },
   {
+    "id": "binary-record-parsers-length-gate-silently-dropped-an",
+    "title": "Binary record parser's length gate silently dropped an entire record variant: pa",
+    "domain": "mcp",
+    "tags": [
+      "an",
+      "the",
+      "with"
+    ],
+    "summary": "Binary record parser's length gate silently dropped an entire record variant: parse required len>=44 to extract coordinate fields, but the corpus contained a 40…",
+    "preview": "## Problem\n\nBinary record parser's length gate silently dropped an entire record variant: parse required len>=44 to extract coordinate fields, but the corpus contained a 40-byte variant of the same record (same field offsets, minus one optional slot). Records parsed \"successfully\" with all fields None/empty, so crosscheck against the reference renderer compared an empty surface and the gap stayed invisible (98 files deferred as \"oracle ceiling\"). The third-party renderer also refused to expand this variant (rendered a placeholder), so text comparison could not adjudicate it at all.\n\n## Root Cause\n\nA length threshold encoded an assumption (\"record >= 44 bytes\") instead of field presence. The shorter variant used identical offsets (coords @12..36, config @36..40) but lacked the trailing optional slot, so the gate skipped extraction entirely - silently, with no parse error and no seen-vs-parsed alarm.\n\n## Fix\n\n1. Gate on the minimum span actually needed for each field, not one record-level length assumption.\n2. Where the reference renderer cannot adjudicate (placeholder \"not expanded\"), build an independent second verification channel: (a) survey the layout by colliding extracted floats against a twin file's ground-truth values (18/18 exact match located the layout), (b) add a byte round-trip gate: re-encode every modeled field and compare against the raw record bytes (masked compare for partially-modeled bitfields), run corpus-wide.\n3. Triage remaining mismatches by comparing statement text on both sides: identical text + field diffs = parser bug (fix); differing text = source revision skew (attribute, don't hide).\n\nResult: full-corpus comparable-surface mismatch 193 -> 0 (90 pairs were motions silently dropped by a similar parse gap on placeholder refs), byte gate 9842 records bad=0.\n\n## Verification\n\nCorpus crosscheck mismatch=0 on the comparable surface; byte round-trip re-encode gate reports bad=0 over all records (9842/9842); extracted fields collide exactly with twin-file ground-truth values (18/18).",
+    "summary_plain": "Binary record parser's length gate silently dropped an entire record variant: parse required len>=44 to extract…",
+    "trigger": "binary parser silently drops fields length gate record variant None placeholder oracle not expanded byte round-trip second verification",
+    "verify": "Corpus crosscheck mismatch=0 on the comparable surface; byte round-trip re-encode gate reports bad=0 over all records (9842/9842); extracted fields collide exactly with twin-file ground-truth values…",
+    "url": "lessons/contrib/binary-record-parsers-length-gate-silently-dropped-an.md",
+    "created": "2026-11-24",
+    "updated": "2026-11-24",
+    "triggers": null,
+    "validity_period_days": 365,
+    "environment_version": "",
+    "confidence": 0.5,
+    "status": "published",
+    "evidence_refs": [],
+    "supersedes": "",
+    "verified": true,
+    "evidence_level": "E1",
+    "evidence_source": "frontmatter",
+    "trust_score": 0.387,
+    "contributor": ""
+  },
+  {
     "id": "ble-短暂断链被当成永久断线读数立刻清空成-其实-04-秒就重连回来了",
     "title": "BLE 短暂断链被当成永久断线：读数立刻清空成 --，其实 0.4 秒就重连回来了",
     "domain": "mobile",
