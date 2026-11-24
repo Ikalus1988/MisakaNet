@@ -51,13 +51,31 @@ def test_the_community_package_is_a_package_this_repository_ships():
         assert tool.get("parameters", {}).get("type") == "object", tool["name"]
 
 
-def test_both_packages_declare_the_card_gate():
-    """The card gate needs a `card` declaration: without it, `confirm` means nothing."""
+def test_both_packages_declare_the_card_and_the_user_typed_gate():
+    """Two declarations, two jobs: the card *discloses* what will be public, and a code the user
+    types back *authorizes* it.
+
+    Both earlier gates are dead ends, measured on a real client on 2026-11-24:
+      · a card button spawns a card slot (手册 §4.5), not a tool call — the plugin's own fetch after
+        the click arrived at the network gate and was refused in 0 ms (nothing published);
+      · `cindy.confirm` renders per source: without a mobile source the dialog lands on the desktop,
+        so a phone user cannot submit at all.
+    The code gate needs no network grant and works wherever the user can type. The channel is the
+    **read-only** `message` topic, not a `will-user-message` hook: intercepting every message would
+    hand the plugin rewrite/block power it has no use for. Only a user message can authorize — an
+    agent's own words never count.
+    """
     for base in (OFFICIAL, COMMUNITY):
         entry = manifest(base)
         assert entry.get("card") is not None, f"{base.name} lost its card declaration"
+        assert "message" in entry["subscribe"]["topics"],             f"{base.name} lost the read-only subscription that sees the user's own authorization"
+        assert "will-user-message" not in entry["subscribe"]["hooks"],             f"{base.name} should not intercept messages"
+        if base == OFFICIAL:
+            # `confirm` stays out unless the plugin actually asks the host for a dialog.
+            assert not entry.get("confirm"), f"{base.name} claims an unused confirm capability"
+        assert "network" not in entry, f"{base.name} must not claim autonomous network"
         source = (base / "main.js").read_text(encoding="utf-8")
-        for marker in ("supplyIntakeCard", "handleCardAction", "CARD_CONFIRM_TIMEOUT_MS"):
+        for marker in ("supplyIntakeCard", "handleCardAction", "handleMessageCreated", "pendingAuthorizations"):
             assert marker in source, f"{base.name} lost {marker}"
 
 

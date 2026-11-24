@@ -1,80 +1,80 @@
 {
-  "generated_at": "2026-11-24T02:24:17.499985+00:00",
+  "generated_at": "2026-11-24T13:57:42.218464+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "docs(cindy): 待办清单补 1.5.14（failure 模式那版）与看护任务",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5672",
-      "timestamp": "2026-11-24T02:13:35Z",
+      "title": "feat(lessons): intake batch 2026-11-24",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5699",
+      "timestamp": "2026-11-24T09:39:03Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(worker): the ladder's used-read scans 10.4M rows per call — three indexed joins instead",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5670",
-      "timestamp": "2026-11-24T01:59:04Z",
+      "title": "fix(mcp): 通知的「没有回答」不再被包成一帧错误（SSE 路径）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5698",
+      "timestamp": "2026-11-24T09:36:03Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(cindy-plugin): 补上仓库钩子那套 failure 模式——动手前先查、查不到就供一张沉淀卡",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5669",
-      "timestamp": "2026-11-24T01:41:13Z",
+      "title": "release(cindy-plugin): 1.5.16 —— 按审核意见改：不预置确认、卡不出来就不发",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5695",
+      "timestamp": "2026-11-24T09:16:34Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(ci): a contributor's generator-only conflict is now a mechanical rebuild, not a bounce",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5667",
-      "timestamp": "2026-11-24T01:19:48Z",
+      "title": "chore(main): release 3.21.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5610",
+      "timestamp": "2026-11-24T08:11:19Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(cindy): 1.5.13 已提审",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5665",
-      "timestamp": "2026-11-24T01:01:16Z",
+      "title": "docs(cindy): 1.5.15 已提审，并记下「提审快照必须是重装后的副本」",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5692",
+      "timestamp": "2026-11-24T07:51:04Z",
       "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "Binary record parser's length gate silently dropped an entire record variant: pa",
+      "url": "lessons/contrib/binary-record-parsers-length-gate-silently-dropped-an.md",
+      "timestamp": "2026-11-24",
+      "domain": "mcp",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "openpyxl read_only 加载 xlsx（WPS 或部分 Mac Excel 产出）时 ws.max_row=1 / max_col=1，但文件实际",
+      "url": "lessons/contrib/openpyxl-read-only-加载-xlsxwps-或部分-mac-excel-产出时-wsmax-row1.md",
+      "timestamp": "2026-11-24",
+      "domain": "mcp",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Windows GUI 自动化里「点击/按键发出去了但界面没反应」的排障成本极高（同一套脚本时灵时不灵，连试数轮全哑），最后发现问题与输入 AP",
+      "url": "lessons/contrib/windows-gui-5671.md",
+      "timestamp": "2026-11-24",
+      "domain": "windows",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "两条 agent 线并行维护同一套共享台账（判据编号表、文档章节号、协作 issue 编号），各自从同一空位自增编号（两线都从 F20 起编、都",
+      "url": "lessons/contrib/两条-agent-线并行维护同一套共享台账判据编号表文档章节号协作-issue.md",
+      "timestamp": "2026-11-24",
+      "domain": "mcp",
+      "source": "lessons"
     },
     {
       "type": "lesson",
       "title": "A checked-in Codex skill can exist without being available to the client. Root C",
       "url": "lessons/contrib/a-checked-in-codex-skill-can-exist-without-being-available.md",
-      "timestamp": "2026-11-23",
-      "domain": "mcp",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A Home Assistant presence observer emitted an arrival after invalid Wi-Fi eviden",
-      "url": "lessons/contrib/a-home-assistant-presence-observer-emitted-an-arrival-after.md",
-      "timestamp": "2026-11-23",
-      "domain": "mcp",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A mobile GPS update delivered late looked current to a Home Assistant arrival au",
-      "url": "lessons/contrib/a-mobile-gps-update-delivered-late-looked-current-to-a-home.md",
-      "timestamp": "2026-11-23",
-      "domain": "mcp",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A motion-triggered light can turn off after a sensor outage even though the reco",
-      "url": "lessons/contrib/a-motion-triggered-light-can-turn-off-after-a-sensor-outage.md",
-      "timestamp": "2026-11-23",
-      "domain": "mcp",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A public ChatGPT shared-conversation URL returned HTTP 200 but only \"Check out t",
-      "url": "lessons/contrib/a-public-chatgpt-shared-conversation-url-returned-http-200.md",
       "timestamp": "2026-11-23",
       "domain": "mcp",
       "source": "lessons"

@@ -243,6 +243,13 @@ REDACT_RULES = (
         "flags": "g",
         "replacement": "<REDACTED:email>",
     },
+    # Review 2026-11-24: a private address is how an intake report leaks where it ran.
+    {
+        "id": "private_ip",
+        "pattern": r"(?<![0-9.])(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|127\.\d{1,3}\.\d{1,3}\.\d{1,3}|169\.254\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2[0-9]|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|100\.(?:6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\.\d{1,3}\.\d{1,3})(?![0-9])",
+        "flags": "g",
+        "replacement": "<REDACTED:private_ip>",
+    },
 )
 
 _COMPILED_REDACT_RULES = tuple(
