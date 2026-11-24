@@ -141,6 +141,43 @@ test('anonymous session accepts notifications/initialized (202, not 401)', async
   const notif = await post({ jsonrpc: '2.0', method: 'notifications/initialized' });
   assert.equal(notif.status, 202);
 
+  // #5694: the same notification over the **SSE path** (`Accept: application/json, text/event-stream`,
+  // which the MCP spec tells clients to send) must also be silence — 202 and no frame. The stream used
+  // to keep the 200 and append `-32603 internal error: the handler did not return JSON` for the empty
+  // body, so every spec-following client got one invented failure right after the handshake.
+  const sseNotif = await worker.fetch(new Request('https://misakanet.org/mcp', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json, text/event-stream',
+      'MCP-Protocol-Version': '2025-06-18',
+      'CF-Connecting-IP': '203.0.113.77',
+    },
+    body: JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }),
+  }), env);
+  assert.equal(sseNotif.status, 202, 'a notification keeps its 202 on the SSE path too');
+  assert.equal(await sseNotif.text(), '', 'and answers with no body at all');
+
+  // A call that *does* have an answer still streams it: the notification branch above must not have
+  // swallowed the whole SSE path.
+  const sseInit = await worker.fetch(new Request('https://misakanet.org/mcp', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json, text/event-stream',
+      'MCP-Protocol-Version': '2025-06-18',
+      'CF-Connecting-IP': '203.0.113.77',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0', id: 9, method: 'initialize',
+      params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'sse', version: '1' } },
+    }),
+  }), env);
+  assert.equal(sseInit.status, 200);
+  assert.equal(sseInit.headers.get('content-type'), 'text/event-stream');
+  const sseBody = await sseInit.text();
+  assert.match(sseBody, /event: message\ndata: \{.*"id":9.*\}/s);
+
   // Other notification namespaces stay open too.
   const other = await post({ jsonrpc: '2.0', method: 'notifications/cancelled', params: {} });
   assert.equal(other.status, 202);

@@ -46,10 +46,23 @@ TARGET = REPO / ".cindy-plugin-community"
 #: The community channel's version line. Deliberately offset from the official one (1.6.x) so the
 #: two channels never take the same version slot on the same plugin id. Bump it when the community
 #: package is published; keep it below the official line.
-COMMUNITY_VERSION = "1.5.13"  # the published community release is 1.5.12; this is the next one
+COMMUNITY_VERSION = "1.5.16"  # 1.5.15 被审核退回（版本号已烧掉）→ 这一版走 1.5.16
 
 #: The community channel's own release story. The official package carries the official one.
 COMMUNITY_RELEASE_NOTES = (
+    "这一版把 failure 模式补完整（相对上一上架的 1.5.14）："
+    "插件现在订阅宿主的**工具执行**主题（第一次能看见哪个工具失败了、报了什么），"
+    "一轮结束时在后台拿错误原文查一次语料——命中就通知你并把命中带进**下一轮**的上下文；"
+    "没命中就把已脱敏的原文交给你，**要不要沉淀成一条教训由 agent 去问用户**，"
+    "用户明确同意之后才走上报（用户点「确认提交」才公开）。"
+    "另：订阅**装配消息时的参考资料**钩子，在下一轮装配时补一句「动手或重试之前先查一次」。"
+    "三条边界：宿主没有「每次工具调用后注入」的钩子（所以落在轮末与下一轮）；"
+    "那个钩子只对「在任务设置里选中了本插件」的任务生效；"
+    "确认卡只渲染在宿主侧原生聊天里（宿主只渲染挂在一次真实工具调用上的卡），"
+    "卡供不出来时插件**停止发送**（回执 CARD_UNAVAILABLE + not_sent），不静默直发。"
+    "查询词与要公开的原文都先机械脱敏（与仓库钩子同源）。"
+    "另外：**从插件市场装的版本会自动更新；从 .cindy 文件装的不会**（宿主记的是 local 来源）——"
+    "已经用文件装过的，卸掉再从市场装一次，之后就自动更新了。"
     "这一版修掉确认卡闸门里的四处缺陷（维护者 2026-11-23 点的名，社区通道的既有问题）："
     "一是**点击之后那次上报改用新的在途调用号**——卡片的归因号属于已经结卷的那次工具调用，"
     "复用它宿主会拒，于是点「确认提交」根本发不出去；"

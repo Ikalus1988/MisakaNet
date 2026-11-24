@@ -183,15 +183,19 @@ function pageview(path = '/start') {
   return new Request(`https://misakanet.org${path}`, { headers: { 'User-Agent': BROWSER_UA } });
 }
 
-function toolCall(name, args, ip = '203.0.113.7') {
+function toolCall(name, args, ip = '203.0.113.7', token = null) {
+  const headers = {
+    'Content-Type': 'application/json',
+    'MCP-Protocol-Version': '2025-06-18',
+    'Origin': 'https://misakanet.org',
+    'CF-Connecting-IP': ip,
+  };
+  // Optional, because `funnel.activate_24h` is only reachable through an authenticated call: an
+  // anonymous one has no token to claim with (2026-11-24).
+  if (token) headers.Authorization = `Bearer ${token}`;
   return new Request('https://misakanet.org/mcp', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'MCP-Protocol-Version': '2025-06-18',
-      'Origin': 'https://misakanet.org',
-      'CF-Connecting-IP': ip,
-    },
+    headers,
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call',
       params: { name, arguments: args } }),
   });
@@ -227,7 +231,8 @@ test('the funnel event set is the five literals, and it is the exported constant
   // Asserted against the export rather than restated: the reader and the five write sites both
   // enumerate this list, and a literal here would keep passing after an event was renamed on one
   // side only — which is the drift this constant exists to make impossible.
-  assert.deepEqual([...FUNNEL_EVENTS], ['visit', 'register', 'authorize', 'pair', 'search']);
+  assert.deepEqual([...FUNNEL_EVENTS], ['visit', 'register', 'register_named', 'authorize', 'pair',
+                                       'search', 'activate_24h']);
   for (const refused of ['first_search', 'drop_off', 'error_search']) {
     assert.ok(!FUNNEL_EVENTS.includes(refused),
       `'${refused}' needs an identifier (or is derived at read time) and must not be a bucket`);
@@ -425,9 +430,14 @@ test('no funnel write carries anything the caller sent', async () => {
   // Drive all five events once.
   await worker.fetch(pageview('/start'), env, ctx);
   await drain(env, ctx, pending);
-  await worker.fetch(toolCall('misakanet_register', { client_id: CLIENT_ID }, IP), env, ctx);
+  const registered = await (await worker.fetch(
+    toolCall('misakanet_register', { client_id: CLIENT_ID }, IP), env, ctx)).json();
   await settle(pending);
-  await worker.fetch(toolCall('misakanet_search', { query: QUERY, top: 1 }, IP), env, ctx);
+  // With the token, so the *first successful call* path runs too (`funnel.activate_24h`).
+  const issued = registered?.result?.structuredContent?.token
+    || registered?.result?.token;
+  await worker.fetch(
+    toolCall('misakanet_search', { query: QUERY, top: 1 }, IP, issued), env, ctx);
   await settle(pending);
   const { code } = await (await worker.fetch(connectRequest(IP), env, ctx)).json();
   await settle(pending);
@@ -492,7 +502,7 @@ test('readFunnelDay merges D1 with the KV fallback instead of stopping at the fi
   await env.MISAKANET_KV.put(`counters:funnel:search:${today}`, '3');
 
   assert.deepEqual(await readFunnelDay(env, today), {
-    visit: 7, register: 0, authorize: 0, pair: 0, search: 3,
+    visit: 7, register: 0, register_named: 0, authorize: 0, pair: 0, search: 3, activate_24h: 0,
   });
 });
 
@@ -577,6 +587,70 @@ test('readFunnelSeries returns one entry per day, oldest first, zeros included',
     new Date(Date.now() - i * 86400000).toISOString().slice(0, 10)));
   for (const entry of series) {
     assert.deepEqual(Object.keys(entry).sort(),
-      ['authorize', 'date', 'pair', 'register', 'search', 'visit']);
+      ['activate_24h', 'authorize', 'date', 'pair', 'register', 'register_named', 'search', 'visit']);
   }
+});
+
+// ── what the funnel was missing: named registrations, and whether a node was ever used ──────────
+//
+// Measured 2026-11-24: 500–1,000 nodes a day, `authorize`/`pair` 0, and no number anywhere that said
+// how many of those nodes were ever *used*. `funnel.register` alone cannot answer it, because a call
+// without a `client_id` mints a new node every time — so the two buckets below are the smallest pair
+// that makes the question askable, and both stay day-level integers.
+
+test('a registration that named itself is counted apart from the anonymous churn', async () => {
+  const d1 = createD1();
+  const env = createEnv({ d1 });
+  const { pending, ctx } = collector();
+
+  await worker.fetch(toolCall('misakanet_register', { client_id: 'named-client-0001' }), env, ctx);
+  assert.equal(funnel(d1, 'register'), 1);
+  assert.equal(funnel(d1, 'register_named'), 1, 'a client_id is the difference between a client and churn');
+
+  await worker.fetch(toolCall('misakanet_register', {}), env, ctx);
+  await settle(pending);
+  assert.equal(funnel(d1, 'register'), 2, 'the anonymous call still registers');
+  assert.equal(funnel(d1, 'register_named'), 1, 'and it is not counted as a named one');
+});
+
+test('the first successful call by a token counts once, however busy the client is', async () => {
+  const d1 = createD1();
+  const env = createEnv({ d1 });
+  const { pending, ctx } = collector();
+  const ip = '203.0.113.111';
+
+  const registered = await toolResult(await worker.fetch(
+    toolCall('misakanet_register', { client_id: 'activated-client-0001' }, ip), env, ctx));
+  assert.ok(registered.token, `register must hand back a token: ${JSON.stringify(registered)}`);
+
+  for (let i = 0; i < 3; i += 1) {
+    await worker.fetch(toolCall('misakanet_search', { query: 'pip timeout', top: 1 }, ip, registered.token), env, ctx);
+  }
+  await settle(pending);
+  assert.equal(funnel(d1, 'activate_24h'), 1,
+    'a token that calls three times in its first day is one activation, not three');
+});
+
+test('a refused call is not activation', async () => {
+  const d1 = createD1();
+  const env = createEnv({ d1 });
+  const { pending, ctx } = collector();
+  const ip = '203.0.113.112';
+
+  const registered = await toolResult(await worker.fetch(
+    toolCall('misakanet_register', { client_id: 'refused-client-0001' }, ip), env, ctx));
+  // `preflight` refuses without an intent: an error result, so nothing was activated.
+  await worker.fetch(toolCall('misakanet_preflight', {}, ip, registered.token), env, ctx);
+  await settle(pending);
+  assert.equal(funnel(d1, 'activate_24h'), 0,
+    'a call that returned an error did not deliver anything, so it is not activation');
+});
+
+test('an anonymous call cannot activate anything — there is no token to claim with', async () => {
+  const d1 = createD1();
+  const env = createEnv({ d1 });
+  const { pending, ctx } = collector();
+  await worker.fetch(toolCall('misakanet_search', { query: 'pip timeout', top: 1 }, '203.0.113.113'), env, ctx);
+  await settle(pending);
+  assert.equal(funnel(d1, 'activate_24h'), 0);
 });

@@ -51,7 +51,8 @@ DOC = REPO / "docs" / "analytics" / "first-call-funnel.md"
 
 # The closed set. Adding a member is a product decision; it must be changed here, in
 # `FUNNEL_EVENTS`, and in the document, in one commit.
-APPROVED = ("visit", "register", "authorize", "pair", "search")
+APPROVED = ("visit", "register", "register_named", "authorize", "pair", "search",
+            "activate_24h")
 
 # Names the worker uses to identify a caller. A funnel write that mentions one of these is a funnel
 # write that can be traced to somebody, which is the one property the whole design exists to avoid.
@@ -68,9 +69,9 @@ FORBIDDEN_IN_WRITE = (
 IDENTITY_BUCKETS = ("first_search", "drop_off")
 
 _FUNNEL_CALL = re.compile(
-    r'bumpCounter\(\s*env\s*,\s*"funnel"\s*,\s*(?:"(?P<literal>[a-z_]+)"|(?P<expr>[A-Za-z_$][\w$]*))'
+    r'bumpCounter\(\s*env\s*,\s*"funnel"\s*,\s*(?:"(?P<literal>[a-z0-9_]+)"|(?P<expr>[A-Za-z_$][\w$]*))'
 )
-_ANY_BUCKET = re.compile(r'bumpCounter\(\s*env\s*,\s*"([a-z_]+)"\s*,\s*"([a-z_]+)"')
+_ANY_BUCKET = re.compile(r'bumpCounter\(\s*env\s*,\s*"([a-z0-9_]+)"\s*,\s*"([a-z0-9_]+)"')
 _DECLARED = re.compile(r"const FUNNEL_EVENTS = Object\.freeze\(\[(.*?)\]\)", re.DOTALL)
 
 
@@ -139,7 +140,7 @@ def check_worker_source(source: str) -> list[str]:
     if not declared:
         problems.append("`FUNNEL_EVENTS` is not declared, so the event set has no single source")
     else:
-        names = re.findall(r'"([a-z_]+)"', declared.group(1))
+        names = re.findall(r'"([a-z0-9_]+)"', declared.group(1))
         if names != list(APPROVED):
             problems.append(f"`FUNNEL_EVENTS` is {names}, not {list(APPROVED)}")
 

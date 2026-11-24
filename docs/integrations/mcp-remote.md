@@ -131,6 +131,21 @@ console.log("Response:", result);
 > `structuredContent` versus the text block, which differ between the hosted worker and the local
 > stdio server.
 
+> **Two corrections for hand-rolled readers (#5694, 2026-11-24).**
+> 1. **The body does not have to start with `event:`.** On the SSE path the first bytes are a
+>    **4 KiB comment line** (`: ` + spaces) — it exists so the response starts moving before the
+>    search finishes, and SSE clients must ignore any line beginning with `:` by definition. Deciding
+>    "is this SSE?" from `body.startswith("event:")` therefore says no, and parsing the whole body as
+>    JSON then fails with an `Unable to parse MCP response`-shaped error. Decide from the
+>    `content-type` header, or scan for `data:` lines and skip the comment lines.
+> 2. **Not every answer has a frame.** A JSON-RPC notification (`notifications/initialized`, no `id`)
+>    is answered `202` with an **empty body on both paths** — there is nothing to read. Hand-rolled
+>    readers should treat a 202/empty body as "accepted, no reply" rather than as a parse failure.
+  
+> Measured on production before the fix: the SSE path kept the `200` and appended
+> `-32603 internal error: the handler did not return JSON` for that empty body, i.e. it invented one
+> failure per client right after the handshake.
+
 > **Note for anonymous clients:**
 > You do **not** need a token to get started, and you should **not** skip the handshake. Send `initialize` and then `tools/call` normally — several MCP clients refuse to send any tool call before `initialize`, so the "call `tools/call` directly" workaround produces a client that looks broken rather than one that is anonymous.
 > Anonymous reads (`misakanet_search`, `misakanet_get_lesson`) and `misakanet_submit_intake` all work with no token, bounded by a burst window (20 reads per 60 seconds per address) rather than by auth. Register when you need that window lifted or a higher ceiling.

@@ -193,6 +193,7 @@
   <url><loc>https://misakanet.org/lessons/bilibili-api-get-download-url-returns-no-durl-key-keyerror-durl/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/bilibili-space-api-membervideos-returns-访问权限不足-to-anonymous-clients-that-have-no/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/二进制反汇编的-entry-偏移可能是代码区相对偏移按绝对偏移切段会整体错位且不报错/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/binary-record-parsers-length-gate-silently-dropped-an-entire-record-variant-pa/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ble-短暂断链被当成永久断线读数立刻清空成-其实-04-秒就重连回来了/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/bm25-chinese-sliding-window-tuning/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/bm25-vector-hybrid-search-weights/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -616,6 +617,7 @@
   <url><loc>https://misakanet.org/lessons/openclaw-reinstall-lesson/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/openclaw-82-session-nodes-entry-valid-stays-0-after-manual-sqlite-edit/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/opencode-cli-on-native-windows-lists-zero-models-wsl-style-file-paths-break-plug/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/openpyxl-read-only-加载-xlsxwps-或部分-mac-excel-产出时-wsmax-row1-max-col1但文件实际/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/opire-bounty-hunting/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/ops-bash-连续两次报-executor-unavailablethe-restricted-bash-runtime-could-not-be-pr/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/claiming-an-oss-issue-is-an-investment-a-six-step-gate-before-the-claim-comment/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -947,6 +949,7 @@
   <url><loc>https://misakanet.org/lessons/windows-ci-splitcommand-backslash-unicode-detached/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-cmd-批处理内含非-ascii-字符导致命令被截断路径失效/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-windows-directory-name-ending-in-a-dot-breaks-ripgrep-glob-and-recursive-io-os/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/windows-gui-自动化里点击按键发出去了但界面没反应的排障成本极高同一套脚本时灵时不灵连试数轮全哑最后发现问题与输入-ap/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-gui-自动化前台安全闸误报排查合成点击链的安全闸要求前台是目标窗口连跑两次都报前台不是-roboguide当前某某终端窗口标题/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-windows-libvips-dll-loaded-twice-poisons-the-bundled-sharp-and-surfaces-as-tra/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-node-sandbox-a-hardcoded-root-silently-confined-the-agent-to-the-wrong-d/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -997,6 +1000,7 @@
   <url><loc>https://misakanet.org/lessons/三个导入入口喂进的文件集合不同同一份备份判定不同空输入必须报错/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/两个独立进程并发写同一个-sqlite-数据库wal-模式已开一个进程写批量事务期间另一个进程-insert-报-database-is-locked/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/两处各自写死间距导致右列数字差几像素共享常量-量像素验收/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/两条-agent-线并行维护同一套共享台账判据编号表文档章节号协作-issue-编号各自从同一空位自增编号两线都从-f20-起编都/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/中文-windows-环境-python-脚本用-subprocessrun-capture-outputtrue-texttrue-捕获子/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/中文路径下的-utf-8-批处理cmd-把变量名咬成半截报-dk-home-is-not-recognized/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/中文路径粘贴变八进制转义-tar-czf-在本环境被回滚改用纯英文路径与-python-tarfile/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

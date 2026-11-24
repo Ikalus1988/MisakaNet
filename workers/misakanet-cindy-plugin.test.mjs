@@ -42,7 +42,7 @@ const COMMUNITY_PACKAGE = resolve(dirname(fileURLToPath(import.meta.url)), '..',
  */
 let loads = 0;
 
-async function loadPlugin({ respond, fetchResult, packageDir = PACKAGE, failWrites = false } = {}) {
+async function loadPlugin({ respond, fetchResult, packageDir = PACKAGE, failWrites = false, failCards = false } = {}) {
   const sent = [];
   const requests = [];
   const dataDir = new Map();
@@ -66,6 +66,8 @@ async function loadPlugin({ respond, fetchResult, packageDir = PACKAGE, failWrit
         }
       }
       sent.push(payload);
+      // 宿主供不出交互卡时它会拒绝（真机上就是 unknown-call）→ 插件必须停止发送，不能直发。
+      if (failCards && payload.type === 'card-update') return { ok: false, errorCode: 'UNKNOWN_CALL' };
       return { ok: true };
     },
     async fetch(req) {
@@ -453,7 +455,10 @@ test('the manifest declares the turn subscription, the resident launch and the n
   // The three fields are the plugin's whole reason for being resident: without them the turn
   // counter never runs, and a manifest that only promises tools would be a lie about the
   // behaviour (the same reason the marketplace brief had to be corrected once).
-  assert.deepEqual(MANIFEST.subscribe, { topics: ['turn'] });
+  assert.deepEqual(MANIFEST.subscribe, {
+    topics: ['turn', 'tool-execution'],
+    hooks: ['will-compose-context'],
+  });
   assert.equal(MANIFEST.launch, 'resident');
   assert.equal(MANIFEST.notify, true);
 });
@@ -1107,6 +1112,349 @@ test('the client id is left out when the private directory cannot be written', a
   assert.equal(load.requests[0].headers['X-MisakaNet-Client'], undefined,
     'an unstable client id must not be sent');
   assert.ok(load.writeAttempts >= 2, 'the write must be retried before giving up');
+});
+
+/* ── 失败观察：动手之前先查、查不到就供一张沉淀卡 ─────────────────────────── */
+
+test('a failed tool call is remembered, and the next turn is told to search first', async () => {
+  const load = await loadPlugin({ respond: () => ({ results: [{ id: 'x', title: 't' }] }) });
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-tool-execution',
+    data: {
+      sessionId: 's-fail',
+      eventType: 'tool_result',
+      payload: { toolName: 'bash', error: 'ENOENT: no such file or directory, /home/user/secret/config.yaml' },
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  // 装配消息时补参考资料：告诉 agent 动手前先查一次。
+  const hooks = [];
+  const originalSend = load.stub.send;
+  load.stub.send = async (payload) => {
+    if (payload && payload.type === 'event-verdict') hooks.push(payload);
+    return originalSend(payload);
+  };
+  await load.stub.handler({
+    type: 'event',
+    name: 'will-compose-context',
+    hookId: 'h-1',
+    data: { sessionId: 's-fail', text: '继续' },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  const verdict = hooks.find((h) => h.hookId === 'h-1');
+  assert.ok(verdict, 'the hook must be answered');
+  assert.equal(verdict.action, 'context');
+  assert.match(verdict.context, /misakanet_search/);
+  assert.match(verdict.context, /动手|重试/);
+  // 路径与令牌不能出现在给 agent 的上下文里（规则块只是请求，机械脱敏才是保证）。
+  assert.doesNotMatch(verdict.context, /\/home\/user\/secret/);
+});
+
+test('a failure with no corpus hit arms a draft, and the agent submit carries the confirm card', async () => {
+  // 宿主的卡只渲染「挂在一次真实工具调用上」的卡（card-update 必须带一个在途调用号）。
+  // 轮末没有任何调用可挂 → 合成 callId 的卡会被宿主以 unknown-call 拒掉（真机上就这么空转过）。
+  // 所以：轮末备一份**已脱敏的草稿**并通知用户；下一轮装配上下文时让 agent 去调真工具——
+  // 那次真实调用自带确认卡，用户点「确认提交」才公开。
+  const load = await loadPlugin({ respond: () => ({ results: [], no_match: true }) });
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-tool-execution',
+    data: {
+      sessionId: 's-auto',
+      eventType: 'error',
+      payload: { message: 'connection refused while dialing the upstream service' },
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-turn-end',
+    data: { sessionId: 's-auto' },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 80));
+
+  // 轮末没有供任何卡（没有调用可挂）。
+  const cards = load.sent.filter((m) => m.type === 'card-update');
+  assert.equal(cards.length, 0, 'a card without a real call behind it would be rejected by the host');
+
+  // 下一轮装配：上下文里要出现「要沉淀就调 submit_intake」的指示，并带上那份原文。
+  const hooks = [];
+  const originalSend = load.stub.send;
+  load.stub.send = async (payload) => {
+    if (payload && payload.type === 'event-verdict') hooks.push(payload);
+    return originalSend(payload);
+  };
+  await load.stub.handler({
+    type: 'event',
+    name: 'will-compose-context',
+    hookId: 'h-auto',
+    data: { sessionId: 's-auto', text: '继续' },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  const verdict = hooks.find((h) => h.hookId === 'h-auto');
+  assert.ok(verdict, 'the hook must be answered');
+  assert.equal(verdict.action, 'context');
+  assert.match(verdict.context, /misakanet_submit_intake/);
+  assert.match(verdict.context, /connection refused/);
+
+  // agent 照着调真工具 → 这次真实调用上挂出确认卡（卡上写的就是将要公开的原文）。
+  await callTool(load, 'misakanet_submit_intake', {
+    problem: '工具调用失败：connection refused while dialing the upstream service',
+    error: 'connection refused while dialing the upstream service',
+    user_confirmed: true,
+  }, { autoClick: false });   // 不自动点：下面那一次点击必须是唯一一次
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  const card = load.sent.filter((m) => m.type === 'card-update' && /确认提交/.test(m.html || ''));
+  assert.equal(card.length, 1, 'the confirm card must ride on the real tool call');
+  assert.match(card[0].html, /connection refused/);
+
+  // 点「确认提交」→ 只发一次，且用新的在途调用号。
+  const before = load.requests.length;
+  await load.stub.handler({
+    type: 'event',
+    name: 'card-action',
+    callId: card[0].callId,
+    actionId: 'intake-submit',
+    spawnCallId: 'spawn-auto',
+    sessionId: 's-auto',
+    userActionToken: 'once',
+  });
+  await new Promise((resolve) => setTimeout(resolve, 80));
+  assert.equal(load.requests.length, before + 1, 'the click must publish exactly once');
+  const body = JSON.parse(load.requests[before].body);
+  assert.equal(body.params.name, 'misakanet_submit_intake');
+  assert.match(body.params.arguments.problem, /connection refused/);
+  assert.notEqual(body.callId, card[0].callId, 'a finished call id must not be reused');
+});
+
+test('a search in this session silences the reminder', async () => {
+  const load = await loadPlugin({ respond: () => ({ results: [] }) });
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-tool-execution',
+    data: {
+      sessionId: 's-searched',
+      eventType: 'tool_use',
+      payload: { toolName: 'misakanet_search', input: { query: 'x' } },
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-turn-end',
+    data: { sessionId: 's-searched' },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  const card = load.sent.filter((m) => m.type === 'card-update' && /要不要沉淀/.test(m.html || ''));
+  assert.equal(card.length, 0, 'a session that already searched must not be nagged');
+});
+
+test('a real-shaped tool_result is recognised, and the failure carries the command', async () => {
+  // 真机实测的宿主载荷（2026-11-24）：
+  //   tool_use    → {"toolUseId":"call_…","toolName":"bash","input":{"command":"…"}}
+  //   tool_result → {"summary":"done","toolUseIds":["call_…"]}
+  // tool_result 里既没有 error 字段，也没有退出码，也没有工具名——只有 summary。
+  // 之前的桩载荷字段更多（带 error/toolName），所以用例是绿的、真机是哑的。这里用真形状。
+  const load = await loadPlugin({ respond: () => ({ results: [] }) });
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-tool-execution',
+    data: {
+      sessionId: 's-real',
+      eventType: 'tool_use',
+      payload: { toolUseId: 'call_real', toolName: 'bash', input: { command: 'npm run build' } },
+    },
+  });
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-tool-execution',
+    data: {
+      sessionId: 's-real',
+      eventType: 'tool_result',
+      payload: { summary: 'exit code 7', toolUseIds: ['call_real'] },
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  await load.stub.handler({ type: 'event', name: 'did-turn-end', data: { sessionId: 's-real' } });
+  await new Promise((resolve) => setTimeout(resolve, 80));
+
+  // 失败必须被认出来，而且认出来的那段文字要能拿去查（带上工具名与命令行）。
+  const search = load.requests.find((r) => JSON.parse(r.body).params.name === 'misakanet_search');
+  assert.ok(search, 'the turn end must search the corpus');
+  const query = JSON.parse(search.body).params.arguments.query;
+  assert.match(query, /npm run build/, 'the query must carry the failing command');
+  assert.match(query, /exit code 7/, 'the query must carry the failure text');
+  // 整段会被截到 120 字：summary（宿主总结的「哪儿错了」）必须排在前面，不能被命令行挤掉。
+  assert.ok(query.indexOf('exit code 7') < query.indexOf('npm run build'),
+    'the summary must come before the command excerpt');
+
+  // 查过了就不再啰嗦：装配消息时宿主应收到 allow（而不是再提一次「先查」）。
+  const hooks = [];
+  const originalSend = load.stub.send;
+  load.stub.send = async (payload) => {
+    if (payload && payload.type === 'event-verdict') hooks.push(payload);
+    return originalSend(payload);
+  };
+  await load.stub.handler({
+    type: 'event',
+    name: 'will-compose-context',
+    hookId: 'h-real',
+    data: { sessionId: 's-real', text: '继续' },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  const verdict = hooks.find((h) => h.hookId === 'h-real');
+  assert.ok(verdict, 'the hook must be answered');
+  // agent 自己查过了 → 不该再被催「先查一次」（那份「语料没命中」的沉淀草稿仍可给）。
+  if (verdict.action === 'context') {
+    assert.doesNotMatch(verdict.context, /misakanet_search\(query=/,
+      'a session that already searched must not be nagged to search again');
+  } else {
+    assert.equal(verdict.action, 'allow');
+  }
+});
+
+test('the state file is written once per turn, not once per tool event', async () => {
+  // 轮里几十次工具调用就是几十次写盘——而且读者可能读到写了一半的文件。
+  const load = await loadPlugin({ respond: () => ({ results: [] }) });
+  for (let i = 0; i < 6; i += 1) {
+    await load.stub.handler({
+      type: 'event',
+      name: 'did-tool-execution',
+      data: {
+        sessionId: 's-writes',
+        eventType: 'tool_use',
+        payload: { toolUseId: `call_${i}`, toolName: 'bash', input: { command: `echo ${i}` } },
+      },
+    });
+  }
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  const writesBefore = load.writeAttempts;
+  await load.stub.handler({ type: 'event', name: 'did-turn-end', data: { sessionId: 's-writes' } });
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  const writesAfter = load.writeAttempts;
+  assert.ok(writesAfter - writesBefore <= 2,
+    `six tool events must not mean six state writes (got ${writesAfter - writesBefore})`);
+});
+
+test('a later, different failure is searched again', async () => {
+  // 整个会话只查一次是不够的：会话很长、后面又失败时，上一次查到的教训对不上这次的报错。
+  const load = await loadPlugin({ respond: () => ({ results: [] }) });
+  const fail = async (callId, command) => {
+    await load.stub.handler({
+      type: 'event',
+      name: 'did-tool-execution',
+      data: {
+        sessionId: 's-again',
+        eventType: 'tool_use',
+        payload: { toolUseId: callId, toolName: 'bash', input: { command } },
+      },
+    });
+    await load.stub.handler({
+      type: 'event',
+      name: 'did-tool-execution',
+      data: {
+        sessionId: 's-again',
+        eventType: 'tool_result',
+        payload: { summary: 'exit code 1', toolUseIds: [callId] },
+      },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    await load.stub.handler({ type: 'event', name: 'did-turn-end', data: { sessionId: 's-again' } });
+    await new Promise((resolve) => setTimeout(resolve, 60));
+  };
+  await fail('call_a', 'npm run first');
+  const afterFirst = load.requests.filter((r) => JSON.parse(r.body).params.name === 'misakanet_search').length;
+  assert.equal(afterFirst, 1, 'the first failure must be searched once');
+  await fail('call_b', 'cargo build second');
+  const searches = load.requests.filter((r) => JSON.parse(r.body).params.name === 'misakanet_search');
+  assert.equal(searches.length, 2, 'a new failure must be searched again');
+  const lastQuery = JSON.parse(searches[1].body).params.arguments.query;
+  assert.match(lastQuery, /cargo build second/, 'the second search must carry the second failure');
+});
+
+test('a search the agent did itself stops the plugin from searching again', async () => {
+  // 「agent 自己查过」与「插件代查过」必须分开：agent 查过 → 插件不再重复查；
+  // 但老版本把这两个含义塞进同一个 searched 标记，导致老会话之后再失败也永远查不到。
+  const load = await loadPlugin({ respond: () => ({ results: [] }) });
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-tool-execution',
+    data: {
+      sessionId: 's-agent',
+      eventType: 'tool_use',
+      payload: { toolName: 'misakanet_search', input: { query: 'x' } },
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-tool-execution',
+    data: {
+      sessionId: 's-agent',
+      eventType: 'tool_result',
+      payload: { summary: 'exit code 1', toolUseIds: ['call_agent'] },
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  await load.stub.handler({ type: 'event', name: 'did-turn-end', data: { sessionId: 's-agent' } });
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  const searches = load.requests.filter((r) => JSON.parse(r.body).params.name === 'misakanet_search');
+  assert.equal(searches.length, 0, 'the agent already searched → the plugin must not search again');
+});
+
+test('when the host cannot show the card, nothing is published', async () => {
+  // 维护者 2026-11-24 的审核意见：确认卡不可用或出错时**停止发送**——
+  // 不能因为供不出卡就把内容发到公开仓库（那等于没有确认闸门）。
+  const load = await loadPlugin({ respond: () => ({ results: [] }), failCards: true });
+  const answer = await callTool(load, 'misakanet_submit_intake', {
+    problem: '一次真实故障的描述',
+    error: 'boom',
+    user_confirmed: true,
+  }, { autoClick: false });
+  assert.equal(answer.ok, false, 'the call must fail');
+  assert.equal(answer.errorCode, 'CARD_UNAVAILABLE');
+  assert.equal(answer.delivery, 'not_sent', 'nothing may have been sent');
+  const posts = load.requests.filter((r) => JSON.parse(r.body).params.name === 'misakanet_submit_intake');
+  assert.equal(posts.length, 0, 'no intake may be published without a card');
+});
+
+test('the draft never pre-sets the user confirmation', async () => {
+  // 审核意见：移除预置确认。插件可以把「语料没命中、这份原文值得沉淀」告诉 agent，
+  // 但**不能**替用户把 user_confirmed=true 填好——那是用户的授权，不是 agent 的判断。
+  const load = await loadPlugin({ respond: () => ({ results: [], no_match: true }) });
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-tool-execution',
+    data: {
+      sessionId: 's-draft',
+      eventType: 'error',
+      payload: { message: 'connection refused while dialing the upstream service' },
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  await load.stub.handler({ type: 'event', name: 'did-turn-end', data: { sessionId: 's-draft' } });
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  const hooks = [];
+  const originalSend = load.stub.send;
+  load.stub.send = async (payload) => {
+    if (payload && payload.type === 'event-verdict') hooks.push(payload);
+    return originalSend(payload);
+  };
+  await load.stub.handler({
+    type: 'event',
+    name: 'will-compose-context',
+    hookId: 'h-draft',
+    data: { sessionId: 's-draft', text: '继续' },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  const verdict = hooks.find((h) => h.hookId === 'h-draft');
+  assert.ok(verdict, 'the hook must be answered');
+  assert.equal(verdict.action, 'context');
+  assert.match(verdict.context, /问用户|用户明确同意/, 'the agent must be told to ask the user');
+  assert.doesNotMatch(verdict.context, /user_confirmed=true/,
+    'the confirmation must never be pre-set for the agent');
 });
 
 test('the generated community package loads and answers too', async () => {

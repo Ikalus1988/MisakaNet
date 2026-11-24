@@ -21,6 +21,13 @@
 
 ## 1. 安装（一步，在 Cindy 里）
 
+> **从插件市场装，别从 `.cindy` 文件装。** 宿主把**市场来源**的安装当作「跟随市场更新」的那一种——
+> 新版上架，它自己就跟上。而**自签 `.cindy` 文件**装的实例在宿主里记的是 *local* 来源，**永远不跟随
+> 市场更新**：市场发了新版本，它们那边也收不到（2026-11-23 实测：近 7 天仍有 25% 的插件检索跑在
+> 1.2.x / 1.3.x 那两条老线上）。
+> 已经用 `.cindy` 文件装过的，**卸掉再从市场装一次**，之后就自动更新了。
+> 插件自己也会在会话第一轮提醒这件事，并把「你用的是哪个版本」写进首轮提示。
+
 在 Cindy 的**插件列表 / 市场**里安装 **MisakaNet 故障记忆**（插件 id `misakanet`）。安装器会把这一句打印
 出来：
 
@@ -37,7 +44,7 @@ npx @misaka-net/misakanet-setup --only cindy
 
 插件源码在本仓库 [`.cindy-plugin/`](https://github.com/Ikalus1988/MisakaNet/tree/main/.cindy-plugin)：
 `ghost.json`（清单）、`main.js`（电子脑）、`locales/en.json` 与 `locales/zh-CN.json`（文案）、
-`manual/misakanet/MANUAL.md`（随包手册）、`assets/icon.png`。市场里发布的就是本仓库这个包（提审期间市场可能仍显示上一版），仓库已到 **1.6.4**（市场评审后同步：三态外发、CSPRNG client id、`detail="full"` 透传正文、提醒计数以内存为准、四个读工具带 `trust_notice`、移除未用的 `network` 声明、清单默认描述与 zh-CN 对齐、`me_inbox` 拒绝同时给两个查询编号、domain 过滤零命中单独标记、首轮公告带版本号与更新办法、自报通道头 `X-MisakaNet-Channel`、透传端点带回的 `plugin_version` 并在落后时说出口、只读重试与确认卡闸门并进唯一真身）；
+`manual/misakanet/MANUAL.md`（随包手册）、`assets/icon.png`。市场里发布的就是本仓库这个包（提审期间市场可能仍显示上一版），仓库已到 **1.6.6**（市场评审后同步：三态外发、CSPRNG client id、`detail="full"` 透传正文、提醒计数以内存为准、四个读工具带 `trust_notice`、移除未用的 `network` 声明、清单默认描述与 zh-CN 对齐、`me_inbox` 拒绝同时给两个查询编号、domain 过滤零命中单独标记、首轮公告带版本号与更新办法、自报通道头 `X-MisakaNet-Channel`、透传端点带回的 `plugin_version` 并在落后时说出口、只读重试与确认卡闸门并进唯一真身）；
 审核通过后，仓库这与市场里的包内容一致。
 
 ### 1.1 社区通道的变体（`.cindy-plugin-community/`）
@@ -46,7 +53,7 @@ npx @misaka-net/misakanet-setup --only cindy
 **用同一份实现**。两份包只在三处不同：通道标记（`X-MisakaNet-Channel`）、版本号、更新说明。
 
 唯一真身在 [`.cindy-plugin/`](https://github.com/Ikalus1988/MisakaNet/tree/main/.cindy-plugin)
-（当前版本 1.6.4）；社区那份由 `scripts/build_cindy_plugin_community_variant.py` 从它**生成**
+（当前版本 1.6.6）；社区那份由 `scripts/build_cindy_plugin_community_variant.py` 从它**生成**
 （当前版本 1.5.12）。两个版本号刻意错开，免得互相占掉对方的版本位。
 
 社区变体**不是**另一份 fork：它是官方真身的薄壳。2026-11-11 之前两条通道是**双向分叉**的——
@@ -170,10 +177,42 @@ npx @misaka-net/misakanet-setup --only cindy --verify
   市场与遥测读数、AE 包装器）。
 - 源仓 [#5637](https://github.com/Ikalus1988/MisakaNet/pull/5637) ✅ 已合并：**确认卡闸门的四处缺陷**
   （维护者 2026-11-23 点的名）——点击用新的在途 callId、超时只落卡不发第二个回执、direct 重提作废旧卡、
-  私有目录写不进去时不带假 client id。社区包版本 **1.5.13**（在售的是 1.5.12）。
+  私有目录写不进去时不带假 client id。社区包版本 **1.5.14**（在售 **1.5.13**）。
 - 源仓 [#5639](https://github.com/Ikalus1988/MisakaNet/pull/5639) / [#5638](https://github.com/Ikalus1988/MisakaNet/pull/5638)：构建脚本的文件集比较改成「包内文件」规则、发版脚本的 Windows 编码、市场触达读数（1,316 下载 / 415 使用）。
-- **1.5.13 提审只差宿主侧的一次安装确认**：提审快照必须取自已安装实例，而宿主不允许用本地包覆盖
-  市场版实例 → 要另装一份 local 开发副本；这一步的安装确认卡在手机端会被自动拒，需要在桌面端点一下。
+- **1.5.13 / 1.5.14 都已过审并上架**（2026-11-24 02:19:51Z / 03:36:37Z 过审）：市场在售版本已是 **1.5.14**，
+  KV 已写 `{"community":"1.5.14","official":""}`（写+回读校验一致）。端点实测：社区通道问 1.5.14 → `outdated:false`，
+  问 1.5.13 / 1.5.9 → `outdated:true`；官方通道**沉默**（KV 里 official 留空 = 不发版本信号，这是对的）。
+  **市场来源的安装会自动跟上**。1.5.14 的 submission `cmwu4ktbd0354wv01hly337b4`、release
+  `c1713e99fa0158c20160f096d`、sha256 `38c1a5fd…`；已装副本与仓库 main 的构建逐字节一致 ✓。
+- **1.5.15 已提审**（2026-11-24 07:32:49Z；submission `cmwudnny900uf0101c1d24nh5`、release
+  `ccf33c26e2ade64ab49f3fb29`、sha256 `5683028a…`）——过审后再写一次 KV 并补「已上架」。
+  它带的是 failure 模式的三处真问题——失败文本的**顺序**
+  （整段截到 120 字，原来的顺序会把最有信息量的报错摘要截掉，查询词就查不中）、**每条新失败都再查一次**
+  （原来一个会话只查一次）、**「你自己查过」与「插件替你查过」分成两个记号**（老版本塞进同一个标记，
+  于是代查过一次之后这个会话里再失败也永远不再查——真机上撞到了）。
+  提审快照取自这台机器上重装过的 local 开发副本，与仓库 main 的构建**逐字节一致**（不是 13:12 那次旧包——
+  本地装的那份当时落后两个提交，若不重装就会把没带卡片修复的字节提上去）。
+- 真机上量到的宿主载荷（**别再按猜测写判定**）：
+  `tool_use → {toolUseId, toolName, input}`、`tool_result → {summary, toolUseIds}`——
+  `tool_result` **没有 error 字段、没有退出码、没有工具名**，失败与否只在 `summary` 里，
+  而工具名与命令行只在 `tool_use` 里 → 必须按 id 配对，否则失败那段文字只剩「exit code 7」这种查不中的碎片。
+  源仓 [#5675](https://github.com/Ikalus1988/MisakaNet/pull/5675) ✅ 已合并（配对 + summary 判定 +
+  状态文件改成每轮只写一次）。
+- **真机上查到的卡片真相**（2026-11-24）：宿主的卡只渲染「挂在正在执行的工具调用上」的卡
+  （`card-update` 必须带那个在途调用号，宿主会核对）。所以：
+  ①轮末那次「自动沉淀卡」用的是合成 callId → 被宿主以 `unknown-call` 拒掉，**卡片从来没出现过**
+  （真机上只剩一句 toast）；现在改成「轮末备草稿 + 下一轮请 agent 调一次真工具」（源仓 #5687 ✅ 已合并）。
+  ②经 **MCP 桥**发起的工具调用不是宿主侧 agent 的原生调用 → 卡挂在一个聊天不认识的调用上，也不渲染。
+- **卡供不出来时插件停止发送**（维护者 2026-11-24 审核 1.5.15 的意见）：回执 `CARD_UNAVAILABLE` +
+  `delivery="not_sent"`，远端没有任何记录；提交必须先取得**用户对具体内容的明确授权**。
+  于是流程变成：插件总结并把原文交给 agent → **agent 问用户** → 用户明确同意 → agent 调
+  `misakanet_submit_intake`（带 `user_confirmed=true`）→ 插件供确认卡 → 用户点「确认提交」→ 发布。
+  插件**不得**替用户预置那个确认标记。
+- - 触达老用户的三处文案（源仓 #5674 ✅ 已合并，**已上线**）：插件安装页 `integrations/cindy` §1、
+  `quickstart` 的 Cindy 段、社区包更新说明（市场详情页）。文档站在
+  `https://ikalus1988.github.io/MisakaNet/`（**不在 misakanet.org 上**——主站没有 cindy 页）。
+  提审时踩到的两件事：宿主的**安装确认卡在手机端会被自动拒**（要在桌面端点一下），以及提审快照
+  必须取自已安装实例——宿主不允许用本地包覆盖市场版实例，所以要另装一份 local 开发副本。
 - 官方通道：**已关闭**（维护者 2026-11-20 明确保留个人发布那条，官方仓里的 `misakanet/` 副本已被
   #371 移除）。`.cindy-plugin/` 现在只是唯一真身，社区变体由它生成。
 

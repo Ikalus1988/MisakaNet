@@ -5,6 +5,7 @@
 
 // Imported modules — loaded at startup via dynamic import (ESM compatible)
 const crypto = globalThis.crypto || (await import("node:crypto")).webcrypto;
+const _d1cost = await import("./lib/d1-cost.js");
 const _utils = await import("./lib/utils.js");
 const {
   CORS_HEADERS, timingSafeEqual, sanitizeIdentifier,
@@ -522,7 +523,7 @@ const MCP_TOOLS = [
   },
   {
     name: "misakanet_write_lesson",
-    description: "[STRUCTURED COMMIT / VALIDATED SUBMISSION] Submit a complete, structured failure lesson (title/domain/problem/root_cause/fix) as a formal submission. Requires authentication (Bearer token in header) — this is the 'validated author' path, not open triage. Output goes through lesson-gate/lint/review and becomes a versioned lesson in the git repo. For quick open reports when you only have a partial failure description, use misakanet_submit_intake instead (no Bearer). Lessons are immutable once merged — corrections go through a new intake/PR, so there is intentionally no misakanet_update_lesson/misakanet_delete_lesson.\nReturns: object {submitted: true, lesson_id: string, status: 'pending_review', quality_score: number, issue_url: string, dedup_key: string}; a repeat of the SAME content returns {submitted: false, duplicate: true, lesson_id, issue_url, dedup_key} instead of filing a second issue; a refused submission returns {submitted: false, error}.\nTimeouts and retries: the outbound call to GitHub has an 8 s deadline, so a submission can time out AFTER its issue was created. The response therefore carries dedup_key (8 chars, derived from title+problem+root_cause+fix), and re-sending identical text is idempotent — you get the original issue back instead of a duplicate. To check its review status without re-submitting, call misakanet_me_inbox(dedup_key=<key>): it reports pending / converted and names the lesson once a maintainer merges it. The key is kept for 7 days; past that a resubmission files a new issue.\nExample: misakanet_write_lesson(title='pip timeout behind proxy', domain='python', problem='...', root_cause='...', fix='...')",
+    description: "[STRUCTURED COMMIT / VALIDATED SUBMISSION] Submit a complete, structured failure lesson (title/domain/problem/root_cause/fix) as a formal submission. Requires authentication (Bearer token in header) — this is the 'validated author' path, not open triage. Output goes through lesson-gate/lint/review and becomes a versioned lesson in the git repo. For quick open reports when you only have a partial failure description, use misakanet_submit_intake instead (no Bearer). Lessons are immutable once merged — corrections go through a new intake or PR; there are deliberately no update or delete tools for them.\nReturns: object {submitted: true, lesson_id: string, status: 'pending_review', quality_score: number, issue_url: string, dedup_key: string}; a repeat of the SAME content returns {submitted: false, duplicate: true, lesson_id, issue_url, dedup_key} instead of filing a second issue; a refused submission returns {submitted: false, error}.\nTimeouts and retries: the outbound call to GitHub has an 8 s deadline, so a submission can time out AFTER its issue was created. The response therefore carries dedup_key (8 chars, derived from title+problem+root_cause+fix), and re-sending identical text is idempotent — you get the original issue back instead of a duplicate. To check its review status without re-submitting, call misakanet_me_inbox(dedup_key=<key>): it reports pending / converted and names the lesson once a maintainer merges it. The key is kept for 7 days; past that a resubmission files a new issue.\nExample: misakanet_write_lesson(title='pip timeout behind proxy', domain='python', problem='...', root_cause='...', fix='...')",
     inputSchema: {
       type: "object",
       properties: {
@@ -698,7 +699,7 @@ function getMcpServerInfo(env) {
     // this constant drifts from it (rule R7, added 2026-09-18). Before that rule existed the value
     // was a hand-kept string that no script, workflow or var injection ever touched — it sat at
     // 2.27.1 through six releases, and it is the *only* version every MCP client reads.
-    version: env.MCP_VERSION || "3.20.0", // x-release-please-version
+    version: env.MCP_VERSION || "3.21.0", // x-release-please-version
   };
 }
 
@@ -4344,6 +4345,35 @@ function analyticsLessonId({ id, path } = {}) {
   return /^[a-z0-9][a-z0-9._-]{0,79}$/i.test(slug) ? slug : "";
 }
 
+//: How soon after registering a first successful tool call still counts as *activation*. Wide enough
+//: for a real session (register → tools/list → the first call), narrow enough that the claim key
+//: below never becomes a per-token history.
+const ACTIVATION_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * `funnel.activate_24h` — a node whose **first** successful tool call landed inside 24 h of its own
+ * `registered_at` (2026-11-24).
+ *
+ * This is the number the repository has been missing: 500–1,000 nodes are created a day, and nothing
+ * could say how many of them were ever used. It is a day-level count and nothing else — no node id, no
+ * token, no client id reaches `counters`. The claim key exists only so a busy client counts once, and
+ * it expires with the window it measures (two days), so no per-token record outlives the question.
+ *
+ * A refused call is not activation (`result.error`), and an anonymous call has no token to claim with.
+ */
+async function recordActivation(env, token, result) {
+  if (!token || (result && result.error)) return false;
+  const data = await storeGet(env, `mcp_token:${token}`, "json");
+  const registeredAt = data && data.registered_at ? Date.parse(data.registered_at) : NaN;
+  const age = Date.now() - registeredAt;
+  if (!Number.isFinite(age) || age < 0 || age > ACTIVATION_WINDOW_MS) return false;
+  const claimed = await claimOnce(env, `activate:${hashString(token)}`, "1",
+                                  { expirationTtl: 86400 * 2 });
+  if (!claimed) return false;
+  await bumpCounter(env, "funnel", "activate_24h", new Date().toISOString().slice(0, 10), 1);
+  return true;
+}
+
 async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, identityVerified = false, request = null) {
   const callerBucket = analyticsCallerBucket(request);
   if (toolName === "misakanet_register") {
@@ -4537,10 +4567,22 @@ async function handleMcpToolCall(env, toolName, args, authToken, clientIp, ctx, 
     //
     // Best-effort, exactly like the referral above: a counter that cannot be written must not cost
     // the caller the node it just created, and it must not change the response.
-    const registerCounted = await bumpCounter(
-      env, "funnel", "register", new Date().toISOString().slice(0, 10), 1,
-    );
+    const today = new Date().toISOString().slice(0, 10);
+    const registerCounted = await bumpCounter(env, "funnel", "register", today, 1);
     if (registerCounted === null) logInternal("funnel register counter failed", kvWriteStats.last_error);
+
+    // `funnel.register_named` (2026-11-24) — a registration that presented a `client_id` versus one
+    // that did not. The difference is the whole difference between a client and churn: without a name
+    // every call creates a node (the tool description says so), so `register` alone counts automation
+    // and reads like growth. The *decision* sits above the call; the bucket is a literal, and no
+    // caller-supplied value reaches `counters` (the property `tests/test_funnel_event_names.py` owns).
+    if (typeof args.client_id === "string" && args.client_id.trim()) {
+      // One write site, so the gate that counts write sites per event stays meaningful
+      // (`tests/test_funnel_event_names.py` refused a second one on 2026-11-24, correctly).
+      const namedCount = bumpCounter(env, "funnel", "register_named", today, 1).catch(() => {});
+      if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(namedCount);
+      else await namedCount;
+    }
 
     return {
       node_id: nodeId,
@@ -6067,6 +6109,25 @@ function mcpSseResponse(body, status = 200, extraHeaders = {}) {
  * a JSON-RPC error frame cannot tell "your request is broken" from "the server failed". `preflight`
  * runs first and returns that Response, or `null` to stream.
  */
+/**
+ * Is this POST a JSON-RPC notification (no `id`)?
+ *
+ * Both the spec and `handleMcpRequest` answer one with `202 Accepted` and an empty body. The SSE
+ * wrapper cannot represent that: a stream is already a 200 by the time it starts, and `JSON.parse("")`
+ * on the empty body used to be re-framed as `-32603 internal error: the handler did not return JSON`
+ * — a failure the client never asked for, sent to every spec-following client right after
+ * `notifications/initialized` (#5694). Batch requests are not notifications, so they stay on the
+ * streamed path.
+ */
+async function isJsonRpcNotification(request) {
+  try {
+    const parsed = JSON.parse(await request.clone().text());
+    return Boolean(parsed) && typeof parsed === "object" && !Array.isArray(parsed) && parsed.id === undefined;
+  } catch {
+    return false;
+  }
+}
+
 function mcpSseStreamedResponse(work, preflight = null) {
   if (typeof preflight === "function") {
     const rejected = preflight();
@@ -6095,7 +6156,25 @@ function mcpSseStreamedResponse(work, preflight = null) {
       let body;
       try {
         const response = await work();
+        // 202/204 mean "there is no answer" (a notification). Emitting a frame here would invent one
+        // — and an error frame at that (#5694). The comment above is the whole response.
+        if (response.status === 202 || response.status === 204) {
+          try {
+            controller.close();
+          } catch {
+            // Already closed.
+          }
+          return;
+        }
         const text = await response.text();
+        if (!text.trim()) {
+          try {
+            controller.close();
+          } catch {
+            // Already closed.
+          }
+          return;
+        }
         try {
           body = JSON.parse(text);
         } catch {
@@ -6469,6 +6548,12 @@ async function handleMcpRequest(request, env, useSse = false, ctx) {
       // exempt a call from the anonymous burst window (#2939).
       const result = await handleMcpToolCall(env, toolName, args, token, clientIp, ctx, identityVerified, request);
 
+      // Activation, measured without anything that outlives the window (see `recordActivation`).
+      // Best-effort and off the response path: a counter must never cost the caller its answer.
+      if (token && ctx && typeof ctx.waitUntil === "function") {
+        ctx.waitUntil(recordActivation(env, token, result).catch(() => {}));
+      }
+
       // Log tool call result at debug level 2
       debugLog(env, 2, "MCP tool result", {
         toolName,
@@ -6598,13 +6683,15 @@ async function fetchFromGitHub(token, path, ref) {
 
 // SELECT binding from env; wrangler injects D1 as env.MISAKANET_D1.
 function d1Binding(env) {
-  return env?.MISAKANET_D1 || null;
+  // Metered here, not at the 70 call sites: a statement cannot bypass the meter by being written
+  // somewhere new (see `lib/d1-cost.js` for the two incidents that made this necessary).
+  return _d1cost.meterD1(env?.MISAKANET_D1 || null);
 }
 
 /** Ops/telemetry DB. Falls back to the serving DB when the binding is absent, so a deployment
  *  that has not applied the new binding keeps the old behavior instead of losing rows. */
 function opsD1(env) {
-  return env?.MISAKANET_OPS_D1 || d1Binding(env);
+  return _d1cost.meterD1(env?.MISAKANET_OPS_D1 || null) || d1Binding(env);
 }
 
 // Fetch lesson rows from D1 as the same array shape used by the GitHub
@@ -7690,10 +7777,8 @@ async function handleContributionLadder(request, env) {
   let lessonAuthorCount = null;
   try {
     await ensureLessonAuthorsTable(d1);
-    const join = "JOIN lesson_authors la ON la.path = ss.top_id OR la.lesson_id = ss.top_id OR la.slug = ss.top_id";
-    const usedSql = sinceSql
-      ? `SELECT la.node_id AS node_id, COUNT(*) AS n, MAX(ss.created_at) AS last FROM search_signals ss ${join} WHERE ss.created_at >= ?1 GROUP BY la.node_id`
-      : `SELECT la.node_id AS node_id, COUNT(*) AS n, MAX(ss.created_at) AS last FROM search_signals ss ${join} GROUP BY la.node_id`;
+    // See `ladderUsedSql`: three indexed joins, not one OR across three columns (2026-11-23).
+    const usedSql = ladderUsedSql(Boolean(sinceSql));
     const usedStmt = d1.prepare(usedSql);
     const usedResult = sinceSql ? await usedStmt.bind(sinceSql).all() : await usedStmt.all();
     for (const row of (usedResult && usedResult.results) || []) {
@@ -8156,6 +8241,30 @@ let lessonAuthorsTableReady = false;
  * has an author. The author comes from the merged PR that *added* the file (the sweep in
  * `.github/workflows/lesson-authors.yml`), never from the lesson body, which is data.
  */
+//: The ladder's "someone else fetched your lesson" read, as **three indexed joins**.
+//:
+//: Measured 2026-11-23 in Cloudflare's D1 analytics over 2026-10-25…11-23: the previous form —
+//: `ON la.path = ss.top_id OR la.lesson_id = ss.top_id OR la.slug = ss.top_id` — cannot use any
+//: index, so every call scanned `lesson_authors × search_signals`: **1,873 calls read 19.56 billion
+//: rows**, 90% of every row this account read in a month, at ~10.4M rows per call.
+//:
+//: The three columns exist because `search_signals.top_id` is sometimes a lesson id, sometimes a
+//: path, sometimes a basename — measured 2026-11-13 across 16k signals. So each becomes its own
+//: indexed join, and `UNION` (not `UNION ALL`) collapses a signal that matches two columns of the
+//: same author row. Exported so `workers/ladder-join-is-indexed.test.mjs` can run it through
+//: `node:sqlite` and compare it with the old form, rather than keeping a second copy of the SQL.
+function ladderUsedSql(filtered) {
+  const branch = (column) => `
+        SELECT ss.id AS sid, la.node_id AS node_id, ss.created_at AS at
+          FROM lesson_authors la
+          JOIN search_signals ss ON ss.top_id = la.${column}
+         WHERE la.${column} IS NOT NULL${filtered ? " AND ss.created_at >= ?1" : ""}`;
+  const union = ["path", "lesson_id", "slug"].map(branch).join("\n        UNION");
+  return `WITH matched AS (${union})
+        SELECT node_id AS node_id, COUNT(*) AS n, MAX(at) AS last
+          FROM matched GROUP BY node_id`;
+}
+
 async function ensureLessonAuthorsTable(d1) {
   if (lessonAuthorsTableReady) return;
   await d1.prepare(
@@ -8171,6 +8280,13 @@ async function ensureLessonAuthorsTable(d1) {
   await d1.prepare(
     "CREATE INDEX IF NOT EXISTS idx_lesson_authors_node ON lesson_authors(node_id)"
   ).run();
+  // The ladder's join tries each of these three columns against `search_signals.top_id`; without an
+  // index on the two non-key ones, two of the three branches are a full scan of `lesson_authors`.
+  for (const column of ["lesson_id", "slug"]) {
+    await d1.prepare(
+      `CREATE INDEX IF NOT EXISTS idx_lesson_authors_${column} ON lesson_authors(${column})`
+    ).run();
+  }
   // `search_signals.top_id` is sometimes a lesson's own `id`, sometimes the file path, sometimes the
   // basename — measured 2026-11-13 across 16k signals. The extra columns let the join match whichever
   // shape that row used; they are added here for tables created before this change.
@@ -8284,6 +8400,16 @@ async function ensureSearchSignalsTable(d1) {
     // signal itself is a trust signal, and losing it because an index could not be created would
     // be a worse outcome than reading a few thousand rows.
     logInternal("[search-signals] the client_hint index could not be created", error);
+  }
+  // The ladder's join matches `search_signals.top_id` against three `lesson_authors` columns, so it
+  // needs an index on this side too — otherwise the plan drives from the 16k-row signals table and
+  // looks up authors one by one. Added with the join rewrite (2026-11-23).
+  try {
+    await d1.prepare(
+      "CREATE INDEX IF NOT EXISTS idx_search_signals_top ON search_signals(top_id)"
+    ).run();
+  } catch (error) {
+    logInternal("[search-signals] the top_id index could not be created", error);
   }
   searchSignalsTableReady = true;
 }
@@ -8855,7 +8981,8 @@ async function readTrafficBreakdown(env, day) {
 // `misakanet-web` from `docs/` and never reach here, so `visit` must never be presented as "visitors
 // to misakanet.org". `tests/test_funnel_event_names.py` pins the closed event set, the absence of any
 // caller-supplied value at a write site, and that the doc and this list name the same five things.
-const FUNNEL_EVENTS = Object.freeze(["visit", "register", "authorize", "pair", "search"]);
+const FUNNEL_EVENTS = Object.freeze(["visit", "register", "register_named", "authorize", "pair",
+                                      "search", "activate_24h"]);
 
 /** One day of funnel counters, D1 first and the `counters:` KV key as the fallback.
  *
@@ -10856,6 +10983,23 @@ export default {
     if (request.method === "GET" && url.pathname === "/api/insights/lesson-coverage") {
       return handleLessonCoverage(env);
     }
+    // GET /api/insights/query-cost — which D1 statement this isolate has paid for (2026-11-24).
+    // Maintainer-only: the payload is our own SQL, but a public list of our query shapes is a map of
+    // where to look for the next hole, and the aggregate answer is already public-safe in
+    // `scripts/d1_cost_report.py`'s daily issue.
+    if (request.method === "GET" && url.pathname === "/api/insights/query-cost") {
+      if (!isMaintainerRequest(request, env)) {
+        return jsonResponse({ error: "maintainer token required" }, 403);
+      }
+      return jsonResponse({
+        generated_at: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
+        source: "in-isolate meter over D1Meta.rows_read",
+        note: "One isolate's totals since it started; `counters(scope='query_cost')` is the durable "
+            + "copy, flushed by the 15-minute cron. `rows_per_call` is the number that separates a bad "
+            + "shape from a busy query.",
+        statements: _d1cost.costSnapshot(25),
+      }, 200, { "Cache-Control": "no-store" });
+    }
     // GET /api/insights/reputation-leaderboard — public points leaderboard (#908)
     if (request.method === "GET" && url.pathname === "/api/insights/reputation-leaderboard") {
       return handleReputationLeaderboard(request, env);
@@ -11092,6 +11236,12 @@ export default {
       const accept = request.headers.get("Accept") || "";
       const useSse = accept.includes("text/event-stream");
       if (useSse) {
+        // A notification has no answer at all (202, empty body). Wrapping that in a stream would force
+        // the status to 200 and, worse, turn "nothing" into a `-32603` message frame — so it takes the
+        // JSON path even when the client advertised SSE (#5694).
+        if (await isJsonRpcNotification(request)) {
+          return handleMcpRequest(request, env, false, ctx);
+        }
         // Streamed so the first byte escapes the buffer (#4072); the work itself runs in JSON mode and
         // its response is re-framed as the SSE `message` event.
         return mcpSseStreamedResponse(() => handleMcpRequest(request, env, false, ctx),
@@ -11451,6 +11601,13 @@ async function getCode() {
       ctx.waitUntil(aggregateDailyTraffic(env).catch(e =>
         console.error("[traffic-aggregation] failed", e.message)
       ));
+      // What each statement cost this isolate, into `counters(scope='query_cost')`. Persisted rather
+      // than kept in memory because an isolate is short-lived and a meter nobody can read later is
+      // not a meter (2026-11-24: one statement read 90% of the account's rows for a month).
+      ctx.waitUntil(_d1cost.flushQueryCost(
+        (scope, bucket, period, delta) => bumpCounter(env, scope, bucket, period, delta),
+        new Date().toISOString().slice(0, 10),
+      ).catch(e => console.error("[query-cost] flush failed", e && e.message)));
     }
     // Durable-store housekeeping: expire what KV used to expire (2026-09-23, #2117).
     ctx.waitUntil(sweepExpiredStore(env).then((reclaimed) => {
@@ -11550,6 +11707,10 @@ function findCoveringLesson(problemText, errorText, lessons) {
 
 
 export {
+  // Exported for workers/ladder-join-is-indexed.test.mjs: the ladder's used-by-node read is three
+  // indexed joins, and the test runs that exact SQL through `node:sqlite` to check both its counts
+  // and its plan (an OR across three columns read 19.56B rows in a month; see the builder's comment).
+  ladderUsedSql,
   queueAnswerNoticeImpl,
   confirmAnswerNoticeImpl,
   deliverAnswerNoticesImpl,

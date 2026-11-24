@@ -112,7 +112,7 @@
 | `protect-pinned-issues.yml` | Protect long-running issues | issues |  |
 | `pr-audit-watch.yml` | PR Audit Watch（PR 审查巡检）| 定时, 手动 | `17 */2 * * *` |
 
-## 基础设施（10）
+## 基础设施（11）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -126,6 +126,7 @@
 | `install-smoke.yml` | Install Smoke（**真装机**探测，对应 intake #2486 的「自动检查通过 ≠ 它能用」：`npm-form` 把仓库打成本地 tarball，断言含 `SKILL.md`/`index.js`/`cordis.patch.yml` 且**不含 `scripts/`**、MCP 行指向 `https://misakanet.org/mcp`，再真的 `initialize` + `tools/call misakanet_search`；`git-stdio` 断言 `python3 --version ≥ 3.11`、用 stdin/stdout 完成 `initialize`/`tools/list`（工具集与 `docs/mcp.md` 的 local stdio 行逐名相等）/`tools/call misakanet_search`。两个 job 互相独立（托管端点可能被限流），结果写 `data` 分支 `badges/install.json`：干净=带日期绿，失败=点名那个形态并发红，**没有任何测量就不发**）| 定时, 手动 | `43 6 * * *` |
 
 | `deploy-freshness.yml` | Deploy Freshness（#2779：每天问一次"线上跑的是不是 main 那个 commit"。`python3 scripts/doctor.py --deploy-freshness` 把 `/api/health` 的 `commit_sha`（由 `deploy-worker.yml` 的 `--var COMMIT_SHA:${GITHUB_SHA}` 注入）与 checkout 的 HEAD 比，不一致就报"线上落后 N 个提交"；`commit_sha` 为 `unknown`（本地 `make deploy-api` 部署）报**无法验证**而非报新。**存在的理由是 post-deploy 校验发现不了"部署压根没发生"**——2026-10-03 线上冻结 3 天、5 个 PR 未上线，全程无红，因为 release-please 不 bump 版本号，线上与 main 长期同号。连续 3 次不过才算失败）| 定时, 手动 | `53 4 * * *` |
+| `d1-cost.yml` | D1 Cost Watch（每天读 Cloudflare 的 `d1QueriesAdaptiveGroups`——**该数据集自带 `query` 维度**，所以不需要 `wrangler d1 insights`；按语句报 **rows/call**、总量，以及**相对上一个窗口新出现的语句**。存在的理由：同一类 bug 修过两次（2026-10-21 每次扫 68,892 行、2026-11-24 跨三列 `OR` join 每次读 1,040 万行、占账户月度读量 90%），而"一条查询一个测试"只能覆盖被想起来的那几条；失败是静默的——答案对、延迟正常、只有账单会说话）。| 定时, 手动 | `17 5 * * *` |
 | `registry-drift-watch.yml` | Registry Drift Watch（**打第三方 API 的那半边**：定时跑 `scripts/verify-glama-listing.py`，比对 Glama 上架的工具集与 worker 实际提供的工具集。**这个脚本本来就是对的——它会 exit 1 并点名多出来的工具——但此前没有任何调用者**。实测 2026-10-04：Glama 列 12 个，`https://misakanet.org/mcp` 的 `tools/list` 只返 7 个，其中 `misakanet_cli` 从来不是 MCP 工具、`misakanet_get_my_events` 已改名 `misakanet_me_events`，另 3 个只存在于 Python stdio 服务器。**注意：仓库里没有任何文件声明那 12 个工具**（`glama.json` 无工具表，`server.json` 只声明 stdio 包），所以重跑 `publish-mcp-registry.yml` 修不好它——要改得去 Glama 那边。连续 3 次不过才算失败；退出码 2（脚本崩了）**不建 issue、直接变红**）| 定时, 手动 | `26 11 * * *` |
 
 ## 有意保持安静的自动化（#1826 的结论，2026-09-25 复核）

@@ -22,7 +22,10 @@ function fakeOps(rows, usedRows = [], authorCount = 0) {
         async all() {
           statements.push({ sql, bound: stmt._bound });
           if (sql.includes('FROM contributions')) return { results: rows };
-          if (sql.includes('JOIN lesson_authors')) return { results: usedRows };
+          // Matches both spellings of the used-read: the OR-join (`JOIN lesson_authors la ON …`) and the
+          // three-join form (`FROM lesson_authors la JOIN search_signals …`). A stub keyed on one
+          // spelling silently stops stubbing the moment the query is rewritten.
+          if (sql.includes('lesson_authors la')) return { results: usedRows };
           if (sql.includes('COUNT(*) AS n FROM lesson_authors')) return { results: [{ n: authorCount }] };
           return { results: [] };
         },
@@ -212,7 +215,10 @@ test('an unreadable author count is null, not zero', async () => {
         bind() { return this; },
         async all() {
           if (sql.includes('FROM contributions')) return { results: [] };
-          if (sql.includes('JOIN lesson_authors')) return { results: [] };
+          // Matches both spellings of the used-read: the OR-join (`JOIN lesson_authors la ON …`) and the
+          // three-join form (`FROM lesson_authors la JOIN search_signals …`). A stub keyed on one
+          // spelling silently stops stubbing the moment the query is rewritten.
+          if (sql.includes('lesson_authors la')) return { results: [] };
           throw new Error('D1_ERROR: no such table: lesson_authors');
         },
         async run() { return { success: true }; },

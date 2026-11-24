@@ -11,7 +11,8 @@ OpenCode / Kiro / MiniMax Code / DeepSeek Harness / Cindy — the same thirteen 
 endpoint into each assistant's own config; for DeepSeek Harness it writes the rules block instead
 and prints `dsh plugin --profile web add misakanet` for the tools; for Cindy it writes nothing at
 all and prints the plugin step, because Cindy's tools come from a plugin the app installs itself
-([cindy.md](integrations/cindy.md)). It does not install anything behind your back, and it
+([cindy.md](integrations/cindy.md)). **从插件市场装，别从 `.cindy` 文件装**：市场来源的安装会跟随市场更新，自签文件装的不会（已经装过的，卸掉再从市场装一次）。
+It does not install anything behind your back, and it
 registers the anonymous node itself, so **no pairing code is involved**.
 
 1. **Install the endpoint** into every assistant you use:

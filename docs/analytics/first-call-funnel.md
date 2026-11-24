@@ -4,7 +4,7 @@
 Measure and optimize the first-time user journey: discovery -> registration -> first search.
 
 ### Metrics
-Five day-level integer counts, written by the worker itself into the `counters` store under
+Seven day-level integer counts, written by the worker itself into the `counters` store under
 `scope='funnel'` (one row per event per UTC day), plus two ratios derived from them at read time.
 No cookie, no IP, no `client_id`, no per-query bucket: the storage shape has no field a person could
 be recognised by, and that is a property of the shape rather than of a policy.
@@ -22,6 +22,20 @@ be recognised by, and that is a property of the shape rather than of a policy.
   `POST /mcp/connect`, and that code exchanged for a token by `POST /mcp/pair`. Somebody who arrives
   from `/start` never calls `misakanet_register`, so without these two the funnel would read every
   human visitor as a drop-off.
+- `funnel.register_named` — registrations that presented a `client_id` (2026-11-24). The tool
+  description says a call without one mints a **new node every time**, so `funnel.register` alone
+  counts automation and reads like growth: 500–1,000 a day against zero `authorize` was the shape that
+  made "users are arriving" unreadable. The split is the smallest thing that makes it readable, and it
+  costs nothing in privacy — the bucket is a day-level integer, and the *decision* sits above the
+  write, not inside it.
+- `funnel.activate_24h` — a node whose **first** successful tool call landed within 24 h of its own
+  `registered_at` (2026-11-24). This is the number the funnel has been missing: how many of today's
+  new nodes were ever *used*. It is not a per-token history — the claim key
+  (`activate:<hash of the token>`) exists only to stop a busy client counting twice and expires with
+  the window it measures (two days), and nothing about the caller reaches `counters`. A refused call
+  is not activation, and an anonymous call has no token to claim with. Read it as
+  `activate_24h / register` for the day, and only across a week — one day's ratio is noise at these
+  counts.
 - `funnel.first_search` — **retired**, and not approximated. "First" relates one search to the caller
   who made it, which needs a cross-session identifier; the client half's contract is "no credential,
   no account, no client_id" (`docs/maintainer/client-half-acceptance.md`, D3). Use `funnel.search`

@@ -114,6 +114,7 @@
 - [bilibili-api get_download_url returns no durl key (KeyError durl)](contrib/bilibili-api-get-download-url-returns-no-durl-key-keyerror.md) | python | "bilibili-api", "python", "dash", "durl" | intake-3789
 - [Bilibili space API (member/videos) returns 访问权限不足 to anonymous clients that have no wbi signature](contrib/bilibili-space-api-membervideos-returns-访问权限不足-to-anonymous.md) | development | "bilibili", "wbi", "api", "risk-control", "unsigned-endpoint", "scraping" | intake-4192
 - [二进制反汇编的 entry 偏移可能是「代码区相对偏移」——按绝对偏移切段会整体错位且不报错](contrib/binary-disassembly-entry-offsets-code-relative-base.md) | development | "binary", "disassembly", "offset", "base-address", "parser", "silent-mis-split" | intake-4279
+- [Binary record parser's length gate silently dropped an entire record variant: pa](contrib/binary-record-parsers-length-gate-silently-dropped-an.md) | mcp | "an", "the", "with" | intake-5682
 - [BLE 短暂断链被当成永久断线：读数立刻清空成 --，其实 0.4 秒就重连回来了](contrib/ble-短暂断链被当成永久断线读数立刻清空成-其实-04-秒就重连回来了.md) | mobile | "ble", "bluetooth", "ios", "disconnect", "reconnect", "stale-data", "backoff" | intake-4151
 - [中文 BM25 搜索：滑动窗口子串加分与唯一候选加分](contrib/bm25-chinese-sliding-window-tuning.md) | search | "bm25", "chinese", "search", "recall", "sliding-window" | mcp-intake-1112
 - [BM25 + Vector Hybrid Search: configurable blending weights](contrib/bm25-vector-hybrid-search-weights.md) | search | "bm25", "vector", "hybrid", "search", "weights" | closed-pr-1029
@@ -563,6 +564,7 @@
 - [OpenClaw 重装教训 — 删除前先停服务清残留](contrib/openclaw-reinstall-lesson.md) | openclaw | "openclaw", "reinstall", "lesson" | bootstrap
 - [OpenClaw 8.2 — session_nodes entry_valid stays 0 after manual sqlite edit](contrib/openclaw-session-row-entry-updatedat-mismatch.md) | devops | "openclaw", "sqlite", "session_nodes", "canonical-key", "repair", "entry_valid" | incident-2026-09-09
 - [OpenCode CLI on native Windows lists zero models: WSL-style `file://` paths break plugin loading](contrib/opencode-cli-native-windows-install-shows-zero-models-from-o.md) | windows | "opencode", "windows", "file-url", "plugin-loading", "model-list", "ollama", "npm-package", "wsl-path" | intake-3800
+- [openpyxl read_only 加载 xlsx（WPS 或部分 Mac Excel 产出）时 ws.max_row=1 / max_col=1，但文件实际](contrib/openpyxl-read-only-加载-xlsxwps-或部分-mac-excel-产出时-wsmax-row1.md) | mcp | "openpyxl", "t-s", "read" | intake-5693
 - [Opire Bounty 实战经验 — 认领、收款与信任分级](contrib/opire-bounty-hunting.md) | crypto-ops | "opire", "bounty", "crypto", "stripe", "claim", "rewards" | 
 - [ops_bash 连续两次报 EXECUTOR_UNAVAILABLE：`the restricted Bash runtime could not be pr](contrib/ops-bash-连续两次报-executor-unavailablethe-restricted-bash.md) | windows | "python", "job_kill", "git" | intake-5603
 - [Claiming an OSS issue is an investment: a six-step gate before the /claim comment](contrib/oss-issue-claim-six-step-gate-before-claiming.md) | github | "oss", "issue-claim", "due-diligence", "auto-close-bot", "competing-pr" | claim audit 2026-09-07 (5 claims, 4 wasted), policy distilled from it
@@ -900,6 +902,7 @@
 - [Windows CI: splitCommand backslash stripping, UnicodeEncodeError, and detached process failure](contrib/windows-ci-splitcommand-backslash-unicode-detached.md) | devops | "windows", "ci", "nodejs", "python", "subprocess", "encoding", "backslash", "detached" | issue-1223
 - [Windows .cmd 批处理内含非 ASCII 字符导致命令被截断、路径失效](contrib/windows-cmd-批处理内含非-ascii-字符导致命令被截断路径失效.md) | windows | "windows", "cmd", "batch", "encoding", "gbk", "utf-8", "mojibake" | intake-4393
 - [A Windows directory name ending in a dot breaks ripgrep, glob and recursive IO (os error 3)](contrib/windows-directory-name-ending-in-dot-breaks-recursive-io.md) | windows | "windows", "ripgrep", "glob", "path-normalization", "trailing-dot", "os-error-3" | intake-3068
+- [Windows GUI 自动化里「点击/按键发出去了但界面没反应」的排障成本极高（同一套脚本时灵时不灵，连试数轮全哑），最后发现问题与输入 AP](contrib/windows-gui-5671.md) | windows | "windows", "gui", "ap" | intake-5671
 - [Windows GUI 自动化「前台安全闸」误报排查：合成点击链的安全闸要求前台是目标窗口，连跑两次都报「前台不是 ROBOGUIDE（当前='某某终端窗口标题](contrib/windows-gui.md) | windows | "windows", "gui", "roboguide" | intake-4866
 - [A Windows libvips DLL loaded twice poisons the bundled sharp and surfaces as TRANSPORT](contrib/windows-libvips-double-load-masquerades-as-transport.md) | windows | "sharp", "libvips", "native-module", "dll-single-load", "err-dlopen-failed", "windows", "restart-required", "dsh" | intake-3335
 - [Windows Node sandbox: a hardcoded /root silently confined the agent to the wrong directory](contrib/windows-node-sandbox-hardcoded-root.md) | mcp | "windows", "nodejs", "sandbox", "path-resolution", "cross-platform", "confinement" | hermes-agent-windows-sandbox-path-2026-09-12
@@ -951,6 +954,7 @@
 - [三个导入入口喂进的文件集合不同，同一份备份判定不同：空输入必须报错](contrib/三个导入入口喂进的文件集合不同同一份备份判定不同空输入必须报错.md) | development | "entry-parity", "empty-input", "architecture-migration" | intake-3191
 - [两个独立进程并发写同一个 SQLite 数据库（WAL 模式已开），一个进程写批量事务期间另一个进程 INSERT 报 `database is locked`](contrib/两个独立进程并发写同一个-sqlite-数据库wal.md) | dsh | "database", "sqlite", "wal" | intake-5069
 - [两处「各自写死间距」导致右列数字差几像素：共享常量 + 量像素验收](contrib/两处各自写死间距导致右列数字差几像素共享常量-量像素验收.md) | mobile | "swiftui", "ios", "layout", "alignment", "pixel-measurement", "shared-constant", "padding", "design-qa" | intake-4182
+- [两条 agent 线并行维护同一套共享台账（判据编号表、文档章节号、协作 issue 编号），各自从同一空位自增编号（两线都从 F20 起编、都](contrib/两条-agent-线并行维护同一套共享台账判据编号表文档章节号协作-issue.md) | mcp | "agent", "f20" | intake-5696
 - [中文 Windows 环境 Python 脚本用 subprocess.run(..., capture_output=True, text=True) 捕获子](contrib/中文-windows-环境-python-脚本用-subprocessrun-capture-outputtrue.md) | windows | "python-gbk-encoding-error", "windows", "python" | intake-5445
 - [中文路径下的 UTF-8 批处理：cmd 把变量名咬成半截，报 DK_HOME is not recognized](contrib/中文路径下的-utf-8-批处理cmd-把变量名咬成半截报-dk-home-is-not-recognized.md) | devops | "windows", "cmd", "batch", "encoding", "utf8" | intake-4452
 - [中文路径粘贴变八进制转义 + tar czf 在本环境被回滚：改用纯英文路径与 Python tarfile](contrib/中文路径粘贴变八进制转义-tar-czf-在本环境被回滚改用纯英文路径与-python-tarfile.md) | devops | "bash", "encoding", "chinese-path", "tar", "rollback", "python-tarfile", "nas" | intake-4162
