@@ -69,3 +69,40 @@ def test_missing_file_is_a_failure_not_a_skip(tmp_path):
     """A deleted page must fail loudly; a missing document is not a passing document."""
     result = _run("--check", str(tmp_path / "does-not-exist.md"))
     assert result.returncode == 1
+
+
+# ── --write: the block is replaced, the rest of the page is untouched ────────────────────────────
+
+def test_write_replaces_the_block_and_leaves_the_prose_alone(tmp_path):
+    """The step this replaces is a human pasting a table, which is why two contributor PRs were
+    machine-unrebuildable on 2026-11-23: every other conflict was in a generator-owned file."""
+    from scripts import evidence_distribution as ed
+
+    original = DOC.read_text(encoding="utf-8")
+    doctored = original.replace("| **E1** (declared) |", "| **E1** (declared) | ", 1)
+    target = tmp_path / "trust-semantics.md"
+    target.write_text(doctored + "\n\n## A section after the block\n\nprose\n", encoding="utf-8")
+
+    before_prose = target.read_text(encoding="utf-8").split(ed.BLOCK_START)[0]
+    after_prose = target.read_text(encoding="utf-8").split(ed.BLOCK_END, 1)[1]
+
+    result = subprocess.run([sys.executable, str(SCRIPT), "--write", str(target)],
+                            capture_output=True, text=True, cwd=REPO)
+    assert result.returncode == 0, result.stderr
+    assert _run("--check", str(target)).returncode == 0, "the written file must pass --check"
+
+    written = target.read_text(encoding="utf-8")
+    assert written.startswith(before_prose), "text before the block changed"
+    assert written.endswith(after_prose), "text after the block changed"
+
+
+def test_write_refuses_a_file_with_no_marker(tmp_path):
+    from scripts import evidence_distribution as ed
+
+    target = tmp_path / "no-marker.md"
+    target.write_text("just prose\n", encoding="utf-8")
+    result = subprocess.run([sys.executable, str(SCRIPT), "--write", str(target)],
+                            capture_output=True, text=True, cwd=REPO)
+    assert result.returncode != 0
+    assert "marker" in (result.stderr + result.stdout)
+    assert target.read_text(encoding="utf-8") == "just prose\n", "a refused write must not touch it"
