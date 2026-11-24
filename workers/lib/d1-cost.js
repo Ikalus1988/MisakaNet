@@ -72,6 +72,16 @@ function record(sql, meta) {
 /** Wrap one prepared statement's terminal methods so every result is counted. */
 function meterStatement(stmt, sql) {
   if (!stmt || typeof stmt !== "object") return stmt;
+  try {
+    return meterStatementUnsafe(stmt, sql);
+  } catch (error) {
+    // A frozen statement, a Proxy that refuses assignment, anything at all: the query still has to
+    // run. This is not defensive decoration — a meter that can break a query is worse than no meter.
+    return stmt;
+  }
+}
+
+function meterStatementUnsafe(stmt, sql) {
   for (const method of ["run", "all", "first", "raw"]) {
     if (typeof stmt[method] !== "function" || stmt[method].__metered) continue;
     const original = stmt[method].bind(stmt);
@@ -105,7 +115,14 @@ export function meterD1(db) {
   try {
     const prepare = db.prepare.bind(db);
     const wrapper = Object.create(db);
-    wrapper.prepare = (sql) => meterStatement(prepare(sql), sql);
+    wrapper.prepare = (sql) => {
+      const stmt = prepare(sql);
+      try {
+        return meterStatement(stmt, sql);
+      } catch (error) {
+        return stmt;
+      }
+    };
     METERED.set(db, wrapper);
     return wrapper;
   } catch (error) {
