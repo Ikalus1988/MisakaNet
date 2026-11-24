@@ -7,6 +7,55 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.21.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.20.0...v3.21.0) (2026-11-24)
+
+
+### Features
+
+* **ci:** a contributor's generator-only conflict is now a mechanical rebuild, not a bounce ([#5667](https://github.com/Ikalus1988/MisakaNet/issues/5667)) ([9ce6e04](https://github.com/Ikalus1988/MisakaNet/commit/9ce6e0484945fb9988adc79c416b6395ec930c4c))
+* **ci:** a daily D1 cost watch — rows per call, and what is new since yesterday ([#5678](https://github.com/Ikalus1988/MisakaNet/issues/5678)) ([2ef7906](https://github.com/Ikalus1988/MisakaNet/commit/2ef7906daa4c19322a74ce10605879d63180c2f7))
+* **cindy-plugin:** 补上仓库钩子那套 failure 模式——动手前先查、查不到就供一张沉淀卡 ([#5669](https://github.com/Ikalus1988/MisakaNet/issues/5669)) ([a275c8d](https://github.com/Ikalus1988/MisakaNet/commit/a275c8dec3de67e1be1d036d7f149da46f7f5c8f))
+* **funnel:** count named registrations and whether a node was ever used ([#5688](https://github.com/Ikalus1988/MisakaNet/issues/5688)) ([d450d1d](https://github.com/Ikalus1988/MisakaNet/commit/d450d1de1991a26f5930204cc6d3ff8f7e215e18))
+* **heartbeat:** panel 5 — who is contributing, the row the digest never had ([#5636](https://github.com/Ikalus1988/MisakaNet/issues/5636)) ([d3e6f7e](https://github.com/Ikalus1988/MisakaNet/commit/d3e6f7e3708e84799318d8e3eaff61ca7dc94dfb))
+* **lessons:** intake batch 2026-11-23 ([#5621](https://github.com/Ikalus1988/MisakaNet/issues/5621)) ([1a83d12](https://github.com/Ikalus1988/MisakaNet/commit/1a83d123d8c4ae9cbf3ff0191af4939927b91bf4))
+* **lessons:** intake batch 2026-11-24 ([#5673](https://github.com/Ikalus1988/MisakaNet/issues/5673)) ([cef2155](https://github.com/Ikalus1988/MisakaNet/commit/cef2155f8bb0794104858ece62abf7207bc8ee22))
+* **lessons:** the batch's one lesson, rebased and regenerated (intake batch 2026-11-23) ([#5617](https://github.com/Ikalus1988/MisakaNet/issues/5617)) ([7acbdd6](https://github.com/Ikalus1988/MisakaNet/commit/7acbdd6c0cd2b6ae26037c52c010d61ea0ee2c40))
+* **lessons:** thirteen intakes that only a copied sentence was blocking ([#5611](https://github.com/Ikalus1988/MisakaNet/issues/5611)) ([3320e4d](https://github.com/Ikalus1988/MisakaNet/commit/3320e4ddf5b741d021ac8df3a9d8f28802a00285))
+* **telemetry:** read installs as the baseline between releases, because that is what they measure ([#5629](https://github.com/Ikalus1988/MisakaNet/issues/5629)) ([16d8c6c](https://github.com/Ikalus1988/MisakaNet/commit/16d8c6c1e6c601bd9e21f788be031f62ee7fb322))
+* **worker:** meter what each D1 statement costs, at the one place queries pass through ([#5684](https://github.com/Ikalus1988/MisakaNet/issues/5684)) ([4ccc4e2](https://github.com/Ikalus1988/MisakaNet/commit/4ccc4e26629b223efff3fc41b08ba94eb0954dd0))
+
+
+### Bug Fixes
+
+* **cindy-plugin:** 修掉确认卡闸门的四处缺陷（维护者点的名） ([#5637](https://github.com/Ikalus1988/MisakaNet/issues/5637)) ([8690543](https://github.com/Ikalus1988/MisakaNet/commit/869054393282f3b4fbeb688016b34a89ab310c3c))
+* **cindy-plugin:** 失败文本把 summary 放前面；每条新失败都再查一次 ([#5683](https://github.com/Ikalus1988/MisakaNet/issues/5683)) ([25a0d2b](https://github.com/Ikalus1988/MisakaNet/commit/25a0d2bc1910fdf96dd7261964864944c376587d))
+* **cindy-plugin:** 按宿主真实的 tool_result 形状认失败，状态写盘降到每轮一次 ([#5675](https://github.com/Ikalus1988/MisakaNet/issues/5675)) ([0e10452](https://github.com/Ikalus1988/MisakaNet/commit/0e10452ad0d04d273596a36775efae225937ecd5))
+* **cindy-plugin:** 文件集比较改用「包内文件」规则 + 发版脚本 Windows 编码 + 待办清单更新 ([#5640](https://github.com/Ikalus1988/MisakaNet/issues/5640)) ([089961e](https://github.com/Ikalus1988/MisakaNet/commit/089961e0a482a12b5420b641fe5f1e628676036a))
+* **cindy-plugin:** 文件集比较改用「包内文件」规则；发版脚本修 Windows 编码 ([#5639](https://github.com/Ikalus1988/MisakaNet/issues/5639)) ([34ffd10](https://github.com/Ikalus1988/MisakaNet/commit/34ffd1052135c6d43ed1052c142be555e83ca868))
+* **gate:** the bare-mention count reads the author's prose, not the fields copied from it ([#5606](https://github.com/Ikalus1988/MisakaNet/issues/5606)) ([2fccbb1](https://github.com/Ikalus1988/MisakaNet/commit/2fccbb1ea0ea2d00b18834567b83e347ae3211e5))
+* **mcp:** a timed-out write_lesson can be retried without filing a second issue ([#5626](https://github.com/Ikalus1988/MisakaNet/issues/5626)) ([100c622](https://github.com/Ikalus1988/MisakaNet/commit/100c622dd0af81c383e5ad1b1d420dbf678c797a))
+* **mcp:** stop naming the two tools that deliberately do not exist ([#5668](https://github.com/Ikalus1988/MisakaNet/issues/5668)) ([ae41e59](https://github.com/Ikalus1988/MisakaNet/commit/ae41e59fc3bd6de3150b2fd8bf8eca2202cfdb11))
+* **publish:** the stand-down poll waits for npm's own window, not 90 seconds ([#5612](https://github.com/Ikalus1988/MisakaNet/issues/5612)) ([6c1f17e](https://github.com/Ikalus1988/MisakaNet/commit/6c1f17eece083c2d72f0ab665bdfa6f461feb0a0))
+* **worker:** the ladder's used-read scans 10.4M rows per call — make it three indexed joins ([#5670](https://github.com/Ikalus1988/MisakaNet/issues/5670)) ([693d171](https://github.com/Ikalus1988/MisakaNet/commit/693d171e75e88159e698e859290ae3170c79646d))
+
+
+### Documentation
+
+* **cindy:** 1.5.13 已上架、1.5.14 已提审；记下真机量到的宿主载荷 ([#5680](https://github.com/Ikalus1988/MisakaNet/issues/5680)) ([957ab2b](https://github.com/Ikalus1988/MisakaNet/commit/957ab2bf0a8c5902c3da34dc2a0040b0b45b6ed3))
+* **cindy:** 1.5.13 已提审（submission cmwtyv1580289yv01o0993nts） ([#5665](https://github.com/Ikalus1988/MisakaNet/issues/5665)) ([f69917f](https://github.com/Ikalus1988/MisakaNet/commit/f69917f7a9c3bb63b8faac4781ac691b4b5742b6))
+* **cindy:** 1.5.15 已提审（submission cmwudnny…），并记下「提审快照必须是重装后的副本」 ([#5692](https://github.com/Ikalus1988/MisakaNet/issues/5692)) ([1ed58a6](https://github.com/Ikalus1988/MisakaNet/commit/1ed58a684ff4e479ec3aa066fa1835d0a8ee18c7))
+* **cindy:** 三处告诉老用户「从插件市场装」 ([#5674](https://github.com/Ikalus1988/MisakaNet/issues/5674)) ([b1369d6](https://github.com/Ikalus1988/MisakaNet/commit/b1369d6e3e71063612268556de8d1bd4e57d57c9))
+* **cindy:** 待办清单补 1.5.14（failure 模式那版）与看护任务 ([#5672](https://github.com/Ikalus1988/MisakaNet/issues/5672)) ([325af32](https://github.com/Ikalus1988/MisakaNet/commit/325af32dc18effe3e0ea5e4a7b9aec62f9a0f356))
+* **handoff:** vol 46 — 90% of a month's D1 reads came from one statement, and the three layers that make it visible ([#5685](https://github.com/Ikalus1988/MisakaNet/issues/5685)) ([15110c7](https://github.com/Ikalus1988/MisakaNet/commit/15110c77eef96387a2763643170e4f88fc171cb3))
+* **health:** the repo is active — the automation is — and review capacity is being traded for noise ([#5631](https://github.com/Ikalus1988/MisakaNet/issues/5631)) ([6ac26af](https://github.com/Ikalus1988/MisakaNet/commit/6ac26af72652d1b59b1d7b85a0caf5b1b8a40054))
+* **roadmap:** retract "nobody activates" — authorize/pair are the human pairing door ([#5630](https://github.com/Ikalus1988/MisakaNet/issues/5630)) ([6da7c19](https://github.com/Ikalus1988/MisakaNet/commit/6da7c1931c49ddc30d8a6e322cb34bb515f98069))
+* **roadmap:** the 2026-11-23 reading — installs decay, API traffic is flat, half the queue is generated ([#5628](https://github.com/Ikalus1988/MisakaNet/issues/5628)) ([28d5fd7](https://github.com/Ikalus1988/MisakaNet/commit/28d5fd76a7a60bdc6e3cc7a467afcbe4a11c35dc))
+
+
+### Tests
+
+* the suite runs on a machine that has a proxy and a token ([#5615](https://github.com/Ikalus1988/MisakaNet/issues/5615)) ([0b0fc1e](https://github.com/Ikalus1988/MisakaNet/commit/0b0fc1e985a7919e886785bdfc4664ce5f0d95d9))
+
 ## [3.20.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.19.0...v3.20.0) (2026-11-23)
 
 
