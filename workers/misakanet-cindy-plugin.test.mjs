@@ -1251,6 +1251,9 @@ test('a real-shaped tool_result is recognised, and the failure carries the comma
   const query = JSON.parse(search.body).params.arguments.query;
   assert.match(query, /npm run build/, 'the query must carry the failing command');
   assert.match(query, /exit code 7/, 'the query must carry the failure text');
+  // 整段会被截到 120 字：summary（宿主总结的「哪儿错了」）必须排在前面，不能被命令行挤掉。
+  assert.ok(query.indexOf('exit code 7') < query.indexOf('npm run build'),
+    'the summary must come before the command excerpt');
 
   // 查过了就不再啰嗦：装配消息时宿主应收到 allow（而不是再提一次「先查」）。
   const hooks = [];
@@ -1292,6 +1295,72 @@ test('the state file is written once per turn, not once per tool event', async (
   const writesAfter = load.writeAttempts;
   assert.ok(writesAfter - writesBefore <= 2,
     `six tool events must not mean six state writes (got ${writesAfter - writesBefore})`);
+});
+
+test('a later, different failure is searched again', async () => {
+  // 整个会话只查一次是不够的：会话很长、后面又失败时，上一次查到的教训对不上这次的报错。
+  const load = await loadPlugin({ respond: () => ({ results: [] }) });
+  const fail = async (callId, command) => {
+    await load.stub.handler({
+      type: 'event',
+      name: 'did-tool-execution',
+      data: {
+        sessionId: 's-again',
+        eventType: 'tool_use',
+        payload: { toolUseId: callId, toolName: 'bash', input: { command } },
+      },
+    });
+    await load.stub.handler({
+      type: 'event',
+      name: 'did-tool-execution',
+      data: {
+        sessionId: 's-again',
+        eventType: 'tool_result',
+        payload: { summary: 'exit code 1', toolUseIds: [callId] },
+      },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    await load.stub.handler({ type: 'event', name: 'did-turn-end', data: { sessionId: 's-again' } });
+    await new Promise((resolve) => setTimeout(resolve, 60));
+  };
+  await fail('call_a', 'npm run first');
+  const afterFirst = load.requests.filter((r) => JSON.parse(r.body).params.name === 'misakanet_search').length;
+  assert.equal(afterFirst, 1, 'the first failure must be searched once');
+  await fail('call_b', 'cargo build second');
+  const searches = load.requests.filter((r) => JSON.parse(r.body).params.name === 'misakanet_search');
+  assert.equal(searches.length, 2, 'a new failure must be searched again');
+  const lastQuery = JSON.parse(searches[1].body).params.arguments.query;
+  assert.match(lastQuery, /cargo build second/, 'the second search must carry the second failure');
+});
+
+test('a search the agent did itself stops the plugin from searching again', async () => {
+  // 「agent 自己查过」与「插件代查过」必须分开：agent 查过 → 插件不再重复查；
+  // 但老版本把这两个含义塞进同一个 searched 标记，导致老会话之后再失败也永远查不到。
+  const load = await loadPlugin({ respond: () => ({ results: [] }) });
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-tool-execution',
+    data: {
+      sessionId: 's-agent',
+      eventType: 'tool_use',
+      payload: { toolName: 'misakanet_search', input: { query: 'x' } },
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  await load.stub.handler({
+    type: 'event',
+    name: 'did-tool-execution',
+    data: {
+      sessionId: 's-agent',
+      eventType: 'tool_result',
+      payload: { summary: 'exit code 1', toolUseIds: ['call_agent'] },
+    },
+  });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  await load.stub.handler({ type: 'event', name: 'did-turn-end', data: { sessionId: 's-agent' } });
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  const searches = load.requests.filter((r) => JSON.parse(r.body).params.name === 'misakanet_search');
+  assert.equal(searches.length, 0, 'the agent already searched → the plugin must not search again');
 });
 
 test('the generated community package loads and answers too', async () => {
