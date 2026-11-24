@@ -6109,6 +6109,25 @@ function mcpSseResponse(body, status = 200, extraHeaders = {}) {
  * a JSON-RPC error frame cannot tell "your request is broken" from "the server failed". `preflight`
  * runs first and returns that Response, or `null` to stream.
  */
+/**
+ * Is this POST a JSON-RPC notification (no `id`)?
+ *
+ * Both the spec and `handleMcpRequest` answer one with `202 Accepted` and an empty body. The SSE
+ * wrapper cannot represent that: a stream is already a 200 by the time it starts, and `JSON.parse("")`
+ * on the empty body used to be re-framed as `-32603 internal error: the handler did not return JSON`
+ * — a failure the client never asked for, sent to every spec-following client right after
+ * `notifications/initialized` (#5694). Batch requests are not notifications, so they stay on the
+ * streamed path.
+ */
+async function isJsonRpcNotification(request) {
+  try {
+    const parsed = JSON.parse(await request.clone().text());
+    return Boolean(parsed) && typeof parsed === "object" && !Array.isArray(parsed) && parsed.id === undefined;
+  } catch {
+    return false;
+  }
+}
+
 function mcpSseStreamedResponse(work, preflight = null) {
   if (typeof preflight === "function") {
     const rejected = preflight();
@@ -6137,7 +6156,25 @@ function mcpSseStreamedResponse(work, preflight = null) {
       let body;
       try {
         const response = await work();
+        // 202/204 mean "there is no answer" (a notification). Emitting a frame here would invent one
+        // — and an error frame at that (#5694). The comment above is the whole response.
+        if (response.status === 202 || response.status === 204) {
+          try {
+            controller.close();
+          } catch {
+            // Already closed.
+          }
+          return;
+        }
         const text = await response.text();
+        if (!text.trim()) {
+          try {
+            controller.close();
+          } catch {
+            // Already closed.
+          }
+          return;
+        }
         try {
           body = JSON.parse(text);
         } catch {
@@ -11199,6 +11236,12 @@ export default {
       const accept = request.headers.get("Accept") || "";
       const useSse = accept.includes("text/event-stream");
       if (useSse) {
+        // A notification has no answer at all (202, empty body). Wrapping that in a stream would force
+        // the status to 200 and, worse, turn "nothing" into a `-32603` message frame — so it takes the
+        // JSON path even when the client advertised SSE (#5694).
+        if (await isJsonRpcNotification(request)) {
+          return handleMcpRequest(request, env, false, ctx);
+        }
         // Streamed so the first byte escapes the buffer (#4072); the work itself runs in JSON mode and
         // its response is re-framed as the SSE `message` event.
         return mcpSseStreamedResponse(() => handleMcpRequest(request, env, false, ctx),
