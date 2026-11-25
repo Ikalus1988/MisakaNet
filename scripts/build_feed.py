@@ -9,6 +9,7 @@ Output: docs/data/feed.json
 No token required. GitHub API calls degrade gracefully to empty arrays on failure.
 """
 import json
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -17,6 +18,75 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 LESSONS_PATH = REPO_ROOT / "data" / "lessons.json"
 OUTPUT_PATH = REPO_ROOT / "docs" / "data" / "feed.json"
+
+# ── landing order ─────────────────────────────────────────────────────────────────────────────────
+# The homepage renders `(feed.items || []).slice(0, LATEST_LIMIT)` — the *first five items of this
+# array*, nothing else — so a reader's whole impression of the feed is decided by the ordering below.
+# Measured 2026-10-23: three of those five were repository plumbing (`chore(main): release 3.22.0`,
+# `chore(data): 市场在售版本更新…`, `chore: auto-update lessons.json…`) — true, timestamped, and worth
+# nothing to a visitor who is not the maintainer.
+#
+# The fix is ordering, not filtering: `items` stays complete and every field keeps its name and shape
+# (other consumers read this file), only the release/bookkeeping entries move behind the human ones.
+# Which entries those are is one predicate, `is_release_bookkeeping`, so the rule is testable on its own
+# instead of being a scattered pile of `"chore" in title` checks.
+LANDING_LIMIT = 5  # the number of items the homepage actually shows
+
+# Conventional-commit types that produce no reader-facing story: version bumps, snapshot refreshes,
+# formatting, CI wiring. A `feat`/`fix`/`perf` on the same subject stays human — only the *type* decides.
+ROUTINE_COMMIT_TYPES = frozenset({"chore", "build", "ci", "style", "test", "docs"})
+
+# Titles that never adopted a conventional prefix but are the same plumbing (a release bot, a snapshot
+# sync). Anchored at the start so a human PR that merely *mentions* release work ("fix: release notes
+# dropped the 2.48.0 section") is not demoted by a substring match.
+_RELEASE_TITLE_RE = re.compile(
+    r"^\s*(?:release[- ]please|release|auto[- ]?update|bump version|version bump)\b",
+    re.IGNORECASE,
+)
+
+_CONVENTIONAL_RE = re.compile(r"^\s*(?P<type>[A-Za-z]+)(?:\((?P<scope>[^)]*)\))?!?\s*:")
+
+
+def _conventional_type(title: str) -> str | None:
+    """`"chore(main): release 3.22.0"` -> `"chore"`; a non-conventional title -> `None`."""
+    match = _CONVENTIONAL_RE.match(title or "")
+    return match.group("type").lower() if match else None
+
+
+def is_release_bookkeeping(item: dict) -> bool:
+    """True when this item is release/automation plumbing rather than a story for a visitor.
+
+    Lessons and challenges are human by construction — a lesson title formatted like a commit must not
+    be hidden. Only merged PRs carry commit subjects, so only they are classified.
+    """
+    if item.get("type") != "merged_pr":
+        return False
+    title = str(item.get("title") or "")
+    commit_type = _conventional_type(title)
+    if commit_type is not None:
+        return commit_type in ROUTINE_COMMIT_TYPES
+    return bool(_RELEASE_TITLE_RE.match(title))
+
+
+def landing_items(items: list[dict]) -> list[dict]:
+    """Order `items` so the homepage's first `LANDING_LIMIT` entries are worth reading.
+
+    A stable partition: bookkeeping moves behind everything else, and the incoming order is preserved
+    *within* both groups, so the newest-first ordering of `feat`/`fix`/`perf` entries is untouched.
+    Nothing is dropped and no field is rewritten — the returned list has the same length and the same
+    items as the input.
+
+    When there is nothing human to promote (every entry is plumbing), the original order is returned
+    rather than an empty or wholesale-reversed view: an all-`chore` feed is honest, an empty one reads
+    as "nothing happened".
+    """
+    human: list[dict] = []
+    routine: list[dict] = []
+    for item in items:
+        (routine if is_release_bookkeeping(item) else human).append(item)
+    if not human:
+        return list(items)
+    return human + routine
 
 
 def load_recent_lessons(limit: int = 5) -> list[dict]:
@@ -93,6 +163,9 @@ def build_feed() -> dict:
     items = lessons + prs + challenges
     # Sort by timestamp descending
     items.sort(key=lambda i: i.get("timestamp", ""), reverse=True)
+    # …then let the human entries lead the homepage. `item_count` is taken after this, so it still
+    # counts everything: reordering must never look like a shrinking feed.
+    items = landing_items(items)
 
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
