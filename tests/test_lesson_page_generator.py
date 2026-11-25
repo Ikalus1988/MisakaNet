@@ -679,3 +679,21 @@ def test_only_lesson_pages_get_structured_data():
     for path, html in topic_pages.items():
         assert "application/ld+json" not in html, f"{path} carries article structured data"
         assert "{json_ld}" not in html, f"{path} still carries the unformatted placeholder"
+
+
+def test_the_generator_writes_lf_on_every_platform(tmp_path):
+    """Pages and the manifest must be LF, or a Windows run commits 1159 whole-file diffs.
+
+    `Path.write_text` translates a newline to `os.linesep`; before this was pinned, running the
+    generator on Windows rewrote every page with CRLF (caught by
+    `tests/test_tracked_text_files_are_lf.py` on 2026-11-25, not by review).
+    """
+    newline = chr(10)
+    files = {"docs/lessons/x/index.html": "<html>one" + newline + "two" + newline + "</html>" + newline}
+    blp.sync(files, root=tmp_path)
+    crlf = bytes([13, 10])
+    page = (tmp_path / "docs/lessons/x/index.html").read_bytes()
+    assert crlf not in page, "the page must be written with LF, never the platform separator"
+    manifest = (tmp_path / blp.MANIFEST).read_bytes()
+    assert crlf not in manifest, "the manifest must be written with LF"
+

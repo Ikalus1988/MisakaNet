@@ -1031,12 +1031,21 @@ def sync(files: dict[str, str], *, root: Path = REPO,
     for rel, text in files.items():
         path = root / rel
         try:
-            current = path.read_text(encoding="utf-8")
+            # `newline=""` keeps the comparison byte-faithful. Without it `read_text` normalises CRLF
+            # to LF, so a page already written with CRLF compares *equal* to the planned text and is
+            # never repaired — the drift becomes invisible to the very writer that should fix it
+            # (measured 2026-11-25: 1159 pages kept their CRLF through a full regeneration).
+            current = path.read_text(encoding="utf-8", newline="")
         except OSError:
             current = None
         if current != text:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(text, encoding="utf-8")
+            # `newline="\n"` is load-bearing, not tidiness: Python's text writer translates `\n` to
+            # the platform's separator, so on Windows this generator used to rewrite all 1159 pages
+            # with CRLF — a whole-file diff on every page where the real change is invisible, which
+            # is exactly what `tests/test_tracked_text_files_are_lf.py` exists to stop (caught on
+            # 2026-11-25 by running the generator here instead of on CI's Linux).
+            path.write_text(text, encoding="utf-8", newline="\n")
             result["written"].append(rel)
 
     for rel in sorted(discover_generated(root) - set(files)):
@@ -1063,7 +1072,7 @@ def sync(files: dict[str, str], *, root: Path = REPO,
                     "pages": sorted(files),
                     "slugs": dict(sorted(slug_map.items()))},
                    indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8")
+        encoding="utf-8", newline="\n")
     return result
 
 

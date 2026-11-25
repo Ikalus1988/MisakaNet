@@ -176,10 +176,24 @@ def build_feed() -> dict:
     }
 
 
+def write_feed(feed: dict, path: Path = OUTPUT_PATH) -> Path:
+    """Write the feed with LF endings, whatever platform this runs on.
+
+    `newline="\n"` is load-bearing: Python's text writer translates `\n` to the platform
+    separator, so on Windows this script used to produce a 136-line CRLF file — a whole-file diff
+    where the real change is invisible. `tests/test_tracked_text_files_are_lf.py` is the gate for
+    that, and `test_feed_landing_yield.py` pins this function so a Windows run cannot slip past it.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(feed, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8", newline="\n")
+    return path
+
+
 def main():
     feed = build_feed()
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_PATH.write_text(json.dumps(feed, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    write_feed(feed)
     print(f"Feed written to {OUTPUT_PATH}: {feed['item_count']} items")
     print(f"  lessons: {sum(1 for i in feed['items'] if i['type'] == 'lesson')}")
     print(f"  merged_prs: {sum(1 for i in feed['items'] if i['type'] == 'merged_pr')}")
