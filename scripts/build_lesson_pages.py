@@ -1036,12 +1036,12 @@ def sync(files: dict[str, str], *, root: Path = REPO,
             current = None
         if current != text:
             path.parent.mkdir(parents=True, exist_ok=True)
-            # `newline="\n"` is load-bearing, not tidiness: Python's text writer translates `\n` to
-            # the platform's separator, so on Windows this generator used to rewrite all 1159 pages
-            # with CRLF — a whole-file diff on every page where the real change is invisible, which
-            # is exactly what `tests/test_tracked_text_files_are_lf.py` exists to stop (caught on
-            # 2026-11-25 by running the generator here instead of on CI's Linux).
-            path.write_text(text, encoding="utf-8", newline="\n")
+            # No `newline=`: the comparison above goes through `read_text`, which normalises the
+            # platform's separator, so rewriting an unchanged page never happens — and a page that
+            # *does* change has to match the checkout it lands in. Pinning `\n` here was tried on
+            # 2026-11-25 and made `windows-latest` (whose checkouts carry CRLF) report every
+            # regenerated page as modified, which is the same failure in a different direction.
+            path.write_text(text, encoding="utf-8")
             result["written"].append(rel)
 
     for rel in sorted(discover_generated(root) - set(files)):
@@ -1063,12 +1063,23 @@ def sync(files: dict[str, str], *, root: Path = REPO,
     # The lesson-id -> slug map is what makes URLs sticky across title edits; keep
     # the previous map when the caller does not supply one.
     slug_map = slugs if slugs is not None else load_slug_map(root)
-    (root / MANIFEST).write_text(
-        json.dumps({"generator": "scripts/build_lesson_pages.py",
-                    "pages": sorted(files),
-                    "slugs": dict(sorted(slug_map.items()))},
-                   indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8", newline="\n")
+    # Written only when the document actually changes (2026-11-25). This used to be an
+    # unconditional `write_text`, so every run rewrote the file with the platform's line ending:
+    # on `windows-latest` that flipped a committed LF manifest to CRLF and
+    # `test_lesson_source_contract.py::test_the_generators_are_a_no_op_on_an_unchanged_corpus`
+    # reported ` M docs/.generated-pages.json` on a corpus that matched. "A no-op on an unchanged
+    # corpus" has to mean the bytes too.
+    manifest_text = json.dumps({"generator": "scripts/build_lesson_pages.py",
+                                "pages": sorted(files),
+                                "slugs": dict(sorted(slug_map.items()))},
+                               indent=2, ensure_ascii=False) + "\n"
+    try:
+        current_manifest = (root / MANIFEST).read_text(encoding="utf-8")
+    except OSError:
+        current_manifest = None
+    if current_manifest != manifest_text:
+        (root / MANIFEST).write_text(manifest_text, encoding="utf-8")
+        result["written"].append(str(MANIFEST))
     return result
 
 
