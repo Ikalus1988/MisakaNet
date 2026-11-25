@@ -46,11 +46,11 @@ TARGET = REPO / ".cindy-plugin-community"
 #: The community channel's version line. Deliberately offset from the official one (1.6.x) so the
 #: two channels never take the same version slot on the same plugin id. Bump it when the community
 #: package is published; keep it below the official line.
-COMMUNITY_VERSION = "1.5.19"  # 1.5.15 被审核退回（版本号已烧掉）→ 这一版走 1.5.16
+COMMUNITY_VERSION = "1.5.20"  # 1.5.15 被审核退回（版本号已烧掉）→ 这一版走 1.5.16
 
 #: The community channel's own release story. The official package carries the official one.
 COMMUNITY_RELEASE_NOTES = (
-    '这一版补上内网地址的脱敏，并把提示改成不承诺「全都替换了」（相对上一上架的 1.5.14）。审核指出：预览说「令牌、密钥、内网地址、邮箱已替换成占位符」，可规则里没有私网 IP——像 192.168.1.10 会原样显示、原样提交；令牌与密钥也只能识别部分格式。现在新增 private_ip 规则（RFC1918 / 回环 / link-local / CGNAT 都覆盖），worker 的两处实现、插件本身、CLI 钩子的 Node 与 Python 双胞胎一起同步；卡片文案改成「能识别的已经换成占位符，识别不了的会原样保留，请逐项核对一遍」。预览即外发、全字段绑定、用户自己发回的 6 位短码授权，这三件事不变。**从市场装的版本会自动更新；从 .cindy 文件装的不会**。版本号继续与官方通道错开（官方 1.6.x / 社区 1.5.x）。'
+    '这一版把上报的确认从「手打一串短码」换成**一键点卡**（相对上一上架的 1.5.19）——上一版为了让授权真的来自用户本人，代价是你得复制 6 个字符、再发一条消息；这一版把这个摩擦去掉：卡片上直接有「确认提交」按钮，你点一下就够了。点击之后宿主会把这次点击连同一次性通行票交回插件，插件据此换回一轮对话，那一轮里由 agent 带着票据把内容提交出去；票据只对你点过的那一版原文有效、15 分钟内有效、用一次即作废，改一个字都要重新确认。没有点击就没有票据，插件一个请求都不会发；卡片画不出来或宿主不支持这种「点击后继续」时，直接停发并说明原因。同时不再订阅你的消息内容（上一版为了认短码才需要），预览仍然就是将要外发的那份文本（全字段脱敏、全字段绑定）。**从市场装的版本会自动更新；从 .cindy 文件装的不会**。版本号继续与官方通道错开（官方 1.6.x / 社区 1.5.x）。'
 )
 
 #: The three substitutions, as (label, file, pattern, replacement).

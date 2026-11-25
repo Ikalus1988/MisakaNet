@@ -5,8 +5,8 @@
   "name": "MisakaNet 故障记忆",
   "description": "把 MisakaNet 公开故障教训库接进对话：报错、CI 失败、构建或工具崩溃前，先查别人踩过并写清修法。四个查询工具匿名只读，只访问 misakanet.org，无凭证；misakanet_submit_intake 在用户明确确认后，把故障或提问写成公开仓库 Ikalus1988/MisakaNet 的 GitHub issue（公开可见，提交前脱敏），me_inbox 可回头查答复。装上后首轮有轻提示，每 20 轮提醒沉淀；不发你的文件、对话与凭证。发给端点的只有查询词与自报标签（客户端名、版本、系统、随机客户端 id，用于统计独立客户端）；按会话的轮次计数只留本地不上传。",
   "whenToUse": "遇到报错、异常、CI 失败、构建失败、工具崩溃或环境诡异行为时找我，先查这个坑是否已有公开教训；也想查某个技术栈、工具或平台的既往故障与修法时找我；用户之前提过问题、想知道维护者答没答时找我；执行迁移、批量导入等高风险操作之前，也可以找我做一次只读风险预检。",
-  "version": "1.6.9",
-  "releaseNotes": "1.6.9：补上内网地址的脱敏规则，并把卡片文案改成不承诺「全都替换了」。审核 2026-11-24 指出：预览说「令牌、密钥、内网地址、邮箱已替换」，但规则里没有私网 IP（如 192.168.1.10 会原样显示并提交），令牌与密钥也只是识别部分格式。现在新增 private_ip 规则（RFC1918 / 回环 / link-local / CGNAT），四处脱敏实现（worker 两处、插件、CLI 钩子的 Node 与 Python 双胞胎）同步；卡片改成「能识别的已经换成占位符，识别不了的会原样保留，请逐项核对」，预览与短码绑定不变。",
+  "version": "1.6.10",
+  "releaseNotes": "1.6.10：上报的确认从「用户手打短码」换成**一键点卡**。用户点卡片上的「确认提交」→ 宿主把点击连同一次性 action token 交回插件（`agent` 能力）→ 插件铸一张绑定这版原文的票据并 `cindy.agent.run` 换回一轮 → 那一轮里的 agent 带 `click_ticket` 调 `misakanet_submit_intake`，外发发生在它的在途调用里。授权链没有变松：点击必须是真的（宿主独占派发、token 一次性）、票据绑定内容且 15 分钟一次性、没有票就一个请求都不发；卡供不出来或不支持 `agent` 时 `CARD_UNAVAILABLE` / `CLICK_GATE_UNAVAILABLE` 停发。同时去掉 `message` 主题订阅（不再需要读用户消息）。预览即外发（全字段脱敏 + 全字段绑定）不变。",
   "author": "Ikalus1988",
   "entry": "main.js",
   "command": "misakanet",
@@ -16,8 +16,7 @@
   "subscribe": {
     "topics": [
       "turn",
-      "tool-execution",
-      "message"
+      "tool-execution"
     ],
     "hooks": [
       "will-compose-context"
@@ -130,7 +129,7 @@
     },
     {
       "name": "misakanet_submit_intake",
-      "description": "把一次没有现成教训覆盖的故障或一个求助问题交给 MisakaNet：在公开仓库 Ikalus1988/MisakaNet 建一个 intake issue，供维护者与其他 Agent 复用。联网目标只有 misakanet.org；problem 等字段会原样发给 misakanet.org 并**公开发布到 GitHub**。**发出后不可撤回**：第一次调用只摆出将要公开的原文并给一个 6 位短码，**不会**提交任何东西；把那段原文给用户看，并请用户**本人**把短码发回来（你转述不算），用户发来之后再带 code 调用一次才真正创建 issue。短码 15 分钟有效，只对这一版原文有效，用一次即作废。仍然需要 user_confirmed=true（绝不自行推断为 true），提交前先脱敏掉密钥、令牌、内网地址与个人信息。kind 省略时由服务端自动判定（提问类会开成 [Question] issue 等待人工回答，故障类进维护者评审）。失败按三态区分：确定没发出去才说可以重试；不确定（可能已建 issue、只是回执没回来）不要重发，改用完全相同的 problem 文本再调一次（端点按内容去重），或用 misakanet_me_inbox 查。返回 { intake_id, status, dedup_key, routing, poll_hint, redactions_applied, quality_score, receipt, answer?, converted? }。",
+      "description": "把一次没有现成教训覆盖的故障或一个求助问题交给 MisakaNet：在公开仓库 Ikalus1988/MisakaNet 建一个 intake issue，供维护者与其他 Agent 复用。联网目标只有 misakanet.org；problem 等字段会原样发给 misakanet.org 并**公开发布到 GitHub**。**发出后不可撤回**，所以有两步：① 第一次调用只把将要公开的原文（已机械脱敏）摆成一张卡，**不提交任何东西**；用户自己点卡上的「确认提交」之后，插件会换回一轮对话并把 `click_ticket` 交给你；② 照着带票据再调一次，那一次才真正创建 issue。票据绑定这一版原文、15 分钟、用一次即作废；改了任何一个字段都会要求重新确认。仍然需要 user_confirmed=true（绝不自行推断为 true）。kind 省略时由服务端自动判定（提问类会开成 [Question] issue 等待人工回答，故障类进维护者评审）。失败按三态区分：确定没发出去才说可以重试；不确定（可能已建 issue、只是回执没回来）不要重发，改用完全相同的 problem 文本再调一次（端点按内容去重），或用 misakanet_me_inbox 查。返回 { intake_id, status, dedup_key, routing, poll_hint, redactions_applied, quality_score, receipt, answer?, converted? }。",
       "parameters": {
         "type": "object",
         "properties": {
@@ -184,9 +183,9 @@
             "type": "boolean",
             "description": "仅在用户明确要求把这次故障上报到 MisakaNet 公开仓库后才传 true；绝不能自行推断或默认传 true。"
           },
-          "code": {
+          "click_ticket": {
             "type": "string",
-            "description": "用户自己发回来的 6 位授权短码（第一次调用会返回它；只有用户本人把它发回来之后，带它再调一次才会真正提交）。"
+            "description": "用户在确认卡上点「确认提交」之后，插件换回的那一轮里给的一次性票据。第一次调用不会返回它：第一次只摆卡，点击才会产生票据。"
           }
         },
         "required": [
@@ -215,5 +214,6 @@
       }
     }
   ],
-  "card": {}
+  "card": {},
+  "agent": {}
 }

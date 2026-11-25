@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-11-24T13:57:42.218464+00:00",
+  "generated_at": "2026-11-24T23:56:59.406672+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
+      "title": "feat(cindy-plugin): 1.5.19 —— 短码闸门 + 预览即外发；补上内网地址脱敏",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5710",
+      "timestamp": "2026-11-24T16:57:07Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): vol 47 — 确认闸门该由谁按下，与 MCP 的「没有回答」",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5712",
+      "timestamp": "2026-11-24T15:09:51Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(lessons): intake batch 2026-11-24",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5706",
+      "timestamp": "2026-11-24T14:22:09Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5705",
+      "timestamp": "2026-11-24T14:16:38Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "feat(lessons): intake batch 2026-11-24",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/5699",
       "timestamp": "2026-11-24T09:39:03Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "fix(mcp): 通知的「没有回答」不再被包成一帧错误（SSE 路径）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5698",
-      "timestamp": "2026-11-24T09:36:03Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "release(cindy-plugin): 1.5.16 —— 按审核意见改：不预置确认、卡不出来就不发",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5695",
-      "timestamp": "2026-11-24T09:16:34Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(main): release 3.21.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5610",
-      "timestamp": "2026-11-24T08:11:19Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(cindy): 1.5.15 已提审，并记下「提审快照必须是重装后的副本」",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5692",
-      "timestamp": "2026-11-24T07:51:04Z",
       "source": "github"
     },
     {
@@ -73,10 +73,10 @@
     },
     {
       "type": "lesson",
-      "title": "A checked-in Codex skill can exist without being available to the client. Root C",
-      "url": "lessons/contrib/a-checked-in-codex-skill-can-exist-without-being-available.md",
-      "timestamp": "2026-11-23",
-      "domain": "mcp",
+      "title": "在 Windows（中文系统）用 Node 子进程调 WinRAR UnRAR.exe 列目录（`lb`）拿到文件名，再用该文件名调 `p` 提",
+      "url": "lessons/contrib/在-windows中文系统用-node-子进程调-winrar-unrarexe.md",
+      "timestamp": "2026-11-24",
+      "domain": "windows",
       "source": "lessons"
     },
     {

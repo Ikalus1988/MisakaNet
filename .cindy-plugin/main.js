@@ -21,7 +21,7 @@ const FETCH_TIMEOUT_MS = 45000;
 // 它按不可逆外发处理，不确定态只能提示先核对远端状态。
 const READ_TIMEOUT_MS = 20000;
 const READ_RETRY_BACKOFF_MS = 400;
-const PLUGIN_VERSION = '1.6.9';
+const PLUGIN_VERSION = '1.6.10';
 
 /* 客户端标识：每台机器一个稳定 id。
  * 端点会把 X-MisakaNet-Client salt-hash 进 search_signals.client_hint，而 client_hint 是
@@ -498,10 +498,21 @@ async function callReadTool(toolName, args, callId) {
  * 墓碑或一次性票据。
  */
 
-/** 把将要公开的内容排成一张卡：只披露、不放按钮，并给出授权短码。
- *  按钮会派生一个不可外发的卡位（见上面的注释），点了只会让人以为提交了；
- *  真正表示同意的是用户**自己打回来**的那 6 个字符。 */
-function renderIntakeCard(args, code) {
+/** 这一轮里 agent 真的调用过 misakanet_submit_intake（用来收掉「要不要沉淀」那个备选）。 */
+let agentSubmitted = false;
+function escapeHtml(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+const CARD_ACTION_CONFIRM = 'intake-confirm';
+const CARD_ACTION_CANCEL = 'intake-cancel';
+
+/** 把将要公开的内容排成一张卡：整段披露 + 两个按钮。 */
+function renderIntakeCard(args) {
   // 遍历**将要外发的那份参数**，不另抄一份字段表：漏掉一个字段（2026-11-24 的审核就是
   // 因为 `matched_lesson_id` 没进预览、确认之后还能被改）就是把「预览」变成一句声明。
   const fields = INTAKE_ARGS
@@ -524,28 +535,24 @@ function renderIntakeCard(args, code) {
     '它会在公开仓库 Ikalus1988/MisakaNet 建一条<b>公开</b> issue，发出后不可撤回。' +
     '下面是**已经机械脱敏、且将要原样发出去**的文本。能识别的令牌、私钥、邮箱、内网 IP、' +
     '本机路径已经换成占位符；识别不了的（少见格式的密钥、主机名、人名等）会原样保留——' +
-    '**请逐项核对一遍**，确认没有问题再用短码授权。' +
+    '**请逐项核对一遍**，确认没问题再点「确认提交」。' +
     '</div>' +
     '<div>' + rows + '</div>' +
-    (code
-      ? '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border-default, #e4e4e0);font-size:13px">' +
-        '同意就把它发回来（打这几个字符，直接发一条消息）：' +
-        '<b style="font-size:16px;letter-spacing:2px">' + escapeHtml(code) + '</b>' +
-        '<div style="color:var(--text-secondary, #6b6b6b);font-size:12px;margin-top:4px">' +
-        '15 分钟内有效，只对这一版原文有效；不发就什么都不提交。</div></div>'
-      : '') +
-    '</div>'
+    '<div style="display:flex;gap:8px;margin-top:10px">' +
+    '<button data-ghost-action="' + CARD_ACTION_CONFIRM + '" data-ghost-primary>确认提交</button>' +
+    '<button data-ghost-action="' + CARD_ACTION_CANCEL + '">不提交</button>' +
+    '</div></div>'
   );
 }
 
 /** 供卡；宿主画不出来时返回 false（调用方必须停止发送，不能降级成直发）。 */
-async function supplyIntakeCard(callId, args, code) {
+async function supplyIntakeCard(callId, args) {
   try {
     const sent = await cindy.send({
       type: 'card-update',
       callId,
       v: 2,
-      html: renderIntakeCard(args, code),
+      html: renderIntakeCard(args),
       height: 460,
     });
     return !!(sent && sent.ok !== false);
@@ -554,55 +561,65 @@ async function supplyIntakeCard(callId, args, code) {
   }
 }
 
-/* ---------- 授权短码：用户自己打的那几个字符就是同意 ---------- */
-
-/*
- * 为什么不用宿主确认框（`cindy.confirm`）：它**按来源呈现**——不带移动来源时确认框落在桌面，
- * 只有从插件自己的移动端页面发起（带 mobilePageId）才由手机原生弹。手机是主要场景，而
- * 「弹到桌面去」等于手机上提交不了。
- * 为什么不回到卡片按钮：卡片动作派生的 `spawnCallId` 是卡位、不是一次工具调用（手册 §4.5），
- * 点击后插件自己发起的 `cindy.fetch` 拿不到宿主代发——2026-11-24 真机实测：点击到了、
- * 0 ms 内被网络闸拒、GitHub 上什么都没建，而用户以为提交了。市场审核又要求**不要**自主联网
- * 授权，所以这条路封死。
- *
- * 现在的形状：**卡片负责披露，用户自己打的短码负责授权**。
- *   ① 工具调用先摆一张卡，整段原文在上面，并给出一个 6 位短码；
- *   ② 用户在自己那侧的聊天里把码发回来（桌面、手机都成立）——`will-user-message` 钩子只从
- *      **用户消息**里认这个码，agent 转述不算，所以信任没法被 agent 伪造；
- *   ③ agent 再带 `code` 调一次，插件核对「同一个码 + 同一段原文」才在**这次在途调用**里发出去。
- * 授权因此来自用户本人、绑定具体内容、一次性、有有效期，且不需要任何联网授权。
- */
-const AUTHORIZATION_ALPHABET = 'ACDEFGHJKLMNPQRTUVWXY34679';
-const AUTHORIZATION_TTL_MS = 15 * 60 * 1000;
-const AUTHORIZATION_LENGTH = 6;
-const pendingAuthorizations = new Map();
-
-/** 短码用密码学随机源生成；拿不到 CSPRNG 就失败，不降级成弱随机。 */
-function mintAuthorizationCode() {
-  const cryptoObj = typeof globalThis === 'object' && globalThis ? globalThis.crypto : undefined;
-  if (!cryptoObj || typeof cryptoObj.getRandomValues !== 'function') {
-    const err = new Error('crypto.getRandomValues 不可用，拒绝用弱随机生成授权短码');
-    err.code = 'MISAKANET_NO_CSPRNG';
-    err.hint = err.message;
-    throw err;
+/** 供卡 / 改卡。宿主拒收（unknown-call / rate-limited）时返回 false——
+ *  调用方必须另找一条看得见的出路，不能默认卡已经画上去了。 */
+async function sendCardUpdate(payload) {
+  try {
+    const sent = await cindy.send(Object.assign({ v: 2 }, payload));
+    return !!(sent && sent.ok !== false);
+  } catch (error) {
+    return false;
   }
-  const alphabet = AUTHORIZATION_ALPHABET;
-  const limit = Math.floor(256 / alphabet.length) * alphabet.length;
-  const chars = [];
-  const bytes = new Uint8Array(32);
-  while (chars.length < AUTHORIZATION_LENGTH) {
-    cryptoObj.getRandomValues(bytes);
-    for (let i = 0; i < bytes.length && chars.length < AUTHORIZATION_LENGTH; i += 1) {
-      if (bytes[i] < limit) chars.push(alphabet[bytes[i] % alphabet.length]);
-    }
-  }
-  return chars.join('');
 }
 
-/** 内容指纹：短码只对**这一段原文**有效，改一个字都不行。 */
-/** 内容指纹：短码只对**这一段原文**有效，改一个字都不行。
+/** 卡画不出来时的可见出路：通知是独立通道（真机上一直能用）。 */
+async function announce(text) {
+  await notify(text, 'info');
+}
+
+/* ---------- 一键确认：点击 → 一次性票据 → 一轮 agent ---------- */
+
+/*
+ * 这是 1.5.15–1.5.19 三轮真机验证之后定下来的形状。被否掉的两条路：
+ *   · **卡片按钮直接发**：点击派生的 `spawnCallId` 是卡位、不是一次工具调用（手册 §4.5），
+ *     插件自己发起的 `cindy.fetch` 拿不到宿主代发——真机上点击到达、0 ms 被网络闸拒、
+ *     仓库里什么都没建；而市场审核要求不要自主联网授权，所以这条路永远走不通。
+ *   · **让用户手打一串短码**：它满足审核（授权来自用户本人），但摩擦落在用户身上
+ *     （1.5.19 的实测：复制 6 个字符、发一条消息、再等一轮）。
  *
- * 同样遍历 `INTAKE_ARGS`：授权绑定的是「将要外发的全部字段」，不是人工挑出来的那几个。
+ * 现在这条：用户点卡上的「确认提交」→ 宿主把点击连同**一次性 action token** 交回插件
+ * （手册 §4.11；真机验证过：声明 `agent` 后事件里就有 `userActionToken`）→ 插件铸一张
+ * 绑定这版原文的票据，用 `cindy.agent.run` 换回**一轮 agent** → 那一轮里的 agent 带
+ * `click_ticket` 调 `misakanet_submit_intake` → 外发发生在它的在途调用里，宿主认得。
+ *
+ * 授权链没有变松：点击必须是真的（token 一次性、宿主独占派发）；票据绑定内容、
+ * 15 分钟、一次即废；没有票就一个请求都不发。
+ */
+const TICKET_TTL_MS = 15 * 60 * 1000;
+//: callId → { args, at, clicked }：卡片供在哪次调用上，以及这次点击是不是已经处理过。
+const pendingCards = new Map();
+//: ticket → { fingerprint, at }
+const pendingTickets = new Map();
+
+function canRunAgent() {
+  return !!(typeof cindy === 'object' && cindy && cindy.agent && typeof cindy.agent.run === 'function');
+}
+
+/** 一张只对「这一版原文」有效的票据；用一次即废。 */
+function mintTicket(args) {
+  const now = Date.now();
+  for (const [key, entry] of pendingTickets) {
+    if (now - entry.at > TICKET_TTL_MS) pendingTickets.delete(key);
+  }
+  const ticket = 'tkt-' + randomClientId().slice('cindy-'.length);
+  pendingTickets.set(ticket, { fingerprint: authorizationFingerprint(args), at: now });
+  while (pendingTickets.size > 50) pendingTickets.delete(pendingTickets.keys().next().value);
+  return ticket;
+}
+
+/** 内容指纹：票据只对**这一段原文**有效，改一个字都不行。
+ *
+ * 遍历 `INTAKE_ARGS`：授权绑定的是「将要外发的全部字段」，不是人工挑出来的那几个。
  */
 function authorizationFingerprint(args) {
   return INTAKE_ARGS
@@ -625,125 +642,85 @@ function redactIntakeArgs(intakeArgs) {
   return intakeArgs;
 }
 
-function normalizeCode(value) {
-  return asString(value).toUpperCase().replace(/[^A-Z0-9]/g, '');
-}
-
-function sweepAuthorizations(now) {
-  for (const [code, entry] of pendingAuthorizations) {
-    if (now - entry.at > AUTHORIZATION_TTL_MS) pendingAuthorizations.delete(code);
-  }
-}
-
-function createAuthorization(args) {
-  const now = Date.now();
-  sweepAuthorizations(now);
-  const code = mintAuthorizationCode();
-  pendingAuthorizations.set(code, {
-    fingerprint: authorizationFingerprint(args),
-    at: now,
-    approvedAt: null,
-    approvedSessionId: null,
-  });
-  return code;
-}
-
-/** 从消息 content 里取出纯文本：字符串、结构对象、序列化 JSON、分段数组都认。 */
-function messageText(raw, depth) {
-  const level = depth || 0;
-  if (raw == null || level > 4) return '';
-  if (typeof raw === 'string') {
-    const trimmed = raw.trim();
-    if (trimmed.startsWith('{') || trimmed.startsWith('[') || trimmed.charAt(0) === '"') {
-      try {
-        return messageText(JSON.parse(trimmed), level + 1);
-      } catch (error) {
-        return raw;
-      }
-    }
-    return raw;
-  }
-  if (Array.isArray(raw)) return raw.map((part) => messageText(part, level + 1)).join(' ');
-  if (typeof raw === 'object') {
-    const parts = [];
-    for (const key of ['text', 'content', 'body', 'message']) {
-      if (raw[key] != null) parts.push(messageText(raw[key], level + 1));
-    }
-    return parts.filter(Boolean).join(' ');
-  }
-  return String(raw);
-}
-
-/** 用户把短码发回来的那一刻：只认**用户**发的消息。
- *
- * 这里用只读的 `message` 主题（`did-message-created`），不用 `will-user-message` 钩子：钩子
- * 能拦、能改，权限是「可读取、拦截或改写你发出的消息」——为了确认一条上报，不值得让插件拿到
- * 这种权力。只读旁听同样只看得到用户本人打的字（agent 的工具参数不经过这里），而「agent 转述」
- * 永远不是用户消息，所以信任链一样成立：授权只能来自用户自己发的那一条。
- */
-async function handleMessageCreated(msg) {
-  const data = (msg && msg.data) || {};
-  // 宿主保存的用户消息正文是 {text, images, files…} 这种结构（也可能已经被序列化成字符串），
-  // 所以要按形状取文本，不能直接 asString —— 那样对象会变成「[object Object]」。
-  const text = messageText(data.content);
-  if (asString(data.role) !== 'user') return;
-  const sessionId = asString(data.sessionId);
-  const folded = normalizeCode(text);
-  if (!folded) return;
-  const now = Date.now();
-  sweepAuthorizations(now);
-  for (const [code, entry] of pendingAuthorizations) {
-    if (entry.approvedAt) continue;
-    if (folded.includes(code)) {
-      entry.approvedAt = now;
-      entry.approvedSessionId = sessionId;
-    }
-  }
-}
-
-/** 供卡 / 改卡。宿主拒收（unknown-call / rate-limited）时返回 false——
- *  调用方必须另找一条看得见的出路，不能默认卡已经画上去了。 */
-async function sendCardUpdate(payload) {
-  try {
-    const sent = await cindy.send(Object.assign({ v: 2 }, payload));
-    return !!(sent && sent.ok !== false);
-  } catch (error) {
-    return false;
-  }
-}
-
-/** 卡画不出来时的可见出路：通知是独立通道（真机上一直能用）。 */
-async function announce(text) {
-  await notify(text, 'info');
-}
-
-const CARD_ACTION_SUBMIT = 'intake-submit';
-function escapeHtml(value) {
-  return String(value == null ? '' : value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-/** 这一轮里 agent 真的调用过 misakanet_submit_intake（用来收掉「要不要沉淀」那个备选）。 */
-let agentSubmitted = false;
-
 /** 一个新的调用号，只当记账用的标签。
-*
-* 它**不能**用来给外发请求授权：宿主只认在途调用。后台（轮末）那条检索没有在途调用，
-* 在没有 network 授权的前提下会被网络闸拒——那条路的结果只能是「查不到，交给 agent 自己查」，
-* 不是插件偷偷把内容发出去。 */
+ *
+ * 它**不能**用来给外发请求授权：宿主只认在途调用。后台（轮末）那条检索没有在途调用，
+ * 在没有 network 授权的前提下会被网络闸拒——那条路的结果只能是「查不到，交给 agent 自己查」。
+ */
 function mintCallId() {
   return 'call-' + randomClientId().slice('cindy-'.length);
 }
 
-/** 旧版本卡片上的按钮（历史卡仍可能被点）。现在的授权走宿主确认框，这里只回一句，
- *  不让一个点了没反应的按钮留在那儿。 */
+/** 点击之后：铸票 + 换一轮 agent。失败就明说，不静默。 */
 async function handleCardAction(msg) {
-  if (msg && msg.actionId === CARD_ACTION_SUBMIT) {
-    await announce('这张是旧版确认卡：它上面的按钮已经不能提交了。让我重新提交一次就好。');
+  const callId = asString(msg && msg.callId);
+  const actionId = asString(msg && msg.actionId);
+  if (!callId || !actionId) return;
+  const pending = pendingCards.get(callId);
+  if (!pending) {
+    if (actionId === CARD_ACTION_CONFIRM) {
+      await announce('这张确认卡已经处理过或已失效：没有提交任何内容。');
+    }
+    return;
   }
+  if (actionId === CARD_ACTION_CANCEL) {
+    pendingCards.delete(callId);
+    pending.clicked = true;
+    const shown = await sendCardUpdate({
+      type: 'card-update',
+      callId,
+      state: 'done',
+      html: '<div style="padding:12px;font-size:13px">已取消：没有提交任何内容，也没有在远端创建任何记录。</div>',
+      height: 120,
+    });
+    if (!shown) await announce('已取消：没有提交任何内容。');
+    return;
+  }
+  if (actionId !== CARD_ACTION_CONFIRM) return;
+  // 一次点击会投递两条 card-action（真机 2026-11-24 实测）：只认第一条。
+  if (pending.clicked) return;
+  pending.clicked = true;
+
+  const ticket = mintTicket(pending.args);
+  let result = null;
+  try {
+    result = await cindy.agent.run(Object.assign({
+      mode: 'continue',
+      promptTemplate:
+        '用户已经在 MisakaNet 插件的确认卡上点了「确认提交」。请**原样**把事件里的上报字段' +
+        '（problem / error / what_tried / fix / verification / matched_lesson_id）作为参数，' +
+        '带上 click_ticket 调用一次 misakanet_submit_intake；不要改写原文，也不要再问用户。' +
+        '{{event_json}} {{user_message}}',
+      userMessage: '继续（这条上报已由用户点击确认）',
+      event: Object.assign({ click_ticket: ticket }, pickArgs(pending.args, INTAKE_ARGS)),
+    }, msg.userActionToken ? { userActionToken: msg.userActionToken } : {}));
+  } catch (error) {
+    result = { ok: false, errorCode: 'AGENT_RUN_THREW' };
+  }
+
+  if (!result || result.ok !== true) {
+    pendingTickets.delete(ticket);
+    const code = asString(result && result.errorCode) || 'UNKNOWN';
+    const shown = await sendCardUpdate({
+      type: 'card-update',
+      callId,
+      state: 'done',
+      html: '<div style="padding:12px;font-size:13px">没能把这次点击接上后续动作（' +
+        escapeHtml(code) + '）。**没有提交任何内容**——让我重新提交一次就好。</div>',
+      height: 160,
+    });
+    if (!shown) await announce('没能把这次点击接上后续动作（' + code + '），没有提交任何内容。');
+    return;
+  }
+
+  await sendCardUpdate({
+    type: 'card-update',
+    callId,
+    state: 'working',
+    html: '<div style="padding:12px;font-size:13px">已收到确认，正在提交…</div>',
+    height: 120,
+  });
+  pendingCards.delete(callId);
 }
 
 const UNTRUSTED_NOTICE =
@@ -1531,20 +1508,25 @@ async function handleToolCall(msg) {
       // confirm 是本地闸门参数，托管端点的 schema 里没有，不能转发过去。
       delete intakeArgs.confirm;
       intakeArgs.source = 'cindy';
-      // 闸门：卡片披露 + 用户自己打的短码授权（理由见文件上方那段注释）。
-      // `confirm` 这个参数已经没有语义了（审核要求删掉 confirm=direct 那条旁路）。
+      // 闸门：卡片披露 + 用户点「确认提交」→ 一次性票据 → 一轮 agent 带票回来。
       delete intakeArgs.confirm;
-      // 先脱敏，再摆卡、再算指纹：卡片上那段文字就是真正要发出去的文字。
       redactIntakeArgs(intakeArgs);
       const fingerprint = authorizationFingerprint(intakeArgs);
-      const providedCode = normalizeCode(args.code);
+      const providedTicket = asString(args.click_ticket).trim();
+      const isQuestion = asString(intakeArgs.kind) === 'question';
 
-      if (!providedCode) {
-        // 第一次调用：摆卡 + 发短码，等用户自己回。
-        const code = createAuthorization(intakeArgs);
-        const carded = await supplyIntakeCard(callId, intakeArgs, code);
+      if (!providedTicket) {
+        if (!canRunAgent()) {
+          return await fail(
+            callId,
+            'CLICK_GATE_UNAVAILABLE',
+            '当前宿主不支持「卡片点击后继续」（`agent` 能力不可用），所以**没有提交任何内容**' +
+            '（远端也没有任何记录）。这条上报需要用户点一下卡片才能发出去。',
+            'not_sent',
+          );
+        }
+        const carded = await supplyIntakeCard(callId, intakeArgs);
         if (!carded) {
-          pendingAuthorizations.delete(code);
           return await fail(
             callId,
             'CARD_UNAVAILABLE',
@@ -1553,49 +1535,40 @@ async function handleToolCall(msg) {
             'not_sent',
           );
         }
+        pendingCards.set(callId, { args: intakeArgs, at: Date.now(), clicked: false });
         return await sendResult(callId, true, {
-          awaiting_user_authorization: true,
-          code,
+          awaiting_click: true,
+          is_question: isQuestion || undefined,
           note:
-            '已经摆出将要公开的原文，并生成了短码 ' + code + '。' +
-            '请把那段原文给用户看，然后请用户**自己**把这个短码发回来（你转述不算，插件只认用户消息）。' +
-            '用户发来之后，带上 code="' + code + '" 再调用一次本工具——那一次才会真正提交。' +
-            '短码 15 分钟内有效，且只对这一版原文有效。',
+            '已把将要公开的原文摆成一张卡，上面有「确认提交」/「不提交」。' +
+            '**请等用户自己点**——点下去之后会换回一轮对话，那一轮里你会收到带 click_ticket 的事件，' +
+            '照着带票再调一次本工具即可。别的都不要做，也不要在用户点之前自行提交。',
         });
       }
 
-      const entry = pendingAuthorizations.get(providedCode);
-      if (!entry) {
+      const ticketEntry = pendingTickets.get(providedTicket);
+      if (!ticketEntry) {
         return await fail(
           callId,
-          'CODE_UNKNOWN',
-          '这个短码没有对应的待确认上报（可能已经提交过，或者已过期）。重新调用一次本工具就能拿到新短码。',
+          'TICKET_UNKNOWN',
+          '这张点击票据没有对应的待确认上报（可能已经用过，或者已过期）。让我重新提交一次就能拿到新的卡。',
           'not_sent',
         );
       }
-      if (Date.now() - entry.at > AUTHORIZATION_TTL_MS) {
-        pendingAuthorizations.delete(providedCode);
-        return await fail(callId, 'CODE_EXPIRED', '短码已过期（15 分钟）。重新调用一次本工具就能拿到新短码。', 'not_sent');
+      if (Date.now() - ticketEntry.at > TICKET_TTL_MS) {
+        pendingTickets.delete(providedTicket);
+        return await fail(callId, 'TICKET_EXPIRED', '这张点击票据已经过期（15 分钟）。让我重新提交一次。', 'not_sent');
       }
-      if (entry.fingerprint !== fingerprint) {
+      if (ticketEntry.fingerprint !== fingerprint) {
         return await fail(
           callId,
           'CONTENT_CHANGED',
-          '这次要提交的原文和用户确认的那一版不一样——短码只对那一版有效，所以什么都没提交。' +
+          '这次要提交的原文和用户确认的那一版不一样——票据只对那一版有效，所以什么都没提交。' +
           '用原样的原文重新调用一次，让用户重新确认。',
           'not_sent',
         );
       }
-      if (!entry.approvedAt) {
-        return await fail(
-          callId,
-          'CODE_NOT_AUTHORIZED',
-          '用户还没有把这个短码发回来，所以没有提交任何内容。把短码给用户，等他/她自己发回来。',
-          'not_sent',
-        );
-      }
-      // 一次性：过了闸门就作废，重放同一个码不会再发一次。
-      pendingAuthorizations.delete(providedCode);
+      pendingTickets.delete(providedTicket);
 
       irreversibleCall = true;
       const payload = await callHostedTool(TOOLS.misakanet_submit_intake, intakeArgs, callId, {
@@ -1603,7 +1576,7 @@ async function handleToolCall(msg) {
       });
       const shaped = shapeIntake(payload);
       shaped.note =
-        '用户在聊天里发回了授权短码（本人自己打的，不是 agent 转述），内容已公开发布，发出后不可撤回。' +
+        '用户已在确认卡上点了「确认提交」（宿主独占派发，票据一次性），内容已公开发布，发出后不可撤回。' +
         shaped.note;
       await sendCardUpdate({
         type: 'card-update',
@@ -1692,11 +1665,6 @@ cindy.onHostMessage(function (msg) {
   // 在 Cindy 能落地的位置——Cindy 没有「每次工具调用后注入」的钩子，所以落在下一轮装配时）。
   if (msg.type === 'event' && msg.name === 'will-compose-context') {
     void handleComposeContext(msg).catch(() => {});
-    return;
-  }
-  // 只读旁听用户消息：只在这里认「用户本人把短码发回来了」——agent 的工具参数不经过这里。
-  if (msg.type === 'event' && msg.name === 'did-message-created') {
-    void handleMessageCreated(msg).catch(() => {});
     return;
   }
 });

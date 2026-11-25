@@ -51,31 +51,28 @@ def test_the_community_package_is_a_package_this_repository_ships():
         assert tool.get("parameters", {}).get("type") == "object", tool["name"]
 
 
-def test_both_packages_declare_the_card_and_the_user_typed_gate():
-    """Two declarations, two jobs: the card *discloses* what will be public, and a code the user
-    types back *authorizes* it.
+def test_both_packages_declare_the_card_and_the_click_gate():
+    """Two declarations, two jobs: the card *discloses* what will be public, and the user's own
+    click *authorizes* it.
 
     Both earlier gates are dead ends, measured on a real client on 2026-11-24:
-      · a card button spawns a card slot (手册 §4.5), not a tool call — the plugin's own fetch after
-        the click arrived at the network gate and was refused in 0 ms (nothing published);
-      · `cindy.confirm` renders per source: without a mobile source the dialog lands on the desktop,
-        so a phone user cannot submit at all.
-    The code gate needs no network grant and works wherever the user can type. The channel is the
-    **read-only** `message` topic, not a `will-user-message` hook: intercepting every message would
-    hand the plugin rewrite/block power it has no use for. Only a user message can authorize — an
-    agent's own words never count.
+      · a card button that makes the plugin send by itself: the action spawns a card slot (手册 §4.5),
+        not a tool call, so the plugin's own fetch is refused by the network gate in 0 ms;
+      · `cindy.confirm`: renders per source — without a mobile source it lands on the desktop, so a
+        phone user cannot submit;
+      · a code the user types back: honest, but the friction is on the user.
+    The gate now: click → one agent turn (`cindy.agent.run` with the host's one-time action token) →
+    the agent submits with `click_ticket` inside its own in-flight call. No message reading needed.
     """
     for base in (OFFICIAL, COMMUNITY):
         entry = manifest(base)
         assert entry.get("card") is not None, f"{base.name} lost its card declaration"
-        assert "message" in entry["subscribe"]["topics"],             f"{base.name} lost the read-only subscription that sees the user's own authorization"
+        assert "agent" in entry, f"{base.name} cannot continue the turn after a click"
+        assert "message" not in entry["subscribe"]["topics"],             f"{base.name} should not read the user's messages anymore"
         assert "will-user-message" not in entry["subscribe"]["hooks"],             f"{base.name} should not intercept messages"
-        if base == OFFICIAL:
-            # `confirm` stays out unless the plugin actually asks the host for a dialog.
-            assert not entry.get("confirm"), f"{base.name} claims an unused confirm capability"
         assert "network" not in entry, f"{base.name} must not claim autonomous network"
         source = (base / "main.js").read_text(encoding="utf-8")
-        for marker in ("supplyIntakeCard", "handleCardAction", "handleMessageCreated", "pendingAuthorizations"):
+        for marker in ("supplyIntakeCard", "handleCardAction", "cindy.agent.run", "pendingTickets"):
             assert marker in source, f"{base.name} lost {marker}"
 
 
