@@ -95,7 +95,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
+from datetime import date
 from pathlib import Path
 from typing import Callable
 
@@ -181,6 +183,7 @@ HTML_TEMPLATE = """\
 {robots}<meta property="og:title" content="{title}">
 <meta property="og:description" content="{description}">
 <meta property="og:url" content="{canonical}">
+{json_ld}
 {tokens}
 <style>
   body {{ font-family: var(--font-ui); background: var(--bg-0); color: var(--fg-1); max-width: 720px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }}
@@ -461,6 +464,94 @@ def lesson_link_resolver(assigned: dict[str, str], lessons: list) -> "Callable[[
     return resolve
 
 
+#: The entity JSON-LD names as the article's publisher. One constant so the name and the URL cannot
+#: drift apart across 1160 pages.
+PUBLISHER = {"@type": "Organization", "name": "MisakaNet", "url": SITE_URL}
+
+#: `created` / `updated` are stored as either a bare date or a UTC timestamp
+#: (`2026-09-25`, `2026-09-25 12:34 UTC`, `2026-09-25 12:34:56 UTC`). Only the date part is used: a
+#: date is a valid ISO-8601 value for both schema.org properties, while re-serialising the timestamp
+#: form would have to assume second precision (and invent `:00`) for a value that records none.
+_DATE_PREFIX = re.compile(
+    r"^(?P<date>\d{4}-\d{2}-\d{2})(?:[ T]\d{2}:\d{2}(?::\d{2})?(?:\s*Z|\s*UTC)?)?$")
+
+
+def iso_date(value: object) -> "str | None":
+    """The ISO-8601 date in a lesson's `created`/`updated`, or None when there is not one.
+
+    Returns None rather than raising or passing junk through: a schema.org date that is not a date
+    is worse than a missing one, and 64 lessons carry `created: ""` while 346 carry `updated: ""`.
+    """
+    match = _DATE_PREFIX.match(str(value or "").strip())
+    if not match:
+        return None
+    try:
+        date.fromisoformat(match.group("date"))
+    except ValueError:  # 2026-13-45 matches the shape and is not a day
+        return None
+    return match.group("date")
+
+
+def lesson_json_ld(lesson: dict, *, title: str, description: str, canonical: str) -> dict:
+    """The schema.org `TechArticle` for one lesson page.
+
+    Why this exists (2026-11-22)
+    ---------------------------
+    `docs/lessons/` holds 1160 generated pages, 1119 of them in `sitemap.xml`, and they are the site's
+    main source of organic traffic — and none of them carried structured data. The generator already
+    knows every field a `TechArticle` needs (headline, description, canonical URL, publisher), so the
+    only reason the markup was absent is that nothing emitted it.
+
+    What is *not* emitted, on purpose:
+
+    * `headline` is the article's own title, not the `<title>` element's `"… — MisakaNet"`. The site
+      name is a suffix the document adds for a browser tab and a search result; a headline is the
+      article.
+    * `datePublished` / `dateModified` only when the lesson actually records `created` / `updated`.
+      A guessed date is a claim about provenance, which is the one thing this corpus is selling.
+    * no `FAQPage`: the corpus has `trigger` (the symptom) and `verify` (how to check the fix), which
+      is not a question/answer pair. Synthesising Q&A from them would put words in the lesson's mouth.
+    """
+    data: dict = {
+        "@context": "https://schema.org",
+        "@type": "TechArticle",
+        "headline": title,
+        "description": description,
+        "url": canonical,
+        "mainEntityOfPage": {"@type": "WebPage", "@id": canonical},
+        "publisher": dict(PUBLISHER),
+    }
+    published = iso_date(lesson.get("created"))
+    if published:
+        data["datePublished"] = published
+    modified = iso_date(lesson.get("updated"))
+    if modified:
+        data["dateModified"] = modified
+    return data
+
+
+def json_ld_script(data: dict) -> str:
+    """`<script type="application/ld+json">` holding `data`, safe to inline in `<head>`.
+
+    Escaping is the whole job of this function. A lesson title can contain `"`, Chinese, and (in a
+    lesson *about* markup) the literal string `</script>` — and a raw `</script>` inside the JSON
+    ends the element early, so the rest of the JSON lands on the page as visible text and the block
+    is unparseable. Every `<` in the serialised JSON therefore becomes the JSON escape `\u003c`, so
+    a title quoting `</script>` is written with its `<` escaped: no `<` is left that could either
+    close the element or open a tag inside data.
+
+    The last part is not hypothetical. `tests/test_site_csp.py` and `scripts/check_page_scripts.py`
+    look for real `<script>` tags in the page source, and a lesson whose *title* quotes `<script>`
+    would otherwise be reported as a page that executes script — a false alarm on hundreds of pages
+    the day someone writes that lesson.
+
+    `\u003c` is a legal JSON escape, so `json.loads` (and every search-engine parser) reads it back
+    as `<`; nothing about the data changes.
+    """
+    text = json.dumps(data, ensure_ascii=False, separators=(", ", ": ")).replace("<", "\\u003c")
+    return f'<script type="application/ld+json">{text}</script>'
+
+
 def build_lesson_page(lesson: dict, root: Path = REPO,
                       markup: dict[str, str] | None = None,
                       resolve: "Callable[[str], str | None] | None" = None) -> str:
@@ -559,8 +650,13 @@ def build_lesson_page(lesson: dict, root: Path = REPO,
     # stays on: the page's links are still worth crawling, and a draft that gets finished later is
     # reachable through them.
     robots = "" if is_published else '<meta name="robots" content="noindex, follow">\n'
+    # Built after `description`, so the JSON-LD carries the same truncated text the <meta> tag does
+    # (and the same "Draft (not published)" prefix, when there is one) instead of a second copy that
+    # can disagree with it.
+    json_ld = json_ld_script(lesson_json_ld(lesson, title=title, description=description,
+                                            canonical=canonical))
     return HTML_TEMPLATE.format(title=title, description=description, canonical=canonical,
-                                 robots=robots, body=body, **blocks)
+                                 robots=robots, json_ld=json_ld, body=body, **blocks)
 
 
 def build_topic_page(domain: str, lessons: list, description: str = "", root: Path = REPO,

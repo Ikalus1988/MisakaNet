@@ -9,6 +9,7 @@
 <meta property="og:title" content="Rust fs::read_to_string rejects non-UTF-8 bytes while Node fs.readFileSync utf8 replaces them">
 <meta property="og:description" content="同一条「二进制 → 文本」转换管道在两个运行时里各写了一遍：Node 侧脚本一路跑绿、数据完整；Rust 侧 UI 入口把其中两个最大的文件整份丢掉，界面不报错，只是「功能少了一大块」。Rust 侧唯一的痕迹是读取时的错误：">
 <meta property="og:url" content="https://misakanet.org/lessons/rust-fsread-to-string-rejects-non-utf-8-bytes-while-node-fsreadfilesync-utf8-rep/">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Rust fs::read_to_string rejects non-UTF-8 bytes while Node fs.readFileSync utf8 replaces them", "description": "同一条「二进制 → 文本」转换管道在两个运行时里各写了一遍：Node 侧脚本一路跑绿、数据完整；Rust 侧 UI 入口把其中两个最大的文件整份丢掉，界面不报错，只是「功能少了一大块」。Rust 侧唯一的痕迹是读取时的错误：", "url": "https://misakanet.org/lessons/rust-fsread-to-string-rejects-non-utf-8-bytes-while-node-fsreadfilesync-utf8-rep/", "mainEntityOfPage": {"@type": "WebPage", "@id": "https://misakanet.org/lessons/rust-fsread-to-string-rejects-non-utf-8-bytes-while-node-fsreadfilesync-utf8-rep/"}, "publisher": {"@type": "Organization", "name": "MisakaNet", "url": "https://misakanet.org"}, "datePublished": "2026-10-25", "dateModified": "2026-10-25"}</script>
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
 /*

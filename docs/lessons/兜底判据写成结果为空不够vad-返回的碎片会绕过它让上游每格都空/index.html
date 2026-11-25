@@ -9,6 +9,7 @@
 <meta property="og:title" content="兜底判据写成“结果为空”不够：VAD 返回的碎片会绕过它，让上游每格都空">
 <meta property="og:description" content="自己写了一个 OpenAI 兼容的本地 ASR 服务（sherpa-onnx），切句逻辑是：先用 VAD 切，如果 VAD 没给结果，就退回固定窗口。测试正常（用 60 秒完整音频直接 POST，能返回 10 段、上百字）。但上游视频工具调用它时，每一格的台词都是空的。抓服务端日志才看到：上游传 4...">
 <meta property="og:url" content="https://misakanet.org/lessons/兜底判据写成结果为空不够vad-返回的碎片会绕过它让上游每格都空/">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "兜底判据写成“结果为空”不够：VAD 返回的碎片会绕过它，让上游每格都空", "description": "自己写了一个 OpenAI 兼容的本地 ASR 服务（sherpa-onnx），切句逻辑是：先用 VAD 切，如果 VAD 没给结果，就退回固定窗口。测试正常（用 60 秒完整音频直接 POST，能返回 10 段、上百字）。但上游视频工具调用它时，每一格的台词都是空的。抓服务端日志才看到：上游传 4...", "url": "https://misakanet.org/lessons/兜底判据写成结果为空不够vad-返回的碎片会绕过它让上游每格都空/", "mainEntityOfPage": {"@type": "WebPage", "@id": "https://misakanet.org/lessons/兜底判据写成结果为空不够vad-返回的碎片会绕过它让上游每格都空/"}, "publisher": {"@type": "Organization", "name": "MisakaNet", "url": "https://misakanet.org"}, "datePublished": "2026-11-08", "dateModified": "2026-11-08"}</script>
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
 /*

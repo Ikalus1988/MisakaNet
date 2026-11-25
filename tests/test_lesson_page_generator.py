@@ -17,6 +17,7 @@ loop, and each one is a real bug that was present:
    `data/lessons.json` would produce (the gate the daily job and docs.yml use).
 """
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -529,3 +530,152 @@ def test_the_relative_target_rule_notices_an_absolute_origin():
 
     assert has_absolute(f'<link rel="canonical" href="{blp.SITE_URL}/lessons/x/">'), "fixture must trip the rule"
     assert not has_absolute('<link rel="canonical" href="/lessons/x/">'), "a relative canonical is fine"
+
+
+# ── structured data on every lesson page ────────────────────────────────────────────────────────
+# Measured 2026-11-22: `docs/lessons/` holds 1160 generated pages, 1119 of them listed in
+# `sitemap.xml`, they are the site's main source of organic traffic — and **none** of them carried
+# JSON-LD. `build_lesson_page()` already has every field a schema.org `TechArticle` needs, so the
+# absence was an omission rather than a decision. These tests keep it from becoming one again.
+#
+# Both halves matter equally: the block must be *parseable* (an unescaped `</script>` in a title
+# truncates it, and a truncated block is invisible on the page while silently costing the markup),
+# and it must not invent anything (a `datePublished` for a lesson that records no date is a claim
+# about provenance that the corpus cannot back).
+
+LD_TAG = re.compile(r'<script type="application/ld\+json">(?P<body>.*?)</script>', re.DOTALL)
+
+
+def _lesson_pages(lessons=None):
+    """{relative path: html} for the lesson pages of a plan — topic pages excluded on purpose."""
+    files = blp.plan(json.loads(json.dumps(lessons if lessons is not None else LESSONS)))
+    return {path: html for path, html in files.items() if path.startswith("docs/lessons/")}
+
+
+def _json_ld(html: str) -> dict:
+    """The page's JSON-LD block, parsed — exactly as a crawler and `json.loads` would read it."""
+    blocks = LD_TAG.findall(html)
+    assert len(blocks) == 1, f"expected one JSON-LD block, found {len(blocks)}"
+    return json.loads(blocks[0])
+
+
+def _title_element(html: str) -> str:
+    match = re.search(r"<title>(?P<title>.*?)</title>", html, re.DOTALL)
+    assert match, "the page has no <title> element"
+    return match.group("title")
+
+
+def test_every_lesson_page_carries_parseable_json_ld():
+    """(a) Every generated lesson page has one JSON-LD block and it is valid JSON.
+
+    All three fixtures, not one: the escaping rule (see `json_ld_script`) has to hold for the whole
+    corpus, and a per-page difference would be invisible if only the first page were parsed.
+    """
+    pages = _lesson_pages()
+    assert len(pages) == 3, f"the fixture stopped producing lesson pages: {sorted(pages)}"
+    for path, html in pages.items():
+        data = _json_ld(html)
+        assert isinstance(data, dict), f"{path}: JSON-LD is a {type(data).__name__}, not an object"
+
+
+def test_json_ld_carries_the_required_fields_and_matches_the_page():
+    """(b) Required fields are present, and they say the same thing the page does.
+
+    `headline` is the article's title, and `<title>` is that title plus the site suffix — the
+    suffix is chrome the template adds for a browser tab, not part of the headline, so the two are
+    compared with it spelled out rather than by string equality.
+    """
+    html = _lesson_pages()["docs/lessons/alpha-lesson/index.html"]
+    data = _json_ld(html)
+
+    assert data["@context"] == "https://schema.org"
+    assert data["@type"] == "TechArticle"
+    assert data["headline"] == "Alpha lesson"
+    assert _title_element(html) == f"{data['headline']} — MisakaNet", (
+        "the headline and the <title> element have drifted apart; the suffix is the site name, "
+        "everything before it must be the headline")
+    assert data["description"] == "a"
+    assert data["publisher"] == {"@type": "Organization", "name": "MisakaNet",
+                                 "url": "https://misakanet.org"}
+
+    canonical = re.search(r'<link rel="canonical" href="(?P<url>[^"]+)"', html).group("url")
+    assert data["url"] == canonical, "the JSON-LD URL must be the page's own canonical"
+    assert data["mainEntityOfPage"] == {"@type": "WebPage", "@id": canonical}
+    assert canonical == "https://misakanet.org/lessons/alpha-lesson/"
+
+
+def test_a_title_that_could_close_the_block_does_not():
+    """(c) Quotes, Chinese and `</script>` in a title cannot break or truncate the JSON-LD.
+
+    `</script>` inside a `<script>` element ends it — the parser does not know it is a string. Every
+    `<` in the serialised JSON is therefore escaped to `\u003c`, which `json.loads` reads back as
+    `<`. Two properties are asserted: the block parses at all (a truncation would fail here), and
+    the headline survives the round trip unchanged (an escaping bug that dropped the tail would not).
+
+    The second half is the one that would have gone unnoticed: a title quoting `<script>` would
+    otherwise put a real script tag into the page source, and both `tests/test_site_csp.py` and
+    `scripts/check_page_scripts.py` read real tags — 1160 lesson pages would be reported as
+    script-running the day such a lesson was written.
+    """
+    hostile = 'A "quoted" 中文 title with </script> and <script>alert(1)</script> in it'
+    html = blp.build_lesson_page({"id": "hostile", "title": hostile, "domain": "ops",
+                                  "summary": "s", "tags": [], "url": "lessons/ops/h.md"})
+
+    match = LD_TAG.search(html)
+    assert match, "the JSON-LD block is missing on a page whose title quotes markup"
+    body = match.group("body")
+    assert "</" not in body, f"an unescaped `</` inside the block: {body[:200]}"
+    assert "<" not in body, f"an unescaped `<` could open a tag inside data: {body[:200]}"
+    assert json.loads(body)["headline"] == hostile, "the title did not survive the escape round-trip"
+
+
+def test_json_ld_omits_dates_the_lesson_does_not_record():
+    """(d) No `datePublished` / `dateModified` key when the lesson has no date — and no null either.
+
+    `"datePublished": null` is worse than an absent key: it is a field the consumer must interpret
+    rather than one that was never claimed. 64 lessons in `data/lessons.json` carry `created: ""`
+    and 346 carry `updated: ""`, so this is the shape most pages actually have.
+    """
+    html = blp.build_lesson_page({"id": "undated", "title": "Undated lesson", "domain": "ops",
+                                  "summary": "s", "tags": [], "url": "lessons/ops/u.md",
+                                  "created": "", "updated": ""})
+    data = _json_ld(html)
+    assert "datePublished" not in data, data
+    assert "dateModified" not in data, data
+    assert "datePublished" not in html, "a null date was written into the page"
+    assert "null" not in html
+
+
+def test_json_ld_emits_a_date_only_when_the_lesson_records_one():
+    """The other half of (d): a real date is emitted, normalised, and junk is refused.
+
+    `created`/`updated` are stored as a bare date or as a UTC timestamp; only the date part is
+    published, because a timestamp would have to assume second precision to become ISO-8601. A
+    value that is not a date is dropped rather than passed through — an invalid `datePublished` is
+    a structured-data error a crawler reports, and a wrong date is worse than none.
+    """
+    dated = {"id": "dated", "title": "Dated lesson", "domain": "ops", "summary": "s",
+             "tags": [], "url": "lessons/ops/d.md", "created": "2026-09-25",
+             "updated": "2026-09-25 12:34 UTC"}
+    data = _json_ld(blp.build_lesson_page(dated))
+    assert data["datePublished"] == "2026-09-25"
+    assert data["dateModified"] == "2026-09-25", "a UTC timestamp must not be published verbatim"
+
+    junk = dict(dated, created="sometime in September", updated="2026-13-45")
+    data = _json_ld(blp.build_lesson_page(junk))
+    assert "datePublished" not in data and "dateModified" not in data, data
+
+
+def test_only_lesson_pages_get_structured_data():
+    """The topic directory is not an article: a `TechArticle` there would be a false claim.
+
+    `build_lesson_pages.py` holds three `<head>` templates (lesson, topic, topic index) and only the
+    first one takes `{json_ld}`. This is what keeps a future edit from adding it to the wrong one.
+    """
+    files = blp.plan(json.loads(json.dumps(LESSONS)))
+    topic_pages = {p: html for p, html in files.items()
+                   if p.startswith("docs/topics/") and p.endswith(".html")}
+    assert topic_pages, "no topic pages in the plan — this test lost its subject"
+    for path, html in topic_pages.items():
+        assert "application/ld+json" not in html, f"{path} carries article structured data"
+        assert "{json_ld}" not in html, f"{path} still carries the unformatted placeholder"

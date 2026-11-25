@@ -9,6 +9,7 @@
 <meta property="og:title" content="长上下文污染 — 独立任务优先派给子代理，主上下文只留决策与验收">
 <meta property="og:description" content="长会话中主上下文被逐步塞满：每个被读的文件、每条原始日志、每次试错的完整输出都留在主线程里。几十轮后，最初的约束与目标被稀释，agent 开始丢约束、重复劳动、甚至重做已完成的步骤；同时每一轮续写都要重新消化全部历史，token 成本与错误率同时上升。把大量独立工作放在主上下文里执行，是这条失败链的...">
 <meta property="og:url" content="https://misakanet.org/lessons/长上下文污染-独立任务优先派给子代理主上下文只留决策与验收/">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "长上下文污染 — 独立任务优先派给子代理，主上下文只留决策与验收", "description": "长会话中主上下文被逐步塞满：每个被读的文件、每条原始日志、每次试错的完整输出都留在主线程里。几十轮后，最初的约束与目标被稀释，agent 开始丢约束、重复劳动、甚至重做已完成的步骤；同时每一轮续写都要重新消化全部历史，token 成本与错误率同时上升。把大量独立工作放在主上下文里执行，是这条失败链的...", "url": "https://misakanet.org/lessons/长上下文污染-独立任务优先派给子代理主上下文只留决策与验收/", "mainEntityOfPage": {"@type": "WebPage", "@id": "https://misakanet.org/lessons/长上下文污染-独立任务优先派给子代理主上下文只留决策与验收/"}, "publisher": {"@type": "Organization", "name": "MisakaNet", "url": "https://misakanet.org"}, "datePublished": "2026-10-30", "dateModified": "2026-10-30"}</script>
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
 /*

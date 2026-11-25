@@ -9,6 +9,7 @@
 <meta property="og:title" content="用 WMI 脱离父子关系的守卫进程，仍会随宿主退出被杀：别指望"等宿主死了再干活">
 <meta property="og:description" content="要给一个运行中的 Electron 宿主（它会锁住 node_modules 里的原生模块）做离线安装，思路是：起一个守卫进程，等宿主完全退出后自动跑安装、装完再把宿主拉起来。守卫用 WMI `Win32_Process.Create` 创建（不是调用方的子进程），进程确实起来了、也写日志了、也检测...">
 <meta property="og:url" content="https://misakanet.org/lessons/用-wmi-脱离父子关系的守卫进程仍会随宿主退出被杀别指望等宿主死了再干活/">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "用 WMI 脱离父子关系的守卫进程，仍会随宿主退出被杀：别指望\"等宿主死了再干活", "description": "要给一个运行中的 Electron 宿主（它会锁住 node_modules 里的原生模块）做离线安装，思路是：起一个守卫进程，等宿主完全退出后自动跑安装、装完再把宿主拉起来。守卫用 WMI `Win32_Process.Create` 创建（不是调用方的子进程），进程确实起来了、也写日志了、也检测...", "url": "https://misakanet.org/lessons/用-wmi-脱离父子关系的守卫进程仍会随宿主退出被杀别指望等宿主死了再干活/", "mainEntityOfPage": {"@type": "WebPage", "@id": "https://misakanet.org/lessons/用-wmi-脱离父子关系的守卫进程仍会随宿主退出被杀别指望等宿主死了再干活/"}, "publisher": {"@type": "Organization", "name": "MisakaNet", "url": "https://misakanet.org"}, "datePublished": "2026-11-08", "dateModified": "2026-11-08"}</script>
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
 /*

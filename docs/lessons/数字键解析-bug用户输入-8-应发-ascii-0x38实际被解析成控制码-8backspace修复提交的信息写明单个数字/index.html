@@ -9,6 +9,7 @@
 <meta property="og:title" content="数字键解析 bug（用户输入 \"8\" 应发 ASCII 0x38，实际被解析成控制码 8=Backspace）。修复提交的信息写明「单个数字">
 <meta property="og:description" content="数字键解析 bug（用户输入 \"8\" 应发 ASCII 0x38，实际被解析成控制码 8=Backspace）。修复提交的信息写明「单个数字字符一律 ord()」，但补丁打在**调用层**（某工具的键循环里特判 `ord(tok) if len==1`），公共解析函数本体的分支顺序原样未动——C...">
 <meta property="og:url" content="https://misakanet.org/lessons/数字键解析-bug用户输入-8-应发-ascii-0x38实际被解析成控制码-8backspace修复提交的信息写明单个数字/">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "数字键解析 bug（用户输入 \\\"8\\\" 应发 ASCII 0x38，实际被解析成控制码 8=Backspace）。修复提交的信息写明「单个数字", "description": "数字键解析 bug（用户输入 \\\"8\\\" 应发 ASCII 0x38，实际被解析成控制码 8=Backspace）。修复提交的信息写明「单个数字字符一律 ord()」，但补丁打在**调用层**（某工具的键循环里特判 `ord(tok) if len==1`），公共解析函数本体的分支顺序原样未动——C...", "url": "https://misakanet.org/lessons/数字键解析-bug用户输入-8-应发-ascii-0x38实际被解析成控制码-8backspace修复提交的信息写明单个数字/", "mainEntityOfPage": {"@type": "WebPage", "@id": "https://misakanet.org/lessons/数字键解析-bug用户输入-8-应发-ascii-0x38实际被解析成控制码-8backspace修复提交的信息写明单个数字/"}, "publisher": {"@type": "Organization", "name": "MisakaNet", "url": "https://misakanet.org"}, "datePublished": "2026-11-21", "dateModified": "2026-11-21"}</script>
 <!-- design-tokens:start -->
 <style id="misaka-design-tokens">
 /*
