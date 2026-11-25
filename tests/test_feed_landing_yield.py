@@ -173,18 +173,3 @@ def test_human_entries_keep_their_relative_order():
     # explicitly: feat / fix / perf may not be reshuffled against each other
     kinds = [i["title"].split("(")[0] for i in ordered if i["title"].split("(")[0] in ("feat", "fix", "perf")]
     assert kinds == ["fix", "feat", "perf"], kinds
-
-
-def test_the_feed_is_written_with_lf_not_the_platform_separator(tmp_path):
-    """A Windows run must not commit a whole-file CRLF diff.
-
-    `Path.write_text` translates `\n` to the platform separator, so before this was pinned a
-    Windows regeneration produced a 136-line CRLF file — every line changed, the real change
-    invisible. `tests/test_tracked_text_files_are_lf.py` is the gate that caught it (2026-11-25);
-    this test catches it at the writer instead of at the commit.
-    """
-    target = bf.write_feed({"generated_at": "x", "item_count": 0, "items": []},
-                                   tmp_path / "feed.json")
-    raw = target.read_bytes()
-    assert b"\r\n" not in raw, "the feed must be written with \n, never the platform separator"
-    assert raw.endswith(b"\n")

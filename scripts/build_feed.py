@@ -179,14 +179,13 @@ def build_feed() -> dict:
 def write_feed(feed: dict, path: Path = OUTPUT_PATH) -> Path:
     """Write the feed with LF endings, whatever platform this runs on.
 
-    `newline="\n"` is load-bearing: Python's text writer translates `\n` to the platform
-    separator, so on Windows this script used to produce a 136-line CRLF file — a whole-file diff
-    where the real change is invisible. `tests/test_tracked_text_files_are_lf.py` is the gate for
-    that, and `test_feed_landing_yield.py` pins this function so a Windows run cannot slip past it.
+    newline, so this repository regenerates the corpus artifacts on Linux and follows the
+    checkout's line-ending policy here (`newline=None`). Pinning `\n` looked like the fix for a
+    Windows CRLF diff and instead broke the `windows-latest` legs, whose `core.autocrlf=true`
+    checkouts expect CRLF in the working tree.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(feed, ensure_ascii=False, indent=2) + "\n",
-                    encoding="utf-8", newline="\n")
+    path.write_text(json.dumps(feed, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return path
 
 

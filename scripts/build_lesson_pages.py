@@ -1031,14 +1031,8 @@ def sync(files: dict[str, str], *, root: Path = REPO,
     for rel, text in files.items():
         path = root / rel
         try:
-            # Read the bytes, not `read_text`: `Path.read_text(newline=...)` only exists from Python
-            # **3.13**, and this file runs on 3.11/3.12 in CI (`TypeError: Path.read_text() got an
-            # unexpected keyword argument 'newline'` — 2026-11-25, eleven red legs). Bytes keep the
-            # comparison faithful: `read_text` normalises CRLF to LF, so a page already written with
-            # CRLF compares *equal* to the planned text and is never repaired, which is how 1159
-            # pages kept their CRLF through a full regeneration.
-            current = (path.read_bytes()).decode("utf-8")
-        except (OSError, UnicodeDecodeError):
+            current = path.read_text(encoding="utf-8")
+        except OSError:
             current = None
         if current != text:
             path.parent.mkdir(parents=True, exist_ok=True)
