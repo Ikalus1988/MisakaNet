@@ -22,10 +22,12 @@ function fakeOps(rows, usedRows = [], authorCount = 0) {
         async all() {
           statements.push({ sql, bound: stmt._bound });
           if (sql.includes('FROM contributions')) return { results: rows };
-          // Matches both spellings of the used-read: the OR-join (`JOIN lesson_authors la ON …`) and the
-          // three-join form (`FROM lesson_authors la JOIN search_signals …`). A stub keyed on one
+          // Matches every spelling of the used-read: the OR-join (`JOIN lesson_authors la ON …`), the
+          // three-join form (`FROM lesson_authors la JOIN search_signals …`), and the single join driven
+          // from the deduped key set (`CROSS JOIN search_signals ss`, 2026-11-25). A stub keyed on one
           // spelling silently stops stubbing the moment the query is rewritten.
           if (sql.includes('lesson_authors la')) return { results: usedRows };
+          if (sql.includes('CROSS JOIN search_signals ss')) return { results: usedRows };
           if (sql.includes('COUNT(*) AS n FROM lesson_authors')) return { results: [{ n: authorCount }] };
           return { results: [] };
         },
