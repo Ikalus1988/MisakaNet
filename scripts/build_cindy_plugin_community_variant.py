@@ -46,11 +46,11 @@ TARGET = REPO / ".cindy-plugin-community"
 #: The community channel's version line. Deliberately offset from the official one (1.6.x) so the
 #: two channels never take the same version slot on the same plugin id. Bump it when the community
 #: package is published; keep it below the official line.
-COMMUNITY_VERSION = "1.5.21"  # 1.5.15 被审核退回（版本号已烧掉）→ 这一版走 1.5.16
+COMMUNITY_VERSION = "1.5.22"  # 1.5.15 被审核退回（版本号已烧掉）→ 这一版走 1.5.16
 
 #: The community channel's own release story. The official package carries the official one.
 COMMUNITY_RELEASE_NOTES = (
-    '这一版不再假装替 agent 查语料（相对上一上架的 1.5.20）。实测两天的读数：轮末那次自动检索**每一次都失败**——宿主的网络代发只给「正在执行的那次工具调用」，轮末没有任何调用可挂，插件又不申请自主联网（审核要求），所以它唯一的产物是每次工具失败后一条「语料查询没成功」的提示。现在改成：轮末只记住失败并提醒，下一轮动手前由 agent 用**它自己那次调用**去查语料；查不到才备草稿、才问你要不要沉淀。你看到的变化是：假失败的提示没了，真正会查的那一次发生在 agent 自己的调用里。上报流程不变（卡片披露 + 一键点卡授权）。**从市场装的版本会自动更新；从 .cindy 文件装的不会**。版本号继续与官方通道错开。'
+    '这一版只改文档：随包手册补回与代码一致（相对上一上架的 1.5.21）。手册 §5.6.1 之前还在描述 1.5.17 之前那套旧闸门——「30 秒等不到点击就放弃」「改走 confirm=direct」「点击后要换一个新的在途调用号」「手机端按钮点不动」。这些在 1.5.20 之后都已经不成立：现在是一次点击就能走通（手机、桌面都行），票据一次性、15 分钟、绑定那一版原文。§5.8 也改成实情：插件不再假装在轮末替你查语料（那条路在宿主规则下必然失败），改成把失败交给下一轮的 agent、由它用自己的在途调用去查。功能与上报流程没有任何变化。**从市场装的版本会自动更新；从 .cindy 文件装的不会**。版本号继续与官方通道错开。'
 )
 
 #: The three substitutions, as (label, file, pattern, replacement).
