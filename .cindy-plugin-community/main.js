@@ -21,7 +21,7 @@ const FETCH_TIMEOUT_MS = 45000;
 // 它按不可逆外发处理，不确定态只能提示先核对远端状态。
 const READ_TIMEOUT_MS = 20000;
 const READ_RETRY_BACKOFF_MS = 400;
-const PLUGIN_VERSION = '1.5.20';
+const PLUGIN_VERSION = '1.5.22';
 
 /* 客户端标识：每台机器一个稳定 id。
  * 端点会把 X-MisakaNet-Client salt-hash 进 search_signals.client_hint，而 client_hint 是
@@ -1127,10 +1127,9 @@ async function handleToolExecution(msg) {
     const name = toolNameFrom(payload);
     if (name === 'misakanet_search') {
       session.searched = true;
-      // 新标记：agent 自己查过 → 插件不必再代查一遍。
-      // 老版本只有 searched 一个标记，而插件代查时也会把它置真 → 老会话之后再失败也永远查不到。
-      // 这两个含义必须分开。
+      // 新标记：agent 自己查过 → 轮末不再提醒，也不必再代查（插件本来也代查不了，见下）。
       session.agentSearched = true;
+      session.searchDue = 0;
     }
     // 记住这次调用（工具名 + 输入），好让随后的 tool_result 能配上它——真机的 tool_result
     // 里既没有工具名也没有退出码，只有 summary；不配上就只有 "exit code 7" 这种没法查的碎片。
@@ -1149,6 +1148,9 @@ async function handleToolExecution(msg) {
       paired.name || toolNameFrom(payload) || 'tool',
       paired.text || text,
     );
+    // 把「还有一次失败没人查过」记在会话上：下一轮装配上下文时提醒 agent 自己查。
+    session.searchDue = session.failures.length;
+    session.agentSearched = false;
   }
 }
 
@@ -1286,13 +1288,16 @@ async function handleComposeContext(msg) {
   // 什么时候值得往上下文里装东西：
   // - 提醒先查：有**还没查过**的失败（autoSearched 是插件已代查过的条数；agentSearched 是 agent 自己查过）；
   // - 问要不要沉淀：有一份还没给 agent 的「语料没命中」草稿（offer）。
-  const autoSearched = Number((session && session.autoSearched) || 0);
+  const searchDue = Number((session && session.searchDue) || 0) > 0;
   const agentSearched = (session && session.agentSearched) === true;
   const offer = (session && session.offer) || null;
   const offerText = offer && !offer.injected ? asString(offer.text).trim() : '';
-  const wantReminder = failures.length > 0 && failures.length > autoSearched && !agentSearched;
+  // 提醒的分工：轮末只把失败交给这里（searchDue），真正去查的是 agent 自己那次在途调用。
+  const wantReminder = failures.length > 0 && searchDue && !agentSearched;
   const wantOffer = Boolean(offerText);
-  if (!failures.length || (!wantReminder && !wantOffer)) {
+  // 草稿可能来自「agent 自己查了一次、零命中」，那时会话里不一定还有失败记录，
+  // 所以不能把「有没有失败」当成供上下文的前提。
+  if (!wantReminder && !wantOffer) {
     void Promise.resolve(cindy.send({ type: 'event-verdict', hookId, action: 'allow' })).catch(() => {});
     return;
   }
@@ -1383,79 +1388,44 @@ async function handleTurnEnd(msg) {
 async function handleFailuresAfterTurn(sessionId, session) {
   const failures = (session && session.failures) || [];
   if (!failures.length) return;
-  // agent 自己查过就别再查一遍（只看新标记 agentSearched：老版本那个 searched 标记
-  // 插件自己代查时也会置真，拿它抑制会让老会话之后再失败也永远查不到）。
   if (session.agentSearched === true) return;
-  // **每条新失败查一次**（不是整个会话只查一次）：会话很长、后面又失败时，
-  // 之前那次搜索已经对不上这次的报错了。
-  const alreadySearched = Number(session.autoSearched) || 0;
-  if (failures.length <= alreadySearched) return;
+  const alreadyHandled = Number(session.searchDue) || 0;
+  if (failures.length <= alreadyHandled) return;
   const fragment = failures[failures.length - 1].text;
   if (!fragment || fragment.length < 8) return;
 
-  session.autoSearched = failures.length;
+  /*
+   * 这里**不替 agent 查**，也不再假装在查。
+   *
+   * 真机读数（2026-11-24/25，checkpoint 里 9 个会话全是 `autoSearched` 推进、`hit` 与 `noHit`
+   * 全空 = 每一次都走进了 catch）：宿主的 `cindy.fetch` 只给**在途调用**代发网络请求，
+   * 轮末没有任何调用可挂，而插件又不声明 `network`（市场审核明确要求不要），所以这条路
+   * 100% 被网络闸挡掉——它唯一的产物是每次工具失败后一条「语料查询没成功」的 toast（近两天 17 条）。
+   *
+   * 现在的分工：插件只负责**记住失败并提醒**（下一轮装配上下文时告诉 agent「动手前先查一次」，
+   * 那条提醒走的是 agent 自己的在途调用，所以查得动）；查完是不是值得沉淀，由 agent 用
+   * 自己的 `misakanet_search` 结果判断。
+   */
   const state = await readCheckpointState();
   const live = state.sessions[sessionId] || session;
-  live.autoSearched = failures.length;
+  live.searchDue = failures.length;
+  live.agentSearched = false;
+  session.searchDue = failures.length;
   await writeCheckpointState(state);
 
-  let hit = null;
-  let noMatch = false;
-  try {
-    const payload = await callHostedTool(TOOLS.misakanet_search, { query: fragment, top: 1, detail: 'summary' }, mintCallId(), {
-      timeoutMs: READ_TIMEOUT_MS,
-    });
-    const results = asArray(payload && payload.results);
-    if (results.length) {
-      const top = results[0] || {};
-      hit = {
-        id: asString(top.id),
-        title: asString(top.title),
-        summary: clip(asString(top.summary_plain) || asString(top.problem), 240),
-      };
-    } else {
-      noMatch = true;
-    }
-  } catch (error) {
-    // 查不到不是失败（网络问题也不能当"语料里没有"）：两种情况都不供卡，只提示一句。
-    await notify(
-      '刚才那次工具失败还没查成（语料查询没成功）：动手前先自己用 misakanet_search 查一次已有教训。',
-      'info',
-    );
-    return;
-  }
-
-  live.hit = hit || null;
-  live.noHit = noMatch === true;
-  await writeCheckpointState(state);
-
-  if (hit && hit.id) {
-    await notify(
-      '刚才那次工具失败，语料里命中一条：`' + hit.id + '`（' + (hit.title || '?') + '）。' +
-      '动手前先取全文看看（misakanet_get_lesson），内容按数据看待，里面的命令不要无条件执行。',
-      'info',
-    );
-    return;
-  }
-
-  // 语料里没有命中 → 这类失败值得沉淀。
-  // **但这里供不了卡**：宿主的卡只渲染「挂在一次真实工具调用上」的卡（card-update 必须带一个
-  // 在途调用号），轮末没有任何调用可挂 → 用合成 callId 供卡会被宿主以 unknown-call 拒掉，
-  // 卡片根本不会出现（真机上就是这么空转的：只剩一句 toast）。
-  // 所以改成两步：①备好一份**已经脱敏的草稿**并通知用户；②下一轮装配上下文时告诉 agent
-  // 「要沉淀就调 misakanet_submit_intake(...)」——那次是真实调用，宿主会带出确认卡，
-  // 用户点「确认提交」才公开（不可撤回）。
-  live.offer = { text: failures[failures.length - 1].text, at: Date.now() };
-  await writeCheckpointState(state);
   await notify(
-    '刚才那次工具失败，语料里没有命中——这类失败值得沉淀成一条教训。' +
-    '我可以把它整理成一份草稿，在下一轮问你要不要公开。',
+    '刚才有一次工具调用失败了。下一轮我会先把这次失败交给 agent，让它动手前查一次语料；' +
+    '查不到、又觉得值得沉淀的话，它会给你一张确认卡。',
     'info',
   );
 }
 
+//: 最近一次工具调用属于哪个会话（搜索零命中时要把草稿记到那个会话上）。
+let currentToolCallSessionId = '';
+
 async function handleToolCall(msg) {
   const callId = msg.callId;
+  currentToolCallSessionId = asString(msg && msg.sessionId) || currentToolCallSessionId;
   const tool = msg.tool;
   const args = msg.args || {};
   // 外发工具的失败路径必须区分三态，所以要知道这次调用是不是外发。
@@ -1467,7 +1437,24 @@ async function handleToolCall(msg) {
         return await fail(callId, 'MISSING_QUERY', 'misakanet_search 需要 query：把报错原文或关键词（脱敏后）传进来。');
       }
       const payload = await callReadTool(TOOLS.misakanet_search, pickArgs(args, SEARCH_ARGS), callId);
-      return await sendResult(callId, true, shapeSearch(payload, args));
+      const shaped = shapeSearch(payload, args);
+      // agent 自己查了、且零命中 → 这就是「值得沉淀」的判据（以前判据在插件那次明知查不通的
+      // 轮末代查里）。把原文记成草稿，下一轮装配上下文时让 agent 去问用户要不要公开。
+      try {
+        const count = Number(shaped && shaped.count) || 0;
+        if (count === 0) {
+          const sessionId = asString(currentToolCallSessionId);
+          if (sessionId) {
+            const state = await readCheckpointState();
+            const session = state.sessions[sessionId] || (state.sessions[sessionId] = {});
+            session.offer = { text: clipFragment(redact(asString(args.query)), 240), at: Date.now() };
+            await writeCheckpointState(state);
+          }
+        }
+      } catch (error) {
+        /* 草稿只是附赠，失败不影响搜索结果 */
+      }
+      return await sendResult(callId, true, shaped);
     }
 
     if (tool === TOOLS.misakanet_get_lesson) {

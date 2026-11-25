@@ -7109,13 +7109,32 @@ function rememberLessons(rows, env) {
  * p95 6337 ms in the Analytics Engine phase breakdown.
  *
  * KV is the right home for this: it is what a read cache is for, a hit costs a KV read rather than a
- * D1 row, and the freshness contract is unchanged — the same `PROXY_CACHE_TTL` the durable cache used,
- * because the corpus changes on a daily sync and not on any request.
+ * D1 row, and the freshness contract is the corpus's own sync cadence (`lessons.synced_at` moves once
+ * a day), not any request — see the window below, which started at `PROXY_CACHE_TTL` and was raised.
  *
  * The write is best-effort and silent on failure: a KV miss or refusal must degrade to the D1 read
  * that was there before, not fail the search.
  */
 const CORPUS_KV_KEY = "corpus:v1";
+
+/**
+ * How long the KV copy of the corpus may be served — **an hour, not `PROXY_CACHE_TTL`'s 300 s**.
+ *
+ * The 300 s window bought nothing and cost the search its latency (measured 2026-11-25). It paired
+ * with a 330 s `expirationTtl` write, so on a corpus of 1159 lessons — 4.38 MB, stored as four ~1 MB
+ * `kv_store` shards — the key was expired for most of the day: `corpus:v1` answered `key not found`
+ * on a direct read, and the shards were rewritten every 6-7 minutes (05:36 / 05:43 / 05:49 / 05:56,
+ * four writes each, ~1 s apiece), always *on a search request*. That is why the phase is bimodal:
+ * p50 26 ms against p90 5649 ms / p95 9153 ms, with 41 of 343 searches over 5 s and a 9.07 s median
+ * corpus phase among them.
+ *
+ * The freshness the 300 s window protected does not exist: `lessons.synced_at` in production holds a
+ * single distinct value — one sync run writes every row — so the corpus a reader sees is already up
+ * to a day behind the last sync. An hourly cache cannot make that worse, and `warmCorpusCache` on
+ * the 15-minute cron keeps the served copy inside ~15 minutes in practice.
+ */
+const CORPUS_KV_TTL_SECONDS = 3600;
+const CORPUS_KV_MAX_AGE_MS = CORPUS_KV_TTL_SECONDS * 1000;
 
 async function readKvCorpus(env) {
   const kv = env && env.MISAKANET_KV;
@@ -7123,7 +7142,7 @@ async function readKvCorpus(env) {
   try {
     const payload = await kv.get(CORPUS_KV_KEY, "json");
     if (!payload || !Array.isArray(payload.rows) || payload.rows.length === 0) return null;
-    if (!payload.ts || Date.now() - payload.ts >= PROXY_CACHE_TTL) return null;
+    if (!payload.ts || Date.now() - payload.ts >= CORPUS_KV_MAX_AGE_MS) return null;
     return payload.rows;
   } catch (error) {
     debugLog(env, 2, "kv corpus read failed", { error: String((error && error.message) || error) });
@@ -7136,12 +7155,30 @@ async function storeKvCorpus(env, rows) {
   if (!kv || typeof kv.put !== "function" || !Array.isArray(rows) || rows.length === 0) return false;
   try {
     await kv.put(CORPUS_KV_KEY, JSON.stringify({ ts: Date.now(), rows }),
-      { expirationTtl: Math.ceil(PROXY_CACHE_TTL / 1000) + 30 });
+      { expirationTtl: CORPUS_KV_TTL_SECONDS + 30 });
     return true;
   } catch (error) {
     debugLog(env, 2, "kv corpus write failed", { error: String((error && error.message) || error) });
     return false;
   }
+}
+
+/**
+ * Put the corpus in KV from the cron, so refreshing it stops costing a search its milliseconds.
+ *
+ * With an hour-long window and ~14 searches an hour, an on-demand refresh still lands on roughly one
+ * search per window — the same bimodal tail, just less often. Warming on the 15-minute cron moves
+ * that 4.38 MB read and write to an invocation where nothing is waiting on it (`scheduled` has
+ * `ctx.waitUntil`).
+ *
+ * Best-effort by design: no D1 or no KV means there is nothing to warm, and a failure here must
+ * leave the on-demand path exactly as it was.
+ */
+async function warmCorpusCache(env) {
+  if (!d1Binding(env) || !(env && env.MISAKANET_KV)) return false;
+  const rows = await loadLessonsFresh(env);
+  if (!rows) return false;
+  return storeKvCorpus(env, rows);
 }
 
 async function loadLessons(env, filters = {}) {
@@ -7199,6 +7236,11 @@ async function loadLessons(env, filters = {}) {
       return rememberLessons(await snapshotLessons(env), env);
     }
     try {
+      // The durable cache still carries the corpus here (2026-11-25): it is a D1→D1 copy, so it is
+      // *not* what makes a search fast — `readKvCorpus` above is — and it is only paid on a KV miss,
+      // which `warmCorpusCache` now makes rare. Retiring it is a separate design question (it costs
+      // 4.38 MB read twice and written twice on every miss); this change deliberately does not mix
+      // that decision into a latency fix.
       const fromD1 = await getWithCache(env, "proxy:lessons:d1", () =>
         fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT, rich: true }));
       if (fromD1 && fromD1.length > 0) {
@@ -7614,6 +7656,13 @@ async function readCachePayload(env, cacheKey) {
 
 // ── KV cache wrapper ──
 async function getWithCache(env, cacheKey, fetchFn, opts = {}) {
+  // How long this entry may be served, and how long the store keeps it. Defaults to the shared
+  // `PROXY_CACHE_TTL` (300 s) — correct for the corpus read, which has to follow a sync — but wrong
+  // for a *rolling* aggregate: `/api/analytics` recomputes a seven-day GROUP BY, and at 300 s of
+  // freshness the same answer was paid for again every few minutes (measured 2026-11-25: 23,915
+  // rows/call, 222 calls/day, on a table of 26,998 rows). Callers that aggregate over days pass
+  // their own window.
+  const maxAgeMs = Number(opts.maxAgeMs) > 0 ? Number(opts.maxAgeMs) : PROXY_CACHE_TTL;
   // Through the durable store, for the same reason as the search index (#2116): a cache that
   // cannot be refreshed during a KV write outage serves the previous corpus to everyone. The key
   // shapes are unchanged (`proxy:lessons`, `insights:lesson-index`, …), and `storeGet` still reads
@@ -7621,7 +7670,7 @@ async function getWithCache(env, cacheKey, fetchFn, opts = {}) {
   if (hasDurableStore(env)) {
     try {
       const cached = await readCachePayload(env, cacheKey);
-      if (cached && cached.ts && Date.now() - cached.ts < PROXY_CACHE_TTL) return cached.data;
+      if (cached && cached.ts && Date.now() - cached.ts < maxAgeMs) return cached.data;
     } catch (error) {
       // A miss is a slow path, not a failure — but an unreadable shard set and a cache that never
       // lands look identical from outside, which is how the swallowed errors below went unnoticed.
@@ -7635,7 +7684,7 @@ async function getWithCache(env, cacheKey, fetchFn, opts = {}) {
     if (hasDurableStore(env)) {
       try {
         const stored = await storeCachePayload(env, cacheKey, { ts: Date.now(), data },
-          { expirationTtl: Math.ceil(PROXY_CACHE_TTL / 1000) + 30 });
+          { expirationTtl: Math.ceil(maxAgeMs / 1000) + 30 });
         if (!stored.written) {
           // Refused, and not rescued by the KV fallback. This is the state that must never be quiet:
           // the cache did not become durable, and the caller cannot tell from the value it got back.
@@ -7779,7 +7828,8 @@ async function handleContributionLadder(request, env) {
   let lessonAuthorCount = null;
   try {
     await ensureLessonAuthorsTable(d1);
-    // See `ladderUsedSql`: three indexed joins, not one OR across three columns (2026-11-23).
+    // See `ladderUsedSql`: one indexed join driven from the small table, not an OR across three
+    // columns and not one full scan of `search_signals` per branch (2026-11-23, re-measured 2026-11-25).
     const usedSql = ladderUsedSql(Boolean(sinceSql));
     const usedStmt = d1.prepare(usedSql);
     const usedResult = sinceSql ? await usedStmt.bind(sinceSql).all() : await usedStmt.all();
@@ -8251,20 +8301,26 @@ let lessonAuthorsTableReady = false;
 //: rows**, 90% of every row this account read in a month, at ~10.4M rows per call.
 //:
 //: The three columns exist because `search_signals.top_id` is sometimes a lesson id, sometimes a
-//: path, sometimes a basename — measured 2026-11-13 across 16k signals. So each becomes its own
-//: indexed join, and `UNION` (not `UNION ALL`) collapses a signal that matches two columns of the
-//: same author row. Exported so `workers/ladder-join-is-indexed.test.mjs` can run it through
-//: `node:sqlite` and compare it with the old form, rather than keeping a second copy of the SQL.
+//: path, sometimes a basename — measured 2026-11-13 across 16k signals. So the key set is the union of
+//: all three spellings, and the join runs once, driven from that small side.
+//:
+//: Measured 2026-11-25 against production (`misakanet-ops`, D1 query API, `meta.rows_read`): the
+//: three-branch form read **85,511** rows for **2** output rows — one full scan of `search_signals` per
+//: branch (3 * 24,982 ≈ 75k, the rest index work). This form reads **6,760** (12.6x) and returns
+//: byte-identical counts (`gh:Ikalus1988` 1501, `gh:zxh1990` 43, same `last`). Exported so
+//: `workers/ladder-join-is-indexed.test.mjs` can run it through `node:sqlite` against the old form.
 function ladderUsedSql(filtered) {
-  const branch = (column) => `
-        SELECT ss.id AS sid, la.node_id AS node_id, ss.created_at AS at
-          FROM lesson_authors la
-          JOIN search_signals ss ON ss.top_id = la.${column}
-         WHERE la.${column} IS NOT NULL${filtered ? " AND ss.created_at >= ?1" : ""}`;
-  const union = ["path", "lesson_id", "slug"].map(branch).join("\n        UNION");
-  return `WITH matched AS (${union})
-        SELECT node_id AS node_id, COUNT(*) AS n, MAX(at) AS last
-          FROM matched GROUP BY node_id`;
+  // `CROSS JOIN` is a reorder barrier, not a cartesian product: with a plain `JOIN` the planner drove
+  // from `search_signals` again and read 34,467 rows for the same answer. The join predicate sits on
+  // the cross join so the optional `?1` window still belongs to the right table.
+  const keys = `
+        SELECT path AS key, node_id FROM lesson_authors WHERE path IS NOT NULL
+        UNION SELECT lesson_id, node_id FROM lesson_authors WHERE lesson_id IS NOT NULL
+        UNION SELECT slug, node_id FROM lesson_authors WHERE slug IS NOT NULL`;
+  return `SELECT k.node_id AS node_id, COUNT(DISTINCT ss.id) AS n, MAX(ss.created_at) AS last
+        FROM (${keys}) k
+        CROSS JOIN search_signals ss ON ss.top_id = k.key${filtered ? " AND ss.created_at >= ?1" : ""}
+        GROUP BY k.node_id`;
 }
 
 async function ensureLessonAuthorsTable(d1) {
@@ -8701,15 +8757,24 @@ async function countDistinctRetrievingClients(env, { lessonId, lessonPath } = {}
     binds.push(`%/${stem}.md`);
   }
   if (clauses.length === 0) return null;
-  const row = await d1.prepare(
-    `SELECT COUNT(DISTINCT client_hint) AS clients
-       FROM search_signals
-      WHERE client_hint IS NOT NULL
-        AND client_hint <> ''
-        AND (${clauses.join(" OR ")})`
-  ).bind(...binds).first();
-  const clients = Number(row?.clients ?? 0);
-  return Number.isFinite(clients) ? clients : 0;
+  // The count changes only when someone searches, and this read is called ~386 times a day
+  // (measured 2026-11-25: 6,468 rows/call — 2.5M rows/day, 11.9% of every row the account read).
+  // The predicate is `top_id = ? OR top_id LIKE '%/<id>.md'`: the `OR` and the leading wildcard
+  // defeat `idx_search_signals_top`, so every call is a scan. It cannot be indexed away without
+  // denormalising `top_id`, so it gets a short durable memo instead — a badge that is fifteen
+  // minutes behind is not an error, and the miss path is unchanged.
+  const cacheKey = `insights:lesson-clients:${String(lessonId || "")}:${String(lessonPath || "")}`;
+  return getWithCache(env, cacheKey, async () => {
+    const row = await d1.prepare(
+      `SELECT COUNT(DISTINCT client_hint) AS clients
+         FROM search_signals
+        WHERE client_hint IS NOT NULL
+          AND client_hint <> ''
+          AND (${clauses.join(" OR ")})`
+    ).bind(...binds).first();
+    const clients = Number(row?.clients ?? 0);
+    return Number.isFinite(clients) ? clients : 0;
+  }, { maxAgeMs: 15 * 60 * 1000 });
 }
 
 // POST /api/search-signal — records that a search went unsolved. The query is
@@ -10343,7 +10408,19 @@ export default {
           if (hit) return hit;
         }
 
-        const [topQueries, topLessons, topGaps, topIntents, daily] = await Promise.all([
+        // One computation per hour per audience, not one per caller (2026-11-25). The edge entry
+        // below is per-colo and disappears the moment its TTL lapses, so in production the same
+        // seven-day aggregate was recomputed **222 times a day** (D1 analytics: 23,915 rows read per
+        // call on a table that holds 26,998 rows — 5.2M rows/day, 24.9% of every row this account
+        // read). The durable copy is colo-independent and survives an edge eviction, so a miss now
+        // costs one `kv_store` row instead of five GROUP BY scans.
+        //
+        // The two audiences get **separate keys**: the maintainer's payload carries
+        // `knowledge_gaps`, which is other people's verbatim failed queries. One key would hand
+        // them to the first anonymous caller that missed.
+        const audienceKey = `insights:analytics:7d:${maintainer ? "maintainer" : "anonymous"}`;
+        const payload = await getWithCache(env, audienceKey, async () => {
+          const [topQueries, topLessons, topGaps, topIntents, daily] = await Promise.all([
           d1.prepare(
             `SELECT query, COUNT(*) AS n FROM lesson_usage
              WHERE event='search' AND created_at >= datetime('now','-7 days')
@@ -10386,15 +10463,19 @@ export default {
              WHERE created_at >= datetime(date('now','-7 days'))
              GROUP BY day ORDER BY day`
           ).all(),
-        ]);
-        const payload = {
-          top_searches: (topQueries.results || []).map(r => ({ query: boundText(r.query), count: r.n })),
-          top_lessons: (topLessons.results || []).map(r => ({ lesson_id: r.lesson_id, count: r.n })),
-          intents: (topIntents.results || []).map(r => ({ intent: boundText(r.intent), count: r.n })),
-          daily_requests: (daily.results || []).map(r => ({ day: r.day, count: r.n })),
-        };
+          ]);
+          const built = {
+            top_searches: (topQueries.results || []).map(r => ({ query: boundText(r.query), count: r.n })),
+            top_lessons: (topLessons.results || []).map(r => ({ lesson_id: r.lesson_id, count: r.n })),
+            intents: (topIntents.results || []).map(r => ({ intent: boundText(r.intent), count: r.n })),
+            daily_requests: (daily.results || []).map(r => ({ day: r.day, count: r.n })),
+          };
+          if (maintainer) {
+            built.knowledge_gaps = (topGaps.results || []).map(r => ({ query: r.query, count: r.n }));
+          }
+          return built;
+        }, { maxAgeMs: ANALYTICS_TTL_SECONDS * 1000 });
         if (maintainer) {
-          payload.knowledge_gaps = (topGaps.results || []).map(r => ({ query: r.query, count: r.n }));
           payload.text_limit = null;
         } else {
           payload.withheld = ["knowledge_gaps", "mcpClients"];
@@ -11611,6 +11692,12 @@ async function getCode() {
         new Date().toISOString().slice(0, 10),
       ).catch(e => console.error("[query-cost] flush failed", e && e.message)));
     }
+    // Corpus warm (2026-11-25): the corpus is 4.38 MB and a KV window of an hour still lets one
+    // search per window pay for reading and rewriting it. Doing it here takes that off the request
+    // path. Logged only when it fails — a line every 15 minutes is how a log stops being read.
+    ctx.waitUntil(warmCorpusCache(env).catch((e) =>
+      console.error("[corpus-kv] warm failed", e && e.message)));
+
     // Durable-store housekeeping: expire what KV used to expire (2026-09-23, #2117).
     ctx.waitUntil(sweepExpiredStore(env).then((reclaimed) => {
       if (reclaimed > 0) console.log(`[kv-store] reclaimed ${reclaimed} expired row(s)`);
@@ -11720,6 +11807,13 @@ export {
   // question this pair answers is whether a refused read degrades to the snapshot or takes search
   // down with it.
   loadLessons,
+  // Exported for workers/corpus-kv-cache.test.mjs: the window the KV copy is served for, the two
+  // ends of that cache, and the cron warm that keeps it populated (2026-11-25).
+  readKvCorpus,
+  storeKvCorpus,
+  warmCorpusCache,
+  CORPUS_KV_KEY,
+  CORPUS_KV_MAX_AGE_MS,
   // Exported for workers/lessons-read-budget.test.mjs: the ceiling on the site's search read.
   readLessonsWithinBudget,
   // Exported for workers/intake-coverage-probe.test.mjs: "would the corpus have answered this?"
@@ -11732,6 +11826,10 @@ export {
   comparePluginVersions,
   readPublishedPluginVersion,
   filterSnapshot,
+  // Exported for workers/insights-store-cache.test.mjs: the per-lesson distinct-client count is a
+  // scan (`top_id = ? OR top_id LIKE '%/<id>.md'` defeats both indexes) called ~386 times a day, so
+  // it is memoised for fifteen minutes in the durable store (2026-11-25).
+  countDistinctRetrievingClients,
   // Exported for workers/health-lessons-read.test.mjs: the probe, its classifier, and the isolate
   // state that `/api/health` now reports.
   probeLessonsRead,

@@ -46,11 +46,11 @@ TARGET = REPO / ".cindy-plugin-community"
 #: The community channel's version line. Deliberately offset from the official one (1.6.x) so the
 #: two channels never take the same version slot on the same plugin id. Bump it when the community
 #: package is published; keep it below the official line.
-COMMUNITY_VERSION = "1.5.20"  # 1.5.15 被审核退回（版本号已烧掉）→ 这一版走 1.5.16
+COMMUNITY_VERSION = "1.5.22"  # 1.5.15 被审核退回（版本号已烧掉）→ 这一版走 1.5.16
 
 #: The community channel's own release story. The official package carries the official one.
 COMMUNITY_RELEASE_NOTES = (
-    '这一版把上报的确认从「手打一串短码」换成**一键点卡**（相对上一上架的 1.5.19）——上一版为了让授权真的来自用户本人，代价是你得复制 6 个字符、再发一条消息；这一版把这个摩擦去掉：卡片上直接有「确认提交」按钮，你点一下就够了。点击之后宿主会把这次点击连同一次性通行票交回插件，插件据此换回一轮对话，那一轮里由 agent 带着票据把内容提交出去；票据只对你点过的那一版原文有效、15 分钟内有效、用一次即作废，改一个字都要重新确认。没有点击就没有票据，插件一个请求都不会发；卡片画不出来或宿主不支持这种「点击后继续」时，直接停发并说明原因。同时不再订阅你的消息内容（上一版为了认短码才需要），预览仍然就是将要外发的那份文本（全字段脱敏、全字段绑定）。**从市场装的版本会自动更新；从 .cindy 文件装的不会**。版本号继续与官方通道错开（官方 1.6.x / 社区 1.5.x）。'
+    '这一版只改文档：随包手册补回与代码一致（相对上一上架的 1.5.21）。手册 §5.6.1 之前还在描述 1.5.17 之前那套旧闸门——「30 秒等不到点击就放弃」「改走 confirm=direct」「点击后要换一个新的在途调用号」「手机端按钮点不动」。这些在 1.5.20 之后都已经不成立：现在是一次点击就能走通（手机、桌面都行），票据一次性、15 分钟、绑定那一版原文。§5.8 也改成实情：插件不再假装在轮末替你查语料（那条路在宿主规则下必然失败），改成把失败交给下一轮的 agent、由它用自己的在途调用去查。功能与上报流程没有任何变化。**从市场装的版本会自动更新；从 .cindy 文件装的不会**。版本号继续与官方通道错开。'
 )
 
 #: The three substitutions, as (label, file, pattern, replacement).
