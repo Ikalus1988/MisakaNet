@@ -7656,6 +7656,13 @@ async function readCachePayload(env, cacheKey) {
 
 // ── KV cache wrapper ──
 async function getWithCache(env, cacheKey, fetchFn, opts = {}) {
+  // How long this entry may be served, and how long the store keeps it. Defaults to the shared
+  // `PROXY_CACHE_TTL` (300 s) — correct for the corpus read, which has to follow a sync — but wrong
+  // for a *rolling* aggregate: `/api/analytics` recomputes a seven-day GROUP BY, and at 300 s of
+  // freshness the same answer was paid for again every few minutes (measured 2026-11-25: 23,915
+  // rows/call, 222 calls/day, on a table of 26,998 rows). Callers that aggregate over days pass
+  // their own window.
+  const maxAgeMs = Number(opts.maxAgeMs) > 0 ? Number(opts.maxAgeMs) : PROXY_CACHE_TTL;
   // Through the durable store, for the same reason as the search index (#2116): a cache that
   // cannot be refreshed during a KV write outage serves the previous corpus to everyone. The key
   // shapes are unchanged (`proxy:lessons`, `insights:lesson-index`, …), and `storeGet` still reads
@@ -7663,7 +7670,7 @@ async function getWithCache(env, cacheKey, fetchFn, opts = {}) {
   if (hasDurableStore(env)) {
     try {
       const cached = await readCachePayload(env, cacheKey);
-      if (cached && cached.ts && Date.now() - cached.ts < PROXY_CACHE_TTL) return cached.data;
+      if (cached && cached.ts && Date.now() - cached.ts < maxAgeMs) return cached.data;
     } catch (error) {
       // A miss is a slow path, not a failure — but an unreadable shard set and a cache that never
       // lands look identical from outside, which is how the swallowed errors below went unnoticed.
@@ -7677,7 +7684,7 @@ async function getWithCache(env, cacheKey, fetchFn, opts = {}) {
     if (hasDurableStore(env)) {
       try {
         const stored = await storeCachePayload(env, cacheKey, { ts: Date.now(), data },
-          { expirationTtl: Math.ceil(PROXY_CACHE_TTL / 1000) + 30 });
+          { expirationTtl: Math.ceil(maxAgeMs / 1000) + 30 });
         if (!stored.written) {
           // Refused, and not rescued by the KV fallback. This is the state that must never be quiet:
           // the cache did not become durable, and the caller cannot tell from the value it got back.
@@ -8750,15 +8757,24 @@ async function countDistinctRetrievingClients(env, { lessonId, lessonPath } = {}
     binds.push(`%/${stem}.md`);
   }
   if (clauses.length === 0) return null;
-  const row = await d1.prepare(
-    `SELECT COUNT(DISTINCT client_hint) AS clients
-       FROM search_signals
-      WHERE client_hint IS NOT NULL
-        AND client_hint <> ''
-        AND (${clauses.join(" OR ")})`
-  ).bind(...binds).first();
-  const clients = Number(row?.clients ?? 0);
-  return Number.isFinite(clients) ? clients : 0;
+  // The count changes only when someone searches, and this read is called ~386 times a day
+  // (measured 2026-11-25: 6,468 rows/call — 2.5M rows/day, 11.9% of every row the account read).
+  // The predicate is `top_id = ? OR top_id LIKE '%/<id>.md'`: the `OR` and the leading wildcard
+  // defeat `idx_search_signals_top`, so every call is a scan. It cannot be indexed away without
+  // denormalising `top_id`, so it gets a short durable memo instead — a badge that is fifteen
+  // minutes behind is not an error, and the miss path is unchanged.
+  const cacheKey = `insights:lesson-clients:${String(lessonId || "")}:${String(lessonPath || "")}`;
+  return getWithCache(env, cacheKey, async () => {
+    const row = await d1.prepare(
+      `SELECT COUNT(DISTINCT client_hint) AS clients
+         FROM search_signals
+        WHERE client_hint IS NOT NULL
+          AND client_hint <> ''
+          AND (${clauses.join(" OR ")})`
+    ).bind(...binds).first();
+    const clients = Number(row?.clients ?? 0);
+    return Number.isFinite(clients) ? clients : 0;
+  }, { maxAgeMs: 15 * 60 * 1000 });
 }
 
 // POST /api/search-signal — records that a search went unsolved. The query is
@@ -10392,7 +10408,19 @@ export default {
           if (hit) return hit;
         }
 
-        const [topQueries, topLessons, topGaps, topIntents, daily] = await Promise.all([
+        // One computation per hour per audience, not one per caller (2026-11-25). The edge entry
+        // below is per-colo and disappears the moment its TTL lapses, so in production the same
+        // seven-day aggregate was recomputed **222 times a day** (D1 analytics: 23,915 rows read per
+        // call on a table that holds 26,998 rows — 5.2M rows/day, 24.9% of every row this account
+        // read). The durable copy is colo-independent and survives an edge eviction, so a miss now
+        // costs one `kv_store` row instead of five GROUP BY scans.
+        //
+        // The two audiences get **separate keys**: the maintainer's payload carries
+        // `knowledge_gaps`, which is other people's verbatim failed queries. One key would hand
+        // them to the first anonymous caller that missed.
+        const audienceKey = `insights:analytics:7d:${maintainer ? "maintainer" : "anonymous"}`;
+        const payload = await getWithCache(env, audienceKey, async () => {
+          const [topQueries, topLessons, topGaps, topIntents, daily] = await Promise.all([
           d1.prepare(
             `SELECT query, COUNT(*) AS n FROM lesson_usage
              WHERE event='search' AND created_at >= datetime('now','-7 days')
@@ -10435,15 +10463,19 @@ export default {
              WHERE created_at >= datetime(date('now','-7 days'))
              GROUP BY day ORDER BY day`
           ).all(),
-        ]);
-        const payload = {
-          top_searches: (topQueries.results || []).map(r => ({ query: boundText(r.query), count: r.n })),
-          top_lessons: (topLessons.results || []).map(r => ({ lesson_id: r.lesson_id, count: r.n })),
-          intents: (topIntents.results || []).map(r => ({ intent: boundText(r.intent), count: r.n })),
-          daily_requests: (daily.results || []).map(r => ({ day: r.day, count: r.n })),
-        };
+          ]);
+          const built = {
+            top_searches: (topQueries.results || []).map(r => ({ query: boundText(r.query), count: r.n })),
+            top_lessons: (topLessons.results || []).map(r => ({ lesson_id: r.lesson_id, count: r.n })),
+            intents: (topIntents.results || []).map(r => ({ intent: boundText(r.intent), count: r.n })),
+            daily_requests: (daily.results || []).map(r => ({ day: r.day, count: r.n })),
+          };
+          if (maintainer) {
+            built.knowledge_gaps = (topGaps.results || []).map(r => ({ query: r.query, count: r.n }));
+          }
+          return built;
+        }, { maxAgeMs: ANALYTICS_TTL_SECONDS * 1000 });
         if (maintainer) {
-          payload.knowledge_gaps = (topGaps.results || []).map(r => ({ query: r.query, count: r.n }));
           payload.text_limit = null;
         } else {
           payload.withheld = ["knowledge_gaps", "mcpClients"];
@@ -11794,6 +11826,10 @@ export {
   comparePluginVersions,
   readPublishedPluginVersion,
   filterSnapshot,
+  // Exported for workers/insights-store-cache.test.mjs: the per-lesson distinct-client count is a
+  // scan (`top_id = ? OR top_id LIKE '%/<id>.md'` defeats both indexes) called ~386 times a day, so
+  // it is memoised for fifteen minutes in the durable store (2026-11-25).
+  countDistinctRetrievingClients,
   // Exported for workers/health-lessons-read.test.mjs: the probe, its classifier, and the isolate
   // state that `/api/health` now reports.
   probeLessonsRead,
