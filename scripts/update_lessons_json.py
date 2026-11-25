@@ -119,12 +119,22 @@ def atomic_write(target: Path, payload: "str | bytes") -> None:
     way out that is not the rename (`BaseException`, not `Exception`: a KeyboardInterrupt between
     the write and the rename must not leave the debris either).
 
-    The temp file is written in **text mode on purpose**. `newline=None` means the OS translates
-    `\n` to `os.linesep`, which is exactly what `Path.write_text` did before this function
-    existed — and that is load-bearing on Windows. Under `core.autocrlf=true` a checkout lands
-    LF as CRLF, so git expects CRLF in the working tree; a generator that writes LF leaves a file
-    whose blob hash still equals `HEAD:` and yet which `git status --porcelain` reports as ` M`.
-    The atomicity comes from `os.replace`, not from writing bytes, so text mode gives nothing up.
+    The temp file is written in **text mode**, and the newline is pinned to `\n` (2026-11-25).
+
+    `newline=None` — the value this used until then — means "translate `\n` to `os.linesep`", so a
+    Windows run wrote `data/lessons.json` and its two mirrors as **CRLF**. That is only correct on a
+    checkout with `core.autocrlf=true`; this repository does not use one (`.gitattributes` pins
+    `eol=lf` for `*.sh` and deliberately does not set `* text=auto`), and every CI leg commits LF.
+    Measured: a Windows regeneration produced a 36,901-line diff of a file whose content had not
+    changed, and `tests/test_tracked_text_files_are_lf.py` refused it — the same class of failure as
+    the site generators' `write_text` calls, in the writer that feeds them.
+
+    Pinning `\n` is what the gate asks for and what git stores: the blob is LF whatever the platform,
+    so `git status --porcelain` is silent after a regeneration instead of reporting a whole-file diff.
+
+    The original note stands where it still applies: under `core.autocrlf=true` a checkout lands LF
+    as CRLF, and a generator that writes LF then leaves a file whose blob hash equals `HEAD:` while
+    `git status` reports ` M`. That trade-off is resolved in favour of the committed blob.
 
     Measured 2026-10-07: this exact regression turned
     `test_lesson_source_contract.py::test_the_generators_are_a_no_op_on_an_unchanged_corpus` red on
@@ -140,16 +150,14 @@ def atomic_write(target: Path, payload: "str | bytes") -> None:
         suffix=".tmp",
     )
     try:
-        # The mode follows the payload, and the difference is not cosmetic:
-        # `data/lessons.json` is written as text so a Windows checkout lands CRLF, which is what
-        # git expects under `core.autocrlf=true`; the two mirrors copy that file's bytes
-        # verbatim and inherit CRLF with it. Writing either as raw bytes put LF on disk and left
-        # `git status --porcelain` reporting ` M` on files whose blob hash still equalled
-        # `HEAD:` — which is what turned the corpus contract test red on every windows leg.
+        # The mode follows the payload, and the newline is pinned rather than left to the platform:
+        # `data/lessons.json` is written as text, and `newline=None` wrote it as CRLF on Windows — a
+        # whole-file diff where nothing had changed, refused by the LF gate on 2026-11-25. `\n` is
+        # what CI commits and what the contract test compares against.
         if isinstance(payload, bytes):
             handle = os.fdopen(fd, "wb")
         else:
-            handle = os.fdopen(fd, "w", encoding="utf-8", newline=None)
+            handle = os.fdopen(fd, "w", encoding="utf-8", newline="\n")
         with handle:
             handle.write(payload)
             handle.flush()

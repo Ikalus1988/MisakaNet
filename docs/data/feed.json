@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-25T15:55:57.152267+00:00",
+  "generated_at": "2026-11-25T18:01:47.307619+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
@@ -113,23 +113,23 @@
     },
     {
       "type": "merged_pr",
+      "title": "chore(data): 市场在售版本更新为社区 1.5.22（KV 已同步）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5802",
+      "timestamp": "2026-11-25T17:33:17Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(cindy-plugin): 1.5.22 —— 随包手册改回与代码一致（旧闸门的残留）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5801",
+      "timestamp": "2026-11-25T16:49:54Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
       "title": "chore(data): 市场在售版本更新为社区 1.5.21（KV 已同步）",
       "url": "https://github.com/Ikalus1988/MisakaNet/pull/5793",
       "timestamp": "2026-11-25T10:30:04Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): 市场在售版本更新为社区 1.5.20（KV 已同步）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5791",
-      "timestamp": "2026-11-25T09:47:14Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5789",
-      "timestamp": "2026-11-25T09:22:10Z",
       "source": "github"
     }
   ]
