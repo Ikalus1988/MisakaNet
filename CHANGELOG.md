@@ -7,6 +7,20 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.22.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.21.0...v3.22.0) (2026-11-25)
+
+
+### Features
+
+* **cindy-plugin:** 1.5.19 —— 短码闸门 + 预览即外发；补上内网地址脱敏 ([#5710](https://github.com/Ikalus1988/MisakaNet/issues/5710)) ([4862b00](https://github.com/Ikalus1988/MisakaNet/commit/4862b008744d7edc2eadf6b13c7643d17eb13538))
+* **lessons:** intake batch 2026-11-24 ([#5699](https://github.com/Ikalus1988/MisakaNet/issues/5699)) ([6f0eea5](https://github.com/Ikalus1988/MisakaNet/commit/6f0eea5b3920a77fcff99fdbf051171f7e0999ad))
+* **lessons:** intake batch 2026-11-24 ([#5706](https://github.com/Ikalus1988/MisakaNet/issues/5706)) ([56073fc](https://github.com/Ikalus1988/MisakaNet/commit/56073fc7731fbc126a6bed3a1ad5107d926a57c4))
+
+
+### Bug Fixes
+
+* **mcp:** 通知的「没有回答」不再被包成一帧错误（SSE 路径） ([#5698](https://github.com/Ikalus1988/MisakaNet/issues/5698)) ([990f018](https://github.com/Ikalus1988/MisakaNet/commit/990f018c16cd79f2184c25b71276c6b05d00ffd4))
+
 ## [3.21.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.20.0...v3.21.0) (2026-11-24)
 
 
