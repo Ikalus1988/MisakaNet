@@ -1,9 +1,30 @@
 {
-  "generated_at": "2026-11-25T18:01:47.307619+00:00",
+  "generated_at": "2026-11-25T19:26:18.573364+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
+    {
+      "type": "merged_pr",
+      "title": "feat(lessons): intake batch 2026-11-25",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5815",
+      "timestamp": "2026-11-25T19:03:07Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): 市场在售版本更新为社区 1.5.22（KV 已同步）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5802",
+      "timestamp": "2026-11-25T17:33:17Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(cindy-plugin): 1.5.22 —— 随包手册改回与代码一致（旧闸门的残留）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5801",
+      "timestamp": "2026-11-25T16:49:54Z",
+      "source": "github"
+    },
     {
       "type": "merged_pr",
       "title": "perf(worker): /api/analytics 与每课客户端计数改为持久缓存（24h 再省 ~9.3M 行读，44%）",
@@ -13,9 +34,9 @@
     },
     {
       "type": "merged_pr",
-      "title": "fix(cindy-plugin): 1.5.21 —— 轮末不再假装替 agent 查语料",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5792",
-      "timestamp": "2026-11-25T10:15:02Z",
+      "title": "chore(data): 市场在售版本更新为社区 1.5.21（KV 已同步）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5793",
+      "timestamp": "2026-11-25T10:30:04Z",
       "source": "github"
     },
     {
@@ -109,27 +130,6 @@
         "onboarding"
       ],
       "timestamp": "2026-08-23T14:53:19Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): 市场在售版本更新为社区 1.5.22（KV 已同步）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5802",
-      "timestamp": "2026-11-25T17:33:17Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(cindy-plugin): 1.5.22 —— 随包手册改回与代码一致（旧闸门的残留）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5801",
-      "timestamp": "2026-11-25T16:49:54Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): 市场在售版本更新为社区 1.5.21（KV 已同步）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5793",
-      "timestamp": "2026-11-25T10:30:04Z",
       "source": "github"
     }
   ]
