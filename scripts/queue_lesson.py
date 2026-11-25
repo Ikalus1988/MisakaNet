@@ -112,7 +112,8 @@ def _update_index(new_file, title, domain, tags, source):
     body_lines = sorted(body_lines)
 
     content = "\n".join(header + body_lines + [""])
-    index_path.write_text(content, encoding="utf-8")
+    index_path.write_text(content, encoding="utf-8", newline="
+")
     print(f"  index: {len(body_lines)} lessons")
 
 def _print_suggested_git(filename, title):
@@ -188,7 +189,8 @@ def write_lesson(title, domain, tags, content, source=NODE_ID, status="published
         body = existing_content.rstrip() + f"\n\n---\n\n### 更新 ({now.strftime('%Y-%m-%d')})\n\n{content}\n"
 
     filepath.parent.mkdir(parents=True, exist_ok=True)
-    filepath.write_text(body, encoding="utf-8")
+    filepath.write_text(body, encoding="utf-8", newline="
+")
 
     _update_index(filepath, title, domain, tags, source)
 
@@ -225,7 +227,8 @@ def write_lesson(title, domain, tags, content, source=NODE_ID, status="published
         pending_dir = REPO_ROOT / ".feedback" / "pending"
         pending_dir.mkdir(parents=True, exist_ok=True)
         pending_file = pending_dir / f"lesson_{ts}_{filename}"
-        pending_file.write_text(body, encoding="utf-8")
+        pending_file.write_text(body, encoding="utf-8", newline="
+")
         meta_file = pending_dir / f"lesson_{ts}_{filename}.meta.json"
         meta_file.write_text(_json.dumps({
             "title": title, "domain": domain, "tags": tags,
@@ -299,7 +302,8 @@ def write_lesson_from_file(filepath: str) -> bool:
     body = f"---\n{json.dumps(fm, ensure_ascii=False)}\n---\n\n{content_body}\n"
 
     dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_text(body, encoding="utf-8")
+    dest.write_text(body, encoding="utf-8", newline="
+")
 
     _update_index(dest, title, domain, tags, source)
 
