@@ -1322,12 +1322,12 @@ test('a search in this session silences the reminder', async () => {
   assert.equal(card.length, 0, 'a session that already searched must not be nagged');
 });
 
-test('a real-shaped tool_result is recognised, and the failure carries the command', async () => {
+test('a real-shaped tool_result is recognised, and the reminder carries summary before command', async () => {
   // 真机实测的宿主载荷（2026-11-24）：
   //   tool_use    → {"toolUseId":"call_…","toolName":"bash","input":{"command":"…"}}
   //   tool_result → {"summary":"done","toolUseIds":["call_…"]}
   // tool_result 里既没有 error 字段，也没有退出码，也没有工具名——只有 summary。
-  // 之前的桩载荷字段更多（带 error/toolName），所以用例是绿的、真机是哑的。这里用真形状。
+  // 失败判定与「查什么」都只能靠 summary + 配对的 tool_use。
   const load = await loadPlugin({ respond: () => ({ results: [] }) });
   await load.stub.handler({
     type: 'event',
@@ -1349,19 +1349,16 @@ test('a real-shaped tool_result is recognised, and the failure carries the comma
   });
   await new Promise((resolve) => setTimeout(resolve, 20));
   await load.stub.handler({ type: 'event', name: 'did-turn-end', data: { sessionId: 's-real' } });
-  await new Promise((resolve) => setTimeout(resolve, 80));
+  await new Promise((resolve) => setTimeout(resolve, 60));
 
-  // 失败必须被认出来，而且认出来的那段文字要能拿去查（带上工具名与命令行）。
-  const search = load.requests.find((r) => JSON.parse(r.body).params.name === 'misakanet_search');
-  assert.ok(search, 'the turn end must search the corpus');
-  const query = JSON.parse(search.body).params.arguments.query;
-  assert.match(query, /npm run build/, 'the query must carry the failing command');
-  assert.match(query, /exit code 7/, 'the query must carry the failure text');
-  // 整段会被截到 120 字：summary（宿主总结的「哪儿错了」）必须排在前面，不能被命令行挤掉。
-  assert.ok(query.indexOf('exit code 7') < query.indexOf('npm run build'),
-    'the summary must come before the command excerpt');
+  // 轮末不再替 agent 查（宿主的 cindy.fetch 只给在途调用代发，轮末那条路 100% 被网络闸挡）。
+  assert.equal(
+    load.requests.filter((r) => JSON.parse(r.body).params.name === 'misakanet_search').length,
+    0,
+    'the turn end must not try to search on its own',
+  );
 
-  // 查过了就不再啰嗦：装配消息时宿主应收到 allow（而不是再提一次「先查」）。
+  // 下一轮装配：把「先查一次」连同这次失败的可查文本交给 agent。
   const hooks = [];
   const originalSend = load.stub.send;
   load.stub.send = async (payload) => {
@@ -1377,15 +1374,15 @@ test('a real-shaped tool_result is recognised, and the failure carries the comma
   await new Promise((resolve) => setTimeout(resolve, 20));
   const verdict = hooks.find((h) => h.hookId === 'h-real');
   assert.ok(verdict, 'the hook must be answered');
-  // agent 自己查过了 → 不该再被催「先查一次」（那份「语料没命中」的沉淀草稿仍可给）。
-  if (verdict.action === 'context') {
-    assert.doesNotMatch(verdict.context, /misakanet_search\(query=/,
-      'a session that already searched must not be nagged to search again');
-  } else {
-    assert.equal(verdict.action, 'allow');
-  }
+  assert.equal(verdict.action, 'context');
+  const context = String(verdict.context || '');
+  assert.match(context, /misakanet_search/, 'the agent is told to search itself');
+  assert.match(context, /npm run build/, 'the query text carries the failing command');
+  assert.match(context, /exit code 7/, 'the query text carries the failure text');
+  // 整段会被截到 120 字：summary（宿主总结的「哪儿错了」）必须排在前面，不能被命令行挤掉。
+  assert.ok(context.indexOf('exit code 7') < context.indexOf('npm run build'),
+    'the summary must come before the command excerpt');
 });
-
 test('the state file is written once per turn, not once per tool event', async () => {
   // 轮里几十次工具调用就是几十次写盘——而且读者可能读到写了一半的文件。
   const load = await loadPlugin({ respond: () => ({ results: [] }) });
@@ -1409,42 +1406,56 @@ test('the state file is written once per turn, not once per tool event', async (
     `six tool events must not mean six state writes (got ${writesAfter - writesBefore})`);
 });
 
-test('a later, different failure is searched again', async () => {
-  // 整个会话只查一次是不够的：会话很长、后面又失败时，上一次查到的教训对不上这次的报错。
+test('a later, different failure re-arms the reminder, with the newer command', async () => {
+  // 整个会话只提醒一次是不够的：会话很长、后面又失败时，上一次提醒对不上这次的报错。
   const load = await loadPlugin({ respond: () => ({ results: [] }) });
   const fail = async (callId, command) => {
     await load.stub.handler({
       type: 'event',
       name: 'did-tool-execution',
-      data: {
-        sessionId: 's-again',
-        eventType: 'tool_use',
-        payload: { toolUseId: callId, toolName: 'bash', input: { command } },
-      },
+      data: { sessionId: 's-again', eventType: 'tool_use', payload: { toolUseId: callId, toolName: 'bash', input: { command } } },
     });
     await load.stub.handler({
       type: 'event',
       name: 'did-tool-execution',
-      data: {
-        sessionId: 's-again',
-        eventType: 'tool_result',
-        payload: { summary: 'exit code 1', toolUseIds: [callId] },
-      },
+      data: { sessionId: 's-again', eventType: 'tool_result', payload: { summary: 'exit code 1', toolUseIds: [callId] } },
     });
     await new Promise((resolve) => setTimeout(resolve, 20));
     await load.stub.handler({ type: 'event', name: 'did-turn-end', data: { sessionId: 's-again' } });
-    await new Promise((resolve) => setTimeout(resolve, 60));
+    await new Promise((resolve) => setTimeout(resolve, 40));
   };
-  await fail('call_a', 'npm run first');
-  const afterFirst = load.requests.filter((r) => JSON.parse(r.body).params.name === 'misakanet_search').length;
-  assert.equal(afterFirst, 1, 'the first failure must be searched once');
-  await fail('call_b', 'cargo build second');
-  const searches = load.requests.filter((r) => JSON.parse(r.body).params.name === 'misakanet_search');
-  assert.equal(searches.length, 2, 'a new failure must be searched again');
-  const lastQuery = JSON.parse(searches[1].body).params.arguments.query;
-  assert.match(lastQuery, /cargo build second/, 'the second search must carry the second failure');
-});
+  const contextFor = async (hookId) => {
+    const hooks = [];
+    const originalSend = load.stub.send;
+    load.stub.send = async (payload) => {
+      if (payload && payload.type === 'event-verdict') hooks.push(payload);
+      return originalSend(payload);
+    };
+    await load.stub.handler({
+      type: 'event',
+      name: 'will-compose-context',
+      hookId,
+      data: { sessionId: 's-again', text: '继续' },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    load.stub.send = originalSend;
+    const verdict = hooks.find((h) => h.hookId === hookId);
+    return verdict && verdict.context || '';
+  };
 
+  await fail('call_a', 'npm run first');
+  const first = await contextFor('h-a');
+  assert.match(first, /npm run first/, 'the reminder carries the first command');
+
+  await fail('call_b', 'npm run second');
+  const second = await contextFor('h-b');
+  assert.match(second, /npm run second/, 'a later failure re-arms the reminder with the newer command');
+  assert.equal(
+    load.requests.filter((r) => JSON.parse(r.body).params.name === 'misakanet_search').length,
+    0,
+    'the plugin never searches by itself',
+  );
+});
 test('a search the agent did itself stops the plugin from searching again', async () => {
   // 「agent 自己查过」与「插件代查过」必须分开：agent 查过 → 插件不再重复查；
   // 但老版本把这两个含义塞进同一个 searched 标记，导致老会话之后再失败也永远查不到。
@@ -1492,21 +1503,19 @@ test('when the host cannot show the card, nothing is published', async () => {
 });
 
 test('the draft never pre-sets the user confirmation', async () => {
-  // 审核意见：移除预置确认。插件可以把「语料没命中、这份原文值得沉淀」告诉 agent，
+  // 审核意见：移除预置确认。插件可以把「这次查也查不到、原文值得沉淀」告诉 agent，
   // 但**不能**替用户把 user_confirmed=true 填好——那是用户的授权，不是 agent 的判断。
+  // 现在这份草稿来自 agent 自己那次零命中的搜索（插件不再代查）。
   const load = await loadPlugin({ respond: () => ({ results: [], no_match: true }) });
   await load.stub.handler({
-    type: 'event',
-    name: 'did-tool-execution',
-    data: {
-      sessionId: 's-draft',
-      eventType: 'error',
-      payload: { message: 'connection refused while dialing the upstream service' },
-    },
+    type: 'tool-call',
+    tool: 'misakanet_search',
+    args: { query: 'connection refused while dialing the upstream service' },
+    callId: 'search-1',
+    sessionId: 's-draft',
   });
-  await new Promise((resolve) => setTimeout(resolve, 20));
-  await load.stub.handler({ type: 'event', name: 'did-turn-end', data: { sessionId: 's-draft' } });
-  await new Promise((resolve) => setTimeout(resolve, 60));
+  await new Promise((resolve) => setTimeout(resolve, 40));
+
   const hooks = [];
   const originalSend = load.stub.send;
   load.stub.send = async (payload) => {
@@ -1527,7 +1536,6 @@ test('the draft never pre-sets the user confirmation', async () => {
   assert.doesNotMatch(verdict.context, /user_confirmed=true/,
     'the confirmation must never be pre-set for the agent');
 });
-
 test('the generated community package loads and answers too', async () => {
   // The community package is built from this one by a script. If the script ever produces
   // something the host cannot run, the marketplace would ship a broken package — so load it.
