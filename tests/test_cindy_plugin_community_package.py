@@ -167,12 +167,18 @@ def test_the_version_constant_matches_its_manifest():
         assert match.group(1) == manifest(base)["version"], base.name
 
 
-def test_both_manuals_document_the_card_gate():
+def test_both_manuals_document_the_click_gate():
+    """The shipped manual is what a reader (and a reviewer) trusts; it must describe the gate that
+    actually exists — the click gate — not a retired one."""
     for base in (OFFICIAL, COMMUNITY):
         manual = (base / "manual" / "misakanet" / "MANUAL.md").read_text(encoding="utf-8")
         assert "确认卡" in manual, f"{base.name} does not document the confirmation card"
-        assert "confirm" in manual, f"{base.name} does not document the confirm argument"
-        assert "30" in manual, f"{base.name} does not document the give-up window"
+        assert "确认提交" in manual, f"{base.name} does not document the confirm button"
+        assert "click_ticket" in manual, f"{base.name} does not document the one-time ticket"
+        assert "15 分钟" in manual, f"{base.name} does not document the ticket lifetime"
+        # 退役的两条路不能以「文档」的形式回来
+        assert 'confirm="direct"' not in manual, f"{base.name} still documents the retired direct path"
+        assert "30 秒" not in manual, f"{base.name} still documents the retired 30s give-up"
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node is what parses the entry point")
