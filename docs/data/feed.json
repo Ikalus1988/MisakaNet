@@ -1,82 +1,82 @@
 {
-  "generated_at": "2026-11-24T23:56:59.406672+00:00",
+  "generated_at": "2026-11-25T08:58:11.816821+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(cindy-plugin): 1.5.19 —— 短码闸门 + 预览即外发；补上内网地址脱敏",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5710",
-      "timestamp": "2026-11-24T16:57:07Z",
+      "title": "feat(cindy-plugin): 1.5.20 —— 上报确认改成「一键点卡」：点击 → 一次性票据 → 一轮 agent",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5782",
+      "timestamp": "2026-11-25T07:12:29Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): vol 47 — 确认闸门该由谁按下，与 MCP 的「没有回答」",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5712",
-      "timestamp": "2026-11-24T15:09:51Z",
+      "title": "chore: auto-update lessons.json, public counts and generated pages",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5780",
+      "timestamp": "2026-11-25T06:05:49Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(lessons): intake batch 2026-11-24",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5706",
-      "timestamp": "2026-11-24T14:22:09Z",
+      "title": "feat(lessons): intake batch 2026-11-25",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5772",
+      "timestamp": "2026-11-25T01:00:14Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5705",
-      "timestamp": "2026-11-24T14:16:38Z",
+      "title": "chore(main): release 3.22.0",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5703",
+      "timestamp": "2026-11-25T00:46:50Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(lessons): intake batch 2026-11-24",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5699",
-      "timestamp": "2026-11-24T09:39:03Z",
+      "title": "chore(data): 市场在售版本更新为社区 1.5.19（KV 已同步）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5771",
+      "timestamp": "2026-11-25T00:44:27Z",
       "source": "github"
     },
     {
       "type": "lesson",
-      "title": "Binary record parser's length gate silently dropped an entire record variant: pa",
-      "url": "lessons/contrib/binary-record-parsers-length-gate-silently-dropped-an.md",
-      "timestamp": "2026-11-24",
+      "title": "A cold-boot witness timed out even though its stored samples proved the guest wa",
+      "url": "lessons/contrib/a-cold-boot-witness-timed-out-even-though-its-stored.md",
+      "timestamp": "2026-11-25",
       "domain": "mcp",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "openpyxl read_only 加载 xlsx（WPS 或部分 Mac Excel 产出）时 ws.max_row=1 / max_col=1，但文件实际",
-      "url": "lessons/contrib/openpyxl-read-only-加载-xlsxwps-或部分-mac-excel-产出时-wsmax-row1.md",
-      "timestamp": "2026-11-24",
+      "title": "A restored integration remained not_loaded in isolated Home Assistant Core even",
+      "url": "lessons/contrib/a-restored-integration-remained-not-loaded-in-isolated-home.md",
+      "timestamp": "2026-11-25",
       "domain": "mcp",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "Windows GUI 自动化里「点击/按键发出去了但界面没反应」的排障成本极高（同一套脚本时灵时不灵，连试数轮全哑），最后发现问题与输入 AP",
-      "url": "lessons/contrib/windows-gui-5671.md",
-      "timestamp": "2026-11-24",
+      "title": "A Windows Credential Manager enrollment using pywin32 rejected an already encode",
+      "url": "lessons/contrib/a-windows-credential-manager-enrollment-using-pywin32.md",
+      "timestamp": "2026-11-25",
       "domain": "windows",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "两条 agent 线并行维护同一套共享台账（判据编号表、文档章节号、协作 issue 编号），各自从同一空位自增编号（两线都从 F20 起编、都",
-      "url": "lessons/contrib/两条-agent-线并行维护同一套共享台账判据编号表文档章节号协作-issue.md",
-      "timestamp": "2026-11-24",
-      "domain": "mcp",
+      "title": "GUI 截图验收批量出图中途机器自动锁屏：CopyFromScreen/PowerShell 全程无报错，10 张「验收截图」全部拍成锁屏壁纸，脚本报成功——假",
+      "url": "lessons/contrib/gui-截图验收批量出图中途机器自动锁屏copyfromscreenpowershell-全程无报错10.md",
+      "timestamp": "2026-11-25",
+      "domain": "windows",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "在 Windows（中文系统）用 Node 子进程调 WinRAR UnRAR.exe 列目录（`lb`）拿到文件名，再用该文件名调 `p` 提",
-      "url": "lessons/contrib/在-windows中文系统用-node-子进程调-winrar-unrarexe.md",
-      "timestamp": "2026-11-24",
-      "domain": "windows",
+      "title": "In a maintenance guest, Home Assistant Supervisor kept reporting supervisor_inte",
+      "url": "lessons/contrib/in-a-maintenance-guest-home-assistant-supervisor-kept.md",
+      "timestamp": "2026-11-25",
+      "domain": "mcp",
       "source": "lessons"
     },
     {
