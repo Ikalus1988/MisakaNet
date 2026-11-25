@@ -821,8 +821,10 @@
   <url><loc>https://misakanet.org/lessons/roboguide-dutyestimation-fails-with-unknown-variable-name-the-controller-does-no/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/roboguide-示教器激活弹出非致命托管异常厂商-com-竞态在-connect-事件前读取机器人对象/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/roboguide-wont-open-a-workcell-after-reinstall-the-frvrc-version-its-backupversi/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/roboguide-多工位克隆共存时所有克隆的窗口标题显示同一个-frw-文件名例如克隆自同一母壳的多个工位窗口标题逐字相同按标题驱动的自动化截图/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/roboguide-工位文件-frw-被外部编辑如改-xml-userframes-坐标后该工位每次引导必楔死rgcore-存活但冻在-frmspla/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/roboguide-虚拟控制器上注入并运行-karel-pc-的完整链路连环翻车v940-实测-1-ftp-stor-mdpc-不可用端/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/roboguide-虚拟控制器的-httprpcftp-通道在崩溃循环后逐一挂死dg-请求全部挂起超时kcl-回包退化成-web-server-主页/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-cloned-confirmation-line-poisons-the-context-loop-detection-must-compare-dialo/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/roleplay-vocative-vs-mention-entity-disambiguation-failure-in-portuguese-turn-ro/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/编译反编译的文本等价比对必须先剔除生成时刻字段raw-比对恒假实测-024/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
