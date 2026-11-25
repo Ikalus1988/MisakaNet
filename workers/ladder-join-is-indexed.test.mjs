@@ -95,18 +95,21 @@ test('a signal that matches two columns of one author is still counted once', ()
   db.close();
 });
 
-test('the shape is three joins and no OR across columns', () => {
-  // The *shape* is the regression: `ON a OR b OR c` cannot use an index in any SQLite version.
-  // Asserting a specific plan would not travel — measured 2026-11-24, this machine's SQLite drives
-  // from `search_signals` and CI's drives from `lesson_authors`; both are linear, while the OR form
-  // is quadratic in both. So the unit test guards the shape, and the effect is read back from
-  // Cloudflare's D1 analytics after the deploy, where the number is per-query.
+test('the shape is one indexed join over a deduped key set, and no OR across columns', () => {
+  // The *shape* is the regression: `ON a OR b OR c` cannot use an index in any SQLite version, and
+  // the three-branch form (2026-11-23) fixed that but then scanned `search_signals` once per branch.
+  // Asserting a specific plan does not travel between SQLite builds — measured 2026-11-24, this
+  // machine's SQLite and CI's drive the three-branch form from opposite sides — so the unit test
+  // guards the shape, and the effect is read back from Cloudflare's D1 analytics after the deploy,
+  // where the number is per-query (85,511 → 6,760 rows/call on 2026-11-25).
   const sql = ladderUsedSql(false);
-  const joins = (sql.match(/JOIN search_signals ss ON ss\.top_id = la\./g) || []).length;
-  assert.equal(joins, 3, 'expected one indexed join per id shape:' + NEWLINE + sql);
+  const joins = (sql.match(/JOIN search_signals ss ON ss\.top_id = k\.key/g) || []).length;
+  assert.equal(joins, 1, 'expected exactly one join against the key set:' + NEWLINE + sql);
   assert.ok(!sql.includes('la.path = ss.top_id OR'), 'the OR-join is back:' + NEWLINE + sql);
-  assert.ok(sql.includes('UNION'), 'expected a UNION of the three branches');
-  assert.ok(!sql.includes('UNION ALL'), 'UNION ALL would double-count a signal matching two shapes');
+  assert.ok(sql.includes('COUNT(DISTINCT ss.id)'),
+    'two spellings of one author must not count a signal twice:' + NEWLINE + sql);
+  assert.ok(sql.includes('UNION'), 'expected the three id shapes to be unioned');
+  assert.ok(!sql.includes('UNION ALL'), 'UNION ALL would keep duplicate keys');
   assert.ok(ladderUsedSql(true).includes('?1'),
     'the filtered variant must bind the since-filter');
 });
@@ -122,18 +125,18 @@ test('the three indexes the branches need exist after the schema is built', () =
   db.close();
 });
 
-test('both plan shapes are linear: one full scan per branch, indexed on the other side', () => {
+test('the big table is never scanned: the plan searches search_signals by index', () => {
+  // `search_signals` (24,982 rows in production) is the table that must not be scanned; the key set
+  // is 633 authors × 3 spellings. `CROSS JOIN` is a reorder barrier here, not a cartesian product —
+  // with a plain `JOIN` the planner drove from `search_signals` again (34,467 rows for the same
+  // answer, measured on D1 2026-11-25).
   const db = build();
   for (const guarded of [false, true]) {
     const plan = planLines(db, ladderUsedSql(guarded), ...(guarded ? ['2026-11-01T00:00:00Z'] : []));
-    assert.ok(!plan.some((line) => line.includes('CROSS JOIN')),
-      'a cross product is back:' + NEWLINE + plan.join(NEWLINE));
-    // `SCAN matched` is the CTE being read back, not a table scan — only the two tables count.
-    const scans = plan.filter((line) => line.startsWith('SCAN ss') || line.startsWith('SCAN la')).length;
-    const searched = plan.filter((line) => /SEARCH [a-z]+ USING (COVERING )?INDEX/.test(line)).length;
-    assert.ok(scans <= 3, 'more than one full scan per branch:' + NEWLINE + plan.join(NEWLINE));
-    assert.ok(searched >= 3,
-      'a branch has no index lookup, which is the cross product:' + NEWLINE + plan.join(NEWLINE));
+    assert.ok(!plan.some((line) => line.startsWith('SCAN ss')),
+      'a full scan of search_signals is back:' + NEWLINE + plan.join(NEWLINE));
+    assert.ok(plan.some((line) => /SEARCH ss USING (COVERING )?INDEX .*top_id=\?/.test(line)),
+      'the join must ride idx_search_signals_top:' + NEWLINE + plan.join(NEWLINE));
   }
   db.close();
 });

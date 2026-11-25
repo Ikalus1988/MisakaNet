@@ -7821,7 +7821,8 @@ async function handleContributionLadder(request, env) {
   let lessonAuthorCount = null;
   try {
     await ensureLessonAuthorsTable(d1);
-    // See `ladderUsedSql`: three indexed joins, not one OR across three columns (2026-11-23).
+    // See `ladderUsedSql`: one indexed join driven from the small table, not an OR across three
+    // columns and not one full scan of `search_signals` per branch (2026-11-23, re-measured 2026-11-25).
     const usedSql = ladderUsedSql(Boolean(sinceSql));
     const usedStmt = d1.prepare(usedSql);
     const usedResult = sinceSql ? await usedStmt.bind(sinceSql).all() : await usedStmt.all();
@@ -8293,20 +8294,26 @@ let lessonAuthorsTableReady = false;
 //: rows**, 90% of every row this account read in a month, at ~10.4M rows per call.
 //:
 //: The three columns exist because `search_signals.top_id` is sometimes a lesson id, sometimes a
-//: path, sometimes a basename — measured 2026-11-13 across 16k signals. So each becomes its own
-//: indexed join, and `UNION` (not `UNION ALL`) collapses a signal that matches two columns of the
-//: same author row. Exported so `workers/ladder-join-is-indexed.test.mjs` can run it through
-//: `node:sqlite` and compare it with the old form, rather than keeping a second copy of the SQL.
+//: path, sometimes a basename — measured 2026-11-13 across 16k signals. So the key set is the union of
+//: all three spellings, and the join runs once, driven from that small side.
+//:
+//: Measured 2026-11-25 against production (`misakanet-ops`, D1 query API, `meta.rows_read`): the
+//: three-branch form read **85,511** rows for **2** output rows — one full scan of `search_signals` per
+//: branch (3 * 24,982 ≈ 75k, the rest index work). This form reads **6,760** (12.6x) and returns
+//: byte-identical counts (`gh:Ikalus1988` 1501, `gh:zxh1990` 43, same `last`). Exported so
+//: `workers/ladder-join-is-indexed.test.mjs` can run it through `node:sqlite` against the old form.
 function ladderUsedSql(filtered) {
-  const branch = (column) => `
-        SELECT ss.id AS sid, la.node_id AS node_id, ss.created_at AS at
-          FROM lesson_authors la
-          JOIN search_signals ss ON ss.top_id = la.${column}
-         WHERE la.${column} IS NOT NULL${filtered ? " AND ss.created_at >= ?1" : ""}`;
-  const union = ["path", "lesson_id", "slug"].map(branch).join("\n        UNION");
-  return `WITH matched AS (${union})
-        SELECT node_id AS node_id, COUNT(*) AS n, MAX(at) AS last
-          FROM matched GROUP BY node_id`;
+  // `CROSS JOIN` is a reorder barrier, not a cartesian product: with a plain `JOIN` the planner drove
+  // from `search_signals` again and read 34,467 rows for the same answer. The join predicate sits on
+  // the cross join so the optional `?1` window still belongs to the right table.
+  const keys = `
+        SELECT path AS key, node_id FROM lesson_authors WHERE path IS NOT NULL
+        UNION SELECT lesson_id, node_id FROM lesson_authors WHERE lesson_id IS NOT NULL
+        UNION SELECT slug, node_id FROM lesson_authors WHERE slug IS NOT NULL`;
+  return `SELECT k.node_id AS node_id, COUNT(DISTINCT ss.id) AS n, MAX(ss.created_at) AS last
+        FROM (${keys}) k
+        CROSS JOIN search_signals ss ON ss.top_id = k.key${filtered ? " AND ss.created_at >= ?1" : ""}
+        GROUP BY k.node_id`;
 }
 
 async function ensureLessonAuthorsTable(d1) {
