@@ -1,42 +1,42 @@
 {
-  "generated_at": "2026-11-25T08:58:11.816821+00:00",
+  "generated_at": "2026-11-25T19:26:18.573364+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(cindy-plugin): 1.5.20 —— 上报确认改成「一键点卡」：点击 → 一次性票据 → 一轮 agent",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5782",
-      "timestamp": "2026-11-25T07:12:29Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore: auto-update lessons.json, public counts and generated pages",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5780",
-      "timestamp": "2026-11-25T06:05:49Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
       "title": "feat(lessons): intake batch 2026-11-25",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5772",
-      "timestamp": "2026-11-25T01:00:14Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5815",
+      "timestamp": "2026-11-25T19:03:07Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 3.22.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5703",
-      "timestamp": "2026-11-25T00:46:50Z",
+      "title": "chore(data): 市场在售版本更新为社区 1.5.22（KV 已同步）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5802",
+      "timestamp": "2026-11-25T17:33:17Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): 市场在售版本更新为社区 1.5.19（KV 已同步）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5771",
-      "timestamp": "2026-11-25T00:44:27Z",
+      "title": "docs(cindy-plugin): 1.5.22 —— 随包手册改回与代码一致（旧闸门的残留）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5801",
+      "timestamp": "2026-11-25T16:49:54Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "perf(worker): /api/analytics 与每课客户端计数改为持久缓存（24h 再省 ~9.3M 行读，44%）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5796",
+      "timestamp": "2026-11-25T13:36:11Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): 市场在售版本更新为社区 1.5.21（KV 已同步）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5793",
+      "timestamp": "2026-11-25T10:30:04Z",
       "source": "github"
     },
     {
