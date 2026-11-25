@@ -7,6 +7,8 @@ provenance:
   contributor: "Unknown"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+created: "2026-08-21"
+updated: "2026-08-28"
 ---
 
 # 压缩包打不开？先别急，试这 3 步

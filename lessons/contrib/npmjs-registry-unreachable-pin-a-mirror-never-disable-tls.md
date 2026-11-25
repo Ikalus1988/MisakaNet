@@ -13,6 +13,8 @@ evidence_level: "E1"
 summary_plain: "pnpm install failed on self-signed/expired certs at registry.npmjs.org; pin a mirror instead of disabling TLS."
 trigger: "ERR_PNPM_META_FETCH_FAIL DEPTH_ZERO_SELF_SIGNED_CERT CERT_HAS_EXPIRED registry.npmjs.org"
 verify: "curl https://registry.npmmirror.com returns HTTP 200; pnpm install completes; package in dependencies + lockfile"
+created: "2026-10-09"
+updated: "2026-11-15"
 ---
 
 # npmjs registry unreachable from this host (self-signed/expired cert): pin a mirror, never disable TLS

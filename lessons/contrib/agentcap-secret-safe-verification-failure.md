@@ -8,6 +8,8 @@ summary_plain: "AgentCap 的 secret-safe 检查发现能力描述里有像密钥
 trigger: "AgentCap secret-safe validation-failed FAIL secret-safe capability verify"
 verify: "agentcap verify 2>&1 | grep -q 'secret-safe' && echo 'FAIL' || echo 'PASS: no secret-safe failures'"
 provenance: verified
+created: "2026-09-28"
+updated: "2026-09-28"
 ---
 
 ## Problem

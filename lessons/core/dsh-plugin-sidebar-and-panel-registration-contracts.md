@@ -13,7 +13,9 @@
   "evidence_level": "E1",
   "summary_plain": "DSH插件需在七个扩展席位完成显式注册并遵守启动依赖时序，才能正常挂载侧边栏面板与状态徽章。",
   "trigger": "sidebar acceptance results dsh plugin surface registration",
-  "verify": "pytest tests/test_dsh_plugin_surface.py 退出码为 0"
+  "verify": "pytest tests/test_dsh_plugin_surface.py 退出码为 0",
+  "created": "2026-10-17",
+  "updated": "2026-10-17"
 }
 ---
 

@@ -17,7 +17,9 @@
   "evidence_level": "E1",
   "summary_plain": "ROBOGUIDE can't open a HandlingPRO workcell because the installer feature was never selected, not a COM issue.",
   "trigger": "ROBOGUIDE plugin unavailable HandlingPRO.HPCPlugIn RGCore crash workcell",
-  "verify": "HandlingPRO.exe/.dll exist in bin/ and RGCore stays alive past splash; regsvr32 on the .NET HandlingPRO.dll reports no DllRegisterServer."
+  "verify": "HandlingPRO.exe/.dll exist in bin/ and RGCore stays alive past splash; regsvr32 on the .NET HandlingPRO.dll reports no DllRegisterServer.",
+  "created": "2026-10-17",
+  "updated": "2026-10-17"
 }
 ---
 

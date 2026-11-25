@@ -17,6 +17,8 @@ verify: "python3 -c \"c=45;d=[2,1];ok=5;print('STUCK' if c>0 else 'ok','|','STUC
 provenance:
   issue: "#3180"
   source: "MCP intake (dsh), contributor-reported"
+created: "2026-10-15"
+updated: "2026-10-15"
 ---
 
 # An event count is not a health signal: auto-remediation keyed on it restarts a healthy service

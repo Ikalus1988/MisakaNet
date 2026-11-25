@@ -12,7 +12,9 @@
   "evidence_level": "E1",
   "summary_plain": "Python录入流水线因硬编码2000字符限制导致长工单尾部段落丢失，移除暴力切片并扩容后解决。",
   "trigger": "2000-char truncation in scripts/intake_pipeline.py cut that issue",
-  "verify": "python scripts/audit_intake_kinds.py 退出码为 0"
+  "verify": "python scripts/audit_intake_kinds.py 退出码为 0",
+  "created": "2026-10-17",
+  "updated": "2026-10-17"
 }
 ---
 

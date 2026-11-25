@@ -7,6 +7,8 @@ evidence_level: "E1"
 summary_plain: "swift-format needs file paths not dirs; NSOpenPanel needs sandbox entitlement."
 trigger: "swift-format diagnostic source edit directory path NSOpenPanel NSSavePanel disabled sandbox"
 verify: "swift-format diagnose --path . 2>&1 | grep -q 'source edit' && echo 'found' || echo 'none'"
+created: "2026-10-03"
+updated: "2026-10-03"
 ---
 
 # swift-format diagnostics and NSOpenPanel/NSSavePanel disabled in sandbox

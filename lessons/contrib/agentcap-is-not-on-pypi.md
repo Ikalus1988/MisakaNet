@@ -7,6 +7,8 @@ evidence_level: E2
 summary_plain: "PyPI 'agentcap' is OliverIida's cost-guardrail lib with no CLI; huggingface/agentcap installs via curl install.sh"
 trigger: "agentcap command not found unrecognized arguments show inspect pip install agentcap"
 verify: "pip install agentcap && agentcap ls -> 'command not found'; curl install.sh then agentcap ls lists runs"
+created: "2026-10-03"
+updated: "2026-10-03"
 ---
 
 ## Problem

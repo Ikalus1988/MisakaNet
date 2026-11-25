@@ -15,7 +15,9 @@
   "evidence_level": "E1",
   "summary_plain": "应用防篡改会让 Finder 拷贝失败：DesktopServicesHelper 以普通用户运行，不匹配内置的 root 规则。",
   "trigger": "Finder The operation can't be completed because you don't have permission to access some of the items DesktopServicesHelper",
-  "verify": "codesign --verify --deep --strict '/Applications/<App>.app' 退出码为 0，且源/目标逐文件 SHA-256 与符号链接目标一致、无多余路径"
+  "verify": "codesign --verify --deep --strict '/Applications/<App>.app' 退出码为 0，且源/目标逐文件 SHA-256 与符号链接目标一致、无多余路径",
+  "created": "2026-10-18",
+  "updated": "2026-10-18"
 }
 ---
 

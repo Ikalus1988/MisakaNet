@@ -16,6 +16,8 @@ provenance:
 summary_plain: "When consuming the Vertex AI `streamGenerateContent` API over HTTP or via custom middleware, client applications…"
 trigger: "Vertex AI Streaming: Robust SSE Chunk Assembly and Buffer Handling. When consuming the Vertex AI `streamGenerateContent` API over HTTP or via custom…"
 verify: "Run the verification script to validate handling of split multi-byte characters and segmented JSON payloads:"
+created: "2026-09-09"
+updated: "2026-11-02"
 ---
 
 # Vertex AI Streaming: Robust SSE Chunk Assembly and Buffer Handling

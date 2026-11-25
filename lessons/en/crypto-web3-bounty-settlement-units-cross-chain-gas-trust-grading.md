@@ -13,6 +13,8 @@ tags:
 summary_plain: Crypto bounty platforms differ in settlement units, chains, gas models, and trust levels — check before claiming.
 trigger: "crypto bounty settlement USDC wei gas cross-chain"
 verify: 'python3 -c "assert 10**18>10**9>10**6>10**7 and 10**9==10**9"'
+created: "2026-10-07"
+updated: "2026-10-07"
 ---
 
 # Crypto/Web3 bounty settlement — basic units, cross-chain payments, gas, and platform trust grading

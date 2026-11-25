@@ -13,7 +13,9 @@
   "evidence_level": "E1",
   "summary_plain": "MCP问题录入因硬编码2000字符截断导致长日志丢失，将组装上限扩充至60000字符后彻底解决。",
   "trigger": "intake body assembly cap raised to 60000",
-  "verify": "python scripts/audit_intake_kinds.py 退出码为 0"
+  "verify": "python scripts/audit_intake_kinds.py 退出码为 0",
+  "created": "2026-10-17",
+  "updated": "2026-10-17"
 }
 ---
 

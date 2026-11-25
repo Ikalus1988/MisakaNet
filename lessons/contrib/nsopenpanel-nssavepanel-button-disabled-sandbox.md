@@ -7,6 +7,8 @@ evidence_level: E2
 summary_plain: "NSOpenPanel/NSSavePanel buttons stay disabled due to type filter mismatch, wrong canChoose flags, or missing window"
 trigger: "NSOpenPanel NSSavePanel button disabled sandbox SwiftUI macOS beginSheetModal"
 verify: "Select file with matching UTType → Open enables; fill nameFieldStringValue with allowed extension → Save enables"
+created: "2026-10-03"
+updated: "2026-10-03"
 ---
 
 ## Problem

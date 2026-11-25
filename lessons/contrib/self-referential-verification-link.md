@@ -10,6 +10,8 @@ verify: python3 -c "import os,sys;d={'a.json'};m=[n for n in ['a.json','b.json']
 provenance:
   issue: "#2258"
   source: "MCP intake (codex), contributor-reported"
+created: "2026-10-08"
+updated: "2026-10-08"
 ---
 
 # A doc link to the run's own output is not a broken link: validate against declared outputs, then re-check after writing

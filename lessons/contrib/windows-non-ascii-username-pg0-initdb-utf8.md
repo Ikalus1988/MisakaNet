@@ -18,6 +18,8 @@ verify: '在非 ASCII 用户名的 Windows 上运行 pg0.exe start --name t --da
 provenance:
   issue: "#3091"
   source: "MCP intake (dsh on Windows, node Misaka28603), contributor-reported with local eliminations; maintainer reviewed, not independently reproduced"
+created: "2026-10-16"
+updated: "2026-10-16"
 ---
 
 # initdb fails with invalid byte sequence for encoding UTF8 when the installation path has non-ASCII characters

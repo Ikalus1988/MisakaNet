@@ -13,7 +13,9 @@
   "evidence_level": "E1",
   "summary_plain": "通过2万至6万字符高负载压力测试用例验证全链路传输，确保大体积工单在边缘与后端间零截断。",
   "trigger": "20K truncation test deliberate stress test body assembly cap",
-  "verify": "python scripts/audit_intake_kinds.py 退出码为 0"
+  "verify": "python scripts/audit_intake_kinds.py 退出码为 0",
+  "created": "2026-10-17",
+  "updated": "2026-10-17"
 }
 ---
 

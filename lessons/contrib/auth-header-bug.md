@@ -11,6 +11,8 @@ provenance:
   contributor: "Community"
   merged_at: "2026-08-23"
   evidence: "post-publication"
+created: "2026-08-21"
+updated: "2026-09-06"
 ---
 
 # Moorcheh API Auth Header Bug

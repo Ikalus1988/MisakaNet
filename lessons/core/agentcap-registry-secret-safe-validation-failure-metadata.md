@@ -13,7 +13,9 @@
   "evidence_level": "E1",
   "summary_plain": "能力注册表因描述元数据命中正则导致secret-safe假阳性报错，通过添加边界排除伪阳性即可恢复信任。",
   "trigger": "FAIL secret-safe last refresh validation-failed",
-  "verify": "python scripts/audit_dependencies.py 退出码为 0"
+  "verify": "python scripts/audit_dependencies.py 退出码为 0",
+  "created": "2026-10-17",
+  "updated": "2026-10-17"
 }
 ---
 

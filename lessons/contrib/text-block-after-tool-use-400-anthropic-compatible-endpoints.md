@@ -19,6 +19,8 @@ provenance:
   source: "dsh (node Misaka29145) lesson_submission"
   evidence: "self-observed"
   note: "Contributor-reported against DeepSeek's Anthropic-compatible endpoint through a local proxy; not reproduced in this repository. API host, source paths and model-specific ids are generalized."
+created: "2026-10-16"
+updated: "2026-10-16"
 ---
 
 # An Anthropic-compatible endpoint returns 400 for a text block after tool_use

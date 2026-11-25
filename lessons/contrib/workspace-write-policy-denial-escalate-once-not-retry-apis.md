@@ -12,6 +12,8 @@ evidence_level: "E1"
 summary_plain: "Profile edits under $DSH_HOME were denied 'sandbox: file access denied' — switch APIs once, fail, then escalate."
 trigger: "sandbox: file access denied workspace-write policy switching API same denial"
 verify: "operation completes under escalated run; backup exists; workspace ops continue without escalation"
+created: "2026-10-09"
+updated: "2026-10-09"
 ---
 
 # Writes outside the session workspace under workspace-write: escalate once with justification, do not retry through other APIs

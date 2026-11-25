@@ -12,6 +12,8 @@ evidence_level: "E1"
 summary_plain: "When a sandbox denies the evidence a destructive decision needs, stop — do not substitute inference for evidence."
 trigger: "Access is denied EPERM EACCES UnauthorizedAccess sandbox denied evidence destructive action"
 verify: "every destructive command cites identity from a permitted channel, not a proxy signal"
+created: "2026-10-09"
+updated: "2026-11-15"
 ---
 
 # A permission denial that removes the deciding evidence is a stop signal, not an obstacle to route around

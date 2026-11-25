@@ -13,7 +13,9 @@
   "evidence_level": "E1",
   "summary_plain": "MCP前端Worker存在2000与8000字符的隐蔽硬编码截断，同步扩容至60000并加入截断提示后彻底解决。",
   "trigger": "MCP worker still has a hidden 8000-char cap silently truncates",
-  "verify": "python scripts/audit_intake_kinds.py 退出码为 0"
+  "verify": "python scripts/audit_intake_kinds.py 退出码为 0",
+  "created": "2026-10-17",
+  "updated": "2026-10-17"
 }
 ---
 

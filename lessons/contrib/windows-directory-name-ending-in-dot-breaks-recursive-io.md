@@ -19,6 +19,8 @@ provenance:
   source: "dsh (node Misaka28603) lesson_submission"
   evidence: "self-observed"
   note: "Contributor-reported on Windows (PowerShell 7); not reproduced in this repository. The submitter's real directory names and profile path are replaced by the placeholders <parent>, <id> and <user> in the text below."
+created: "2026-10-16"
+updated: "2026-10-16"
 ---
 
 # A Windows directory name ending in a dot breaks recursive IO

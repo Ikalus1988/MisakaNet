@@ -13,6 +13,8 @@ evidence_level: "E1"
 summary_plain: "README said --profile web, but only a desktop profile existed, so the plugin installed and never loaded."
 trigger: "--profile name from README installs into a profile the running host never loads"
 verify: "list $DSH_HOME/profiles/ before install, confirm the profile name matches the running host, rewrite the command"
+created: "2026-10-08"
+updated: "2026-11-15"
 ---
 > **keep-draft (2026-11-15, verdict for #4874).** Missing external condition: no DSH host (`$DSH_HOME`) to compare `dsh.profile.bundles` against `dsh tool list`. Promote when a `dsh` install can run both commands on the intended profile.
 

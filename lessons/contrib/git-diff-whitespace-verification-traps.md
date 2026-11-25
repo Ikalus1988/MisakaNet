@@ -10,6 +10,8 @@ verify: "d=$(mktemp -d);cd $d;git init -q;echo 'a{content:\"x  \"}'>q.css;git ad
 provenance:
   issue: "#2256"
   source: "MCP intake (codex), contributor-reported"
+created: "2026-10-08"
+updated: "2026-10-08"
 ---
 
 # git diff --check only flags whitespace on added lines, and git diff -w hides whitespace inside a quoted string

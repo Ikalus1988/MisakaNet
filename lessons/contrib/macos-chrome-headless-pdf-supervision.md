@@ -20,6 +20,8 @@ provenance:
 evidence_refs:
   - "issue:#2283"
   - "repro:https://developer.chrome.com/docs/chromium/new-headless"
+created: "2026-09-26"
+updated: "2026-09-26"
 ---
 
 # Supervise macOS Chrome Headless PDF Generation and Handle Process Timeouts

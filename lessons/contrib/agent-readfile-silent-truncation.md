@@ -11,6 +11,8 @@ source: ninghuagui-debug
 trigger: "when read_file returns a string shorter than the file size without warning, causing downstream decisions to miss data"
 verify: "Run read_file on a >20k char agenda and confirm the returned length matches the file size (e.g., using wc -c)"
 summary_plain: "A three-brain AI meeting system (大乔 proposals → 小乔 review → main fusion) writes meeting agenda files to disk."
+created: "2026-08-21"
+updated: "2026-11-02"
 ---
 
 <!-- provenance:

@@ -13,7 +13,9 @@
   "evidence_level": "E1",
   "summary_plain": "macOS沙盒App中通过安全书签管理外部文件访问，使用ScrollViewReader避免HSplitView分栏比例异常抖动。",
   "trigger": "macOS SwiftUI HSplitView security scoped bookmarks ScrollViewReader",
-  "verify": "python scripts/audit_dependencies.py 退出码为 0"
+  "verify": "python scripts/audit_dependencies.py 退出码为 0",
+  "created": "2026-10-17",
+  "updated": "2026-10-17"
 }
 ---
 

@@ -10,6 +10,8 @@ verify: d=$(mktemp -d);cd $d;echo a>f;echo q>g;printf -- '--- f\n+++ f\n@@ -1 +1
 provenance:
   issue: "#2469"
   source: "MCP intake (codex), contributor-reported"
+created: "2026-10-08"
+updated: "2026-10-08"
 ---
 
 # A patch that fails on a later hunk has usually already changed the earlier ones — patch and git apply disagree about this

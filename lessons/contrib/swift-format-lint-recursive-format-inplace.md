@@ -10,6 +10,8 @@ verify: "swift-format lint -r Sources/ exits 0; format -r --in-place Sources/ fi
 provenance:
   issue: "#2495"
   source: "MCP intake (codex), contributor-reported"
+created: "2026-10-03"
+updated: "2026-10-08"
 ---
 
 ## Problem

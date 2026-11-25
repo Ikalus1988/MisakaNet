@@ -10,6 +10,8 @@ verify: "Add .id(row.id) to each child; call reader.scrollTo(id, anchor:) inside
 provenance:
   issue: "#2484"
   source: "MCP intake (codex), contributor-reported"
+created: "2026-10-03"
+updated: "2026-10-08"
 ---
 
 ## Problem

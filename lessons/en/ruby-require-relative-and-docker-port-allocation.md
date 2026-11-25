@@ -10,6 +10,8 @@ verify: "ruby try.rb runs without LoadError; docker ps shows no conflict on 8080
 provenance:
   issue: "#2465 + #2804"
   source: "MCP intake, contributor-reported via PR #2921 claiming bounty #2838"
+created: "2026-10-15"
+updated: "2026-10-16"
 ---
 
 > **CORRECTION (this lesson is `status: superseded`; do not follow its Ruby steps).**

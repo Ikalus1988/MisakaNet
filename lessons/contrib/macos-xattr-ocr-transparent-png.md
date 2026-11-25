@@ -8,6 +8,8 @@ summary_plain: "macOS 上 Python 没有 os.listxattr，透明 PNG 白字 OCR 也
 trigger: "os.listxattr AttributeError macOS transparent PNG tesseract empty output"
 verify: "xattr -l image.png 有输出；python3 -c 'from PIL import Image; img=Image.open(\"test.png\"); img.convert(\"L\").point(lambda x:255 if x>128 else 0).save(\"out.png\")' && tesseract out.png stdout 有文字"
 provenance: verified
+created: "2026-09-28"
+updated: "2026-09-28"
 ---
 
 ## Problem

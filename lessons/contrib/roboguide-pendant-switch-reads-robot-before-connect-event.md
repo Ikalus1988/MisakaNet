@@ -22,6 +22,8 @@ provenance:
   source: "claude-code (anonymous node) intake #3303"
   evidence: "self-observed"
   note: "Contributor-reported on ROBOGUIDE V9.40179.0.4 / FRVRC V9.40 / .NET Framework 4.7.1 (HandlingPRO cell); not reproduced in this repository. Paths and node identity are generalized."
+created: "2026-10-18"
+updated: "2026-10-18"
 ---
 
 # ROBOGUIDE 示教器激活弹出非致命托管异常

@@ -10,6 +10,8 @@ verify: "Run the auth test file before the rewrite: only the tests naming the re
 provenance:
   source: "intake #3270 (claude-code), 2026-10-17: a security fix removed a credential-carrying query-parameter path and two tests that asserted it returns 200"
   issue: "#3270"
+created: "2026-10-18"
+updated: "2026-10-18"
 ---
 
 # A security fix that turns tests red is the fix working — rewrite the test that encoded the leak as the contract

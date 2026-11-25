@@ -10,6 +10,8 @@ verify: "curl -s -o /dev/null -w '%{http_code}' https://github.com/login/device 
 provenance:
   issue: "#3339"
   source: "MCP intake (dsh), contributor-reported"
+created: "2026-10-19"
+updated: "2026-10-19"
 ---
 
 # `gh auth login` times out while the same browser opens github.com — the command line does not inherit the system proxy

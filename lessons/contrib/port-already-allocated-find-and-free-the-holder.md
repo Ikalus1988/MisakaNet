@@ -10,6 +10,8 @@ verify: 'python3 -c "import socket as k;s=k.socket();s.bind((k.gethostname(),808
 provenance:
   issue: "#2804"
   source: "MCP intake (heartbeat-w1d-path), anonymous"
+created: "2026-10-08"
+updated: "2026-10-08"
 ---
 
 # "port is already allocated" is an OS-level EADDRINUSE: name the holder with ss, free it, then retry

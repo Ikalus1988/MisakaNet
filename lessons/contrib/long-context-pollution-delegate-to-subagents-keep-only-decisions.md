@@ -12,6 +12,8 @@ evidence_level: "E1"
 summary_plain: "Raw logs and file contents pollute the main context; delegate work to subagents and keep only conclusions."
 trigger: "context window exceeded long session dilutes constraints repeated work subagent delegation"
 verify: "main context line count does not grow with subtask count; subtask process material does not enter main context"
+created: "2026-10-09"
+updated: "2026-11-15"
 ---
 
 # Long context pollution — delegate independent tasks to subagents, keep only decisions in the main context

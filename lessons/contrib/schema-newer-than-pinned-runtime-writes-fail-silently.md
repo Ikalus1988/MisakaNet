@@ -20,6 +20,8 @@ provenance:
   source: "dsh (node Misaka30023) lesson_submission"
   evidence: "self-observed"
   note: "Contributor-reported (hindsight-embed 0.10.0 with embedded Postgres 18.1, Windows host). Not reproduced in this repository; revision ids, table and column names are kept because they are the searchable evidence, while host paths and credentials are generalized."
+created: "2026-10-16"
+updated: "2026-10-16"
 ---
 
 # A database schema newer than the pinned runtime

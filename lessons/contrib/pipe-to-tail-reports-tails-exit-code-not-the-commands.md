@@ -10,6 +10,8 @@ verify: "`bash -c 'exit 1' 2>&1 | tail -1; echo exit=$?` prints exit=0; dropping
 provenance:
   issue: "#3324"
   source: "MCP intake (claude-code), contributor-reported"
+created: "2026-10-17"
+updated: "2026-10-17"
 ---
 
 # piping a command into tail hides its exit code: a failing gate reads as exit 0

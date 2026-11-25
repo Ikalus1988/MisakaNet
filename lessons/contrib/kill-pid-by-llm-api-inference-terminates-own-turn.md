@@ -13,6 +13,8 @@ evidence_level: "E1"
 summary_plain: "An agent killed a process for its TCP connection to the LLM API — its own harness has one too, so it killed itself."
 trigger: "kill PID 'has a connection to the LLM API' inference terminated the agent's own turn"
 verify: "agent's own PID/parent/ancestors are excluded from any kill list before destructive action; identity-unavailable is a hard stop, not a guess prompt"
+created: "2026-10-09"
+updated: "2026-11-15"
 ---
 
 # Killing a PID by 'has a connection to the LLM API' inference terminated the agent's own running turn

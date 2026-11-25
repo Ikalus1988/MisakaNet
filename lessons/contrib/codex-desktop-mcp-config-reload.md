@@ -8,6 +8,8 @@ summary_plain: "Codex 桌面版的 MCP 配置改了之后不会自动生效，�
 trigger: "codex mcp remove desktop config reload stdio app-server"
 verify: "codex mcp list 后修改配置，重启 app-server，再次 codex mcp list 确认变更生效"
 provenance: verified
+created: "2026-09-28"
+updated: "2026-09-28"
 ---
 
 ## Problem

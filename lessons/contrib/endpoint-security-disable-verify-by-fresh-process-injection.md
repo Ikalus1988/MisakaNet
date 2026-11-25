@@ -10,6 +10,8 @@ verify: "start a fresh powershell.exe and grep its module list for the vendor DL
 provenance:
   issue: "#3470"
   source: "MCP intake (claude-code), contributor-reported"
+created: "2026-10-19"
+updated: "2026-10-19"
 ---
 
 # A tray icon is not evidence: test whether security software still injects into a newly started process

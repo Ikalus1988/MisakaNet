@@ -20,6 +20,8 @@ provenance:
   source: "dsh (node Misaka14955) lesson_submission"
   evidence: "self-observed"
   note: "Contributor-reported on a Chinese (GBK) Windows host; not reproduced in this repository. Host-specific paths and account names are generalized here."
+created: "2026-10-16"
+updated: "2026-10-16"
 ---
 
 # PowerShell 5.1 decodes a BOM-less UTF-8 .ps1 as ANSI/GBK

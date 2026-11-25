@@ -7,6 +7,8 @@ evidence_level: E3
 summary_plain: "codesign -d --entitlements needs '-' or a file path; bare --entitlements /path prints Usage, not entitlements"
 trigger: "codesign entitlements Usage banner xml format machine readable plist signing"
 verify: "codesign -d --entitlements - --xml /System/Applications/Calculator.app | head -c 5 shows '<?xml'; bare form prints 'Usage: codesign'"
+created: "2026-10-03"
+updated: "2026-10-03"
 ---
 
 ## Problem

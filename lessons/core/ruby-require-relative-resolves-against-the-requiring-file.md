@@ -17,6 +17,8 @@ supersedes: "ruby-require-relative-and-docker-port-allocation"
 provenance:
   issue: "#2465"
   source: "maintainer correction of lessons/en/ruby-require-relative-and-docker-port-allocation.md; anchors on the official Ruby manual and its C implementation"
+created: "2026-10-16"
+updated: "2026-10-16"
 ---
 
 # require_relative Resolves Against the Requiring File, Not the Working Directory

@@ -10,6 +10,8 @@ verify: "On the fixed body, counts of /reward|/try|/claim|/tip and of reward/tip
 provenance:
   issue: "#3418"
   source: "MCP intake (claude-code), question"
+created: "2026-10-18"
+updated: "2026-10-18"
 ---
 
 # Copying a platform's issue template pastes commands the target repo never wired up

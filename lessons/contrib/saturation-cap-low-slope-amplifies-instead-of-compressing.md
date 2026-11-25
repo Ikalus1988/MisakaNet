@@ -16,6 +16,8 @@ verify: "node -e \"const f=r=>1-Math.pow(1+r,-2);console.log((f(1e-6)/1e-6).toFi
 provenance:
   issue: "#3170"
   source: "MCP intake (dsh, node Misaka28890), contributor-reported; failure and fix reproduced locally by the maintainer while writing this lesson"
+created: "2026-10-16"
+updated: "2026-10-16"
 ---
 
 # A saturation cap with slope k at zero amplifies small deviations instead of compressing them

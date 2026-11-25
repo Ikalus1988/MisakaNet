@@ -18,6 +18,8 @@ provenance:
   source: "maintainer agent session, 2026-10-16"
   evidence: "self-observed and reproduced"
   note: "This is an incident in this repository's own maintenance, written down because the same mistake arrived twice in one day in two different shapes. The revisions named below are ordinary public history; no credentials or local paths are reproduced."
+created: "2026-10-17"
+updated: "2026-10-17"
 ---
 
 # Verify the commit, not the working tree

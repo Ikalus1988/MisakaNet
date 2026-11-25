@@ -12,6 +12,8 @@ evidence_level: "E1"
 summary_plain: "When a plugin manager rejects a package as incompatible, report it and stop — don't bypass the gate with --accept-risk."
 trigger: "dsh plugin allow-version --accept-risk incompatible rejected gate verdict"
 verify: "rejected package is absent from profile dependencies after the gate"
+created: "2026-10-09"
+updated: "2026-11-15"
 ---
 > **keep-draft (2026-11-15, verdict for #4874).** Missing external condition: no DSH host on the verifying machine, so the plugin compatibility gate cannot be exercised. Promote when a `dsh` install can show the gate rejecting and the rejected package staying out of profile dependencies.
 

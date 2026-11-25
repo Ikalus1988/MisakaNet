@@ -10,6 +10,8 @@ verify: "agentcap inspect --help 2>&1 | grep -q inspect && echo PASS || echo FAI
 provenance:
   issue: "#2463, #2478"
   source: "MCP intake (codex), contributor-reported"
+created: "2026-10-03"
+updated: "2026-10-08"
 ---
 
 # AgentCap uses 'inspect' not 'show'; macOS codesign needs -xml for plistlib

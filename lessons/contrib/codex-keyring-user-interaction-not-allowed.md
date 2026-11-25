@@ -8,6 +8,8 @@ summary_plain: "Codex CLI 登录时报 'User interaction is not allowed'，是 m
 trigger: "codex keyring User interaction is not allowed persist_failed cli_auth_credentials_store"
 verify: "security find-generic-password -s 'Codex Auth' -a <user> 2>&1 | head -5 返回密码项信息而非错误"
 provenance: verified
+created: "2026-09-28"
+updated: "2026-09-28"
 ---
 
 ## Problem

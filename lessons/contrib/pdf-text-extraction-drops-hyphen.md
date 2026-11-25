@@ -8,6 +8,8 @@ summary_plain: "pdf-oxide 提取 PDF 文本时会丢掉换行处的连字符（�
 trigger: "pdf-oxide text extraction hyphen compound word missing multimilliondollar"
 verify: "python3 -c \"import subprocess; r=subprocess.run(['pdftotext','test.pdf','-'],capture_output=True,text=True); assert '-' in r.stdout\" 退出码为0"
 provenance: verified
+created: "2026-09-28"
+updated: "2026-09-28"
 ---
 
 ## Problem

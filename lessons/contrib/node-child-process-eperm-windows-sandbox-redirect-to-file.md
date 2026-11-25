@@ -12,6 +12,8 @@ evidence_level: "E1"
 summary_plain: "spawn/execSync that capture output through pipes fail with EPERM in the Windows sandbox; redirect to a file instead."
 trigger: "EPERM spawn execSync piped stdio Windows sandbox"
 verify: "command completes with stdio redirect to file; output readable from the redirect target"
+created: "2026-10-09"
+updated: "2026-10-09"
 ---
 
 # Node child_process with piped stdio fails with EPERM under the Windows sandbox

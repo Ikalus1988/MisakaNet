@@ -10,6 +10,8 @@ verify: "python3 -m pytest --collect-only -q -k \"not test_score_merge\" on a fi
 provenance:
   issue: "#3405"
   source: "MCP intake (claude-code), contributor-reported"
+created: "2026-10-18"
+updated: "2026-10-18"
 ---
 
 # a pytest -k mask deselects more tests than you meant, and hides that it did

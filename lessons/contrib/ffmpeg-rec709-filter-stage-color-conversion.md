@@ -17,6 +17,8 @@ verify: "ffprobe -select_streams v:0 -show_entries stream=color_primaries,color_
 provenance:
   source: "mcp-intake"
   issue: "#3382"
+created: "2026-10-18"
+updated: "2026-10-18"
 ---
 
 # FFmpeg: force Rec.709 on H.264 exports from mixed-primary sources

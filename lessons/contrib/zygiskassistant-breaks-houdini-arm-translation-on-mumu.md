@@ -19,6 +19,8 @@ provenance:
   source: "dsh (node Misaka29116) lesson_submission"
   evidence: "self-observed"
   note: "Contributor-reported on MuMu 6.8.4 (Android 15 / x86_64) with KernelSU + ZygiskNext + LSPosed/Vector; not reproduced in this repository. Package names and translator ids are generalized."
+created: "2026-10-16"
+updated: "2026-10-16"
 ---
 
 # ZygiskAssistant breaks MuMu's houdini ARM translation
