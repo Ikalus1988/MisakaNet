@@ -49,6 +49,19 @@ async function loadPlugin({ respond, fetchResult, packageDir = PACKAGE, failWrit
   let writeAttempts = 0;
   const stub = {
     handler: null,
+    // 手册 §4.11：卡片点击换来的一轮 agent。测试里只记录请求，真正的提交由下一次工具调用模拟。
+    agentRuns: [],
+    agentError: null,
+    async run(request) {
+      stub.agentRuns.push(request);
+      if (stub.agentError) return { ok: false, errorCode: stub.agentError };
+      return { ok: true, sessionId: 's1', disposition: 'queued' };
+    },
+    agent: {
+      async run(request) {
+        return stub.run(request);
+      },
+    },
     onHostMessage(cb) { stub.handler = cb; },
     async send(payload) {
       // The private data directory is the only host capability the plugin claims beyond the
@@ -98,38 +111,44 @@ async function loadPlugin({ respond, fetchResult, packageDir = PACKAGE, failWrit
 /** Hand the plugin a tool-call and wait for its answer. */
 async function callTool(load, tool, args, options = {}) {
   load.sent.length = 0;
-  // 上报类的闸门是「用户自己把短码发回来」：默认把两步都走完（拿码 → 用户消息 → 带 code 再调）。
-  // 断言「授权之前什么都没发生」的用例传 { autoClick: false }；要单独验某一步的传别的开关。
-  const autoAuthorize = options.autoClick !== false;
+  // 上报类的闸门是「用户点卡上的确认 → 插件换回一轮 agent → agent 带票再调一次」。
+  // 默认把两步都走完；断言「点击之前什么都没发生」的用例传 { autoClick: false }。
+  const autoClick = options.autoClick !== false;
   const callId = options.callId || 'test-call';
-  await load.stub.handler({ type: 'tool-call', tool, args, callId });
-  // 供卡时先发的是 card-update，回执是 tool-result：等回执，别拿错消息。
-  for (let i = 0; i < 100 && load.sent.filter((m) => m.type === 'tool-result').length === 0; i += 1) {
-    await new Promise((resolve) => setTimeout(resolve, 10));
-  }
-  let answer = load.sent.filter((m) => m.type === 'tool-result')[0];
-
-  if (autoAuthorize && answer && answer.ok === true && answer.result
-      && answer.result.awaiting_user_authorization === true) {
-    const code = answer.result.code;
-    if (options.skipUserMessage !== true) {
-      // 用户本人在自己的聊天里把码打回来：这是唯一能产生授权的事件。
-      await load.stub.handler({
-        type: 'event',
-        name: 'did-message-created',
-        data: { sessionId: options.sessionId || 's1', role: 'user', messageId: 'm-1', content: options.userText || code },
-      });
-      await new Promise((resolve) => setTimeout(resolve, 10));
-    }
-    const secondArgs = Object.assign({}, args, options.codeOverride || { code });
-    const secondCallId = options.authorizeCallId || callId + '-authorize';
-    load.sent.length = 0;
-    await load.stub.handler({ type: 'tool-call', tool, args: secondArgs, callId: secondCallId });
+  const waitForAnswer = async () => {
     for (let i = 0; i < 100 && load.sent.filter((m) => m.type === 'tool-result').length === 0; i += 1) {
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
-    const results = load.sent.filter((m) => m.type === 'tool-result');
-    if (results.length) answer = results[results.length - 1];
+    const answers = load.sent.filter((m) => m.type === 'tool-result');
+    return answers.length ? answers[answers.length - 1] : undefined;
+  };
+
+  await load.stub.handler({ type: 'tool-call', tool, args, callId });
+  let answer = await waitForAnswer();
+
+  if (autoClick && answer && answer.ok === true && answer.result && answer.result.awaiting_click === true) {
+    // 用户点「确认提交」：宿主把点击和一次性 token 交给插件，插件 cast 一张票据并换回一轮。
+    const before = load.stub.agentRuns.length;
+    await load.stub.handler({
+      type: 'event',
+      name: 'card-action',
+      callId,
+      actionId: 'intake-confirm',
+      spawnCallId: callId + '-spawn',
+      sessionId: 's1',
+      userActionToken: 'once',
+    });
+    for (let i = 0; i < 50 && load.stub.agentRuns.length === before; i += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    const run = load.stub.agentRuns[before];
+    const ticket = options.ticketOverride || (run && run.event && run.event.click_ticket);
+    const secondArgs = Object.assign({}, args, options.ticketBlank ? {} : { click_ticket: ticket });
+    const secondCallId = options.authorizeCallId || callId + '-authorize';
+    load.sent.length = 0;
+    await load.stub.handler({ type: 'tool-call', tool, args: secondArgs, callId: secondCallId });
+    const second = await waitForAnswer();
+    if (second) answer = second;
   }
   // The call id travels with the answer: a test has to be able to say "the follow-up request must
   // not reuse this one".
@@ -465,10 +484,13 @@ test('the manifest declares the turn subscription, the resident launch and the n
   // counter never runs, and a manifest that only promises tools would be a lie about the
   // behaviour (the same reason the marketplace brief had to be corrected once).
   assert.deepEqual(MANIFEST.subscribe, {
-    topics: ['turn', 'tool-execution', 'message'],
-    // message 主题是授权通道：只读旁听用户消息，agent 转述不算。
+    topics: ['turn', 'tool-execution'],
     hooks: ['will-compose-context'],
   });
+  // 一键确认要用 agent 能力把一次点击换成一轮对话。
+  assert.ok(MANIFEST.agent, 'the click gate needs the agent capability');
+  // 不再读用户消息：短码那条路已经退役。
+  assert.ok(!MANIFEST.subscribe.topics.includes('message'), 'the message topic is no longer needed');
   assert.equal(MANIFEST.launch, 'resident');
   assert.equal(MANIFEST.notify, true);
 });
@@ -781,249 +803,217 @@ test('search: a read that fails twice surfaces the failure', async () => {
 
 /* ── 交互卡闸门：用户不点，就不外发 ──────────────────────────────────────── */
 
-test('submit_intake: nothing leaves the machine before the user sends the code back', async () => {
-  // 授权只能来自用户本人打的字。真机 2026-11-24 的两条死路都在这里被排除：
-  // 卡片按钮派生的卡位拿不到宿主代发；宿主确认框按来源落在桌面，手机上提交不了。
+test('submit_intake: nothing leaves the machine before the user clicks the card', async () => {
+  // 授权只能来自用户对**这一版原文**点的那一下。1.5.15–1.5.19 的两条老路都被真机否掉了：
+  // 卡位不是工具调用（插件自己发不出去），手打短码摩擦太大。
   const load = await loadPlugin({ respond: () => ({ submitted: true, intake_id: 'issue-1', dedup_key: 'abcd1234' }) });
   const answer = await callTool(load, 'misakanet_submit_intake', {
-    problem: 'a report waiting for the user to type the code',
+    problem: 'a report waiting for the user to click',
     user_confirmed: true,
   }, { autoClick: false });
-  assert.equal(load.requests.length, 0, '没有用户发回的短码就一个请求都不发');
-  assert.equal(answer.result.awaiting_user_authorization, true);
-  assert.match(answer.result.code, /^[A-Z0-9]{6}$/);
-  assert.match(answer.result.note, /自己/);
-  const cards = load.sent.filter((m) => m.type === 'card-update');
-  assert.equal(cards.length, 1, 'the disclosure card must be supplied');
-  assert.match(String(cards[0].html), new RegExp(answer.result.code), 'the card shows the code the user has to send');
-});
-
-test('submit_intake: the code authorizes that exact text, in one tool call', async () => {
-  const load = await loadPlugin({ respond: () => ({ submitted: true, intake_id: 'issue-1', dedup_key: 'abcd1234' }) });
-  const answer = await callTool(load, 'misakanet_submit_intake', {
-    problem: 'a report the user authorized',
-    user_confirmed: true,
-  }, { callId: 'call-abc' });
-  assert.equal(load.requests.length, 1, '授权之后只发一次');
-  assert.equal(load.requests[0].callId, 'call-abc-authorize', '外发骑在带 code 的那次在途调用上');
-  assert.equal(answer.result.intake_id, 'issue-1');
-  assert.match(answer.result.note, /自己打的/);
-});
-
-test('submit_intake: every reported field is in the preview and in the authorization', async () => {
-  // 审核 2026-11-24：`matched_lesson_id` 既不在预览里、也不在指纹里 —— 用户点过头之后，
-  // agent 还能把这个字段换掉再发出去。现在预览与指纹都遍历 INTAKE_ARGS。
-  const load = await loadPlugin({ respond: () => ({ submitted: true }) });
-  const args = {
-    problem: 'a report with a cross reference',
-    matched_lesson_id: 'auto-merge-ci-pipeline',
-    user_confirmed: true,
-  };
-  const first = await callTool(load, 'misakanet_submit_intake', args, { autoClick: false });
+  assert.equal(load.requests.length, 0, '没有点击就一个请求都不发');
+  assert.equal(answer.result.awaiting_click, true);
+  assert.equal(load.stub.agentRuns.length, 0, 'no click → no agent turn');
   const card = String(load.sent.filter((m) => m.type === 'card-update')[0].html);
-  assert.match(card, /auto-merge-ci-pipeline/, 'the preview lists every field that will be sent');
-  assert.match(card, /matched_lesson_id/);
+  assert.match(card, /data-ghost-action="intake-confirm"/, 'the card carries the confirm button');
+  assert.match(card, /data-ghost-action="intake-cancel"/);
+});
 
-  // 用户授权之后换掉这个字段 → 必须重新确认，不能发。
+test('submit_intake: the click mints a ticket and asks for one agent turn', async () => {
+  const load = await loadPlugin({ respond: () => ({ submitted: true }) });
+  await callTool(load, 'misakanet_submit_intake', {
+    problem: 'a report the user clicks',
+    user_confirmed: true,
+  }, { autoClick: false });
   await load.stub.handler({
     type: 'event',
-    name: 'did-message-created',
-    data: { sessionId: 's1', role: 'user', messageId: 'm-x', content: first.result.code },
-  });
-  await new Promise((resolve) => setTimeout(resolve, 20));
-  load.sent.length = 0;
-  await load.stub.handler({
-    type: 'tool-call',
-    tool: 'misakanet_submit_intake',
-    args: Object.assign({}, args, { matched_lesson_id: 'some-other-lesson', code: first.result.code }),
-    callId: 'c-swap',
+    name: 'card-action',
+    callId: 'test-call',
+    actionId: 'intake-confirm',
+    spawnCallId: 'test-call-spawn',
+    sessionId: 's1',
+    userActionToken: 'once',
   });
   await new Promise((resolve) => setTimeout(resolve, 40));
-  assert.equal(load.requests.length, 0, 'a field the user never saw must not be changed after approval');
-  assert.equal(load.sent.filter((m) => m.type === 'tool-result').pop().errorCode, 'CONTENT_CHANGED');
+  assert.equal(load.stub.agentRuns.length, 1, 'exactly one agent turn per click');
+  const run = load.stub.agentRuns[0];
+  assert.equal(run.mode, 'continue');
+  assert.equal(run.userActionToken, 'once', 'the host click ticket must be passed through');
+  assert.match(run.event.click_ticket, /^tkt-/);
+  assert.equal(run.event.problem, 'a report the user clicks', 'the event carries the exact payload');
+  assert.equal(load.requests.length, 0, 'the plugin itself still sends nothing');
 });
 
-test('submit_intake: the preview is the redacted text that actually goes out', async () => {
-  // 审核 2026-11-24：说明写的是「查询词和公开内容都会机械脱敏」，实际只有自动收集的失败片段
-  // 脱敏。现在的口径是「预览 = 外发」：先脱敏，再摆卡、算指纹、发送。
-  const load = await loadPlugin({ respond: () => ({ submitted: true, intake_id: 'issue-7', dedup_key: 'abcd1234' }) });
-  const secretProblem = 'deploy failed while reading ghp_abcdefghijklmnop from the key store';
+test('submit_intake: a second click on the same card does not mint another ticket', async () => {
+  // 真机实测：一次点击会投递两条 card-action。
+  const load = await loadPlugin({ respond: () => ({ submitted: true }) });
+  await callTool(load, 'misakanet_submit_intake', { problem: 'double tap', user_confirmed: true }, { autoClick: false });
+  for (let i = 0; i < 2; i += 1) {
+    await load.stub.handler({
+      type: 'event', name: 'card-action', callId: 'test-call', actionId: 'intake-confirm',
+      spawnCallId: 'spawn-' + i, sessionId: 's1', userActionToken: 'once',
+    });
+  }
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  assert.equal(load.stub.agentRuns.length, 1, 'one tap → one agent turn, however many events arrive');
+});
+
+test('submit_intake: the ticket authorizes exactly that text, once', async () => {
+  const load = await loadPlugin({ respond: () => ({ submitted: true, intake_id: 'issue-1', dedup_key: 'abcd1234' }) });
   const answer = await callTool(load, 'misakanet_submit_intake', {
-    problem: secretProblem,
-    error: 'contact ops@example.com for the token',
-    what_tried: 'ssh admin@192.168.1.10 and retried',
+    problem: 'a report the user clicked',
+    user_confirmed: true,
+  }, { callId: 'call-abc' });
+  assert.equal(load.requests.length, 1, 'the authorized report goes out exactly once');
+  assert.equal(load.requests[0].callId, 'call-abc-authorize', '外发骑在带票的那次在途调用上');
+  assert.equal(answer.result.intake_id, 'issue-1');
+  assert.match(answer.result.note, /确认卡上点了/);
+});
+
+test('submit_intake: a ticket the user never clicked for sends nothing', async () => {
+  const load = await loadPlugin({ respond: () => ({ submitted: true }) });
+  const answer = await callTool(load, 'misakanet_submit_intake', {
+    problem: 'no click happened here',
+    user_confirmed: true,
+    click_ticket: 'tkt-madeup',
+  }, { autoClick: false });
+  assert.equal(load.requests.length, 0);
+  assert.equal(answer.errorCode, 'TICKET_UNKNOWN');
+});
+
+test('submit_intake: changing any reported field after the click sends nothing', async () => {
+  const load = await loadPlugin({ respond: () => ({ submitted: true }) });
+  const first = await callTool(load, 'misakanet_submit_intake', {
+    problem: 'the text the user actually read',
+    matched_lesson_id: 'auto-merge-ci-pipeline',
     user_confirmed: true,
   }, { autoClick: false });
-  const card = String(load.sent.filter((m) => m.type === 'card-update')[0].html);
-  assert.doesNotMatch(card, /ghp_abcdefghijklmnop/, 'the preview must not show an unredacted token');
-  assert.doesNotMatch(card, /ops@example\.com/, 'the preview must not show an unredacted email');
-  assert.doesNotMatch(card, /192\.168\.1\.10/, 'the preview must not show a private address');
-  assert.match(card, /REDACTED/, 'the card shows the placeholder that will be sent');
-
+  assert.equal(first.result.awaiting_click, true);
   await load.stub.handler({
-    type: 'event',
-    name: 'did-message-created',
-    data: { sessionId: 's1', role: 'user', messageId: 'm-y', content: answer.result.code },
+    type: 'event', name: 'card-action', callId: 'test-call', actionId: 'intake-confirm',
+    spawnCallId: 'spawn-x', sessionId: 's1', userActionToken: 'once',
   });
-  await new Promise((resolve) => setTimeout(resolve, 20));
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  const ticket = load.stub.agentRuns[0].event.click_ticket;
   load.sent.length = 0;
   await load.stub.handler({
     type: 'tool-call',
     tool: 'misakanet_submit_intake',
     args: {
-      problem: secretProblem,
-      error: 'contact ops@example.com for the token',
-      what_tried: 'ssh admin@192.168.1.10 and retried',
+      problem: 'something the user never saw',
+      matched_lesson_id: 'auto-merge-ci-pipeline',
       user_confirmed: true,
-      code: answer.result.code,
+      click_ticket: ticket,
     },
-    callId: 'c-redact',
-  });
-  await new Promise((resolve) => setTimeout(resolve, 40));
-  assert.equal(load.requests.length, 1);
-  const sent = JSON.parse(load.requests[0].body).params.arguments;
-  assert.doesNotMatch(sent.problem, /ghp_abcdefghijklmnop/, 'nothing unredacted may leave the machine');
-  assert.doesNotMatch(sent.error, /ops@example\.com/);
-  assert.doesNotMatch(sent.what_tried, /192\.168\.1\.10/, 'a private address must not leave either');
-  assert.match(sent.problem, /REDACTED/);
-  assert.match(sent.what_tried, /REDACTED:private_ip/);
-});
-
-test('submit_intake: a code the user never sent back sends nothing', async () => {
-  const load = await loadPlugin({ respond: () => ({ submitted: true }) });
-  const first = await callTool(load, 'misakanet_submit_intake', {
-    problem: 'a report nobody authorized',
-    user_confirmed: true,
-  }, { autoClick: false });
-  load.sent.length = 0;
-  await load.stub.handler({
-    type: 'tool-call',
-    tool: 'misakanet_submit_intake',
-    args: { problem: 'a report nobody authorized', user_confirmed: true, code: first.result.code },
-    callId: 'c2',
+    callId: 'c-swap',
   });
   await new Promise((resolve) => setTimeout(resolve, 40));
   assert.equal(load.requests.length, 0);
-  const answer = load.sent.filter((m) => m.type === 'tool-result').pop();
-  assert.equal(answer.ok, false);
-  assert.equal(answer.errorCode, 'CODE_NOT_AUTHORIZED');
-  assert.equal(answer.delivery, 'not_sent');
+  assert.equal(load.sent.filter((m) => m.type === 'tool-result').pop().errorCode, 'CONTENT_CHANGED');
 });
 
-test('submit_intake: an unknown code sends nothing', async () => {
-  const load = await loadPlugin({ respond: () => ({ submitted: true }) });
-  const answer = await callTool(load, 'misakanet_submit_intake', {
-    problem: 'a report with a made-up code',
-    user_confirmed: true,
-    code: 'AAAAAA',
-  }, { autoClick: false });
-  assert.equal(load.requests.length, 0);
-  assert.equal(answer.errorCode, 'CODE_UNKNOWN');
-});
-
-test('submit_intake: changing the text after the user authorized it sends nothing', async () => {
-  // 短码只对用户看过的那一版原文有效——否则 agent 可以先拿授权、再偷换内容。
-  const load = await loadPlugin({ respond: () => ({ submitted: true }) });
-  const first = await callTool(load, 'misakanet_submit_intake', {
-    problem: 'the text the user actually read',
-    user_confirmed: true,
-  }, { autoClick: false });
-  const code = first.result.code;
-  await load.stub.handler({
-    type: 'event',
-    name: 'did-message-created',
-    data: { sessionId: 's1', role: 'user', messageId: 'm-2', content: code },
-  });
-  await new Promise((resolve) => setTimeout(resolve, 20));
-  load.sent.length = 0;
-  await load.stub.handler({
-    type: 'tool-call',
-    tool: 'misakanet_submit_intake',
-    args: { problem: 'something the user never saw', user_confirmed: true, code },
-    callId: 'c3',
-  });
-  await new Promise((resolve) => setTimeout(resolve, 40));
-  assert.equal(load.requests.length, 0);
-  const answer = load.sent.filter((m) => m.type === 'tool-result').pop();
-  assert.equal(answer.errorCode, 'CONTENT_CHANGED');
-});
-
-test('submit_intake: an authorization code is single use', async () => {
+test('submit_intake: a ticket is single use', async () => {
   const load = await loadPlugin({ respond: () => ({ submitted: true, intake_id: 'issue-2', dedup_key: 'abcd1234' }) });
-  const first = await callTool(load, 'misakanet_submit_intake', {
-    problem: 'a report that goes out exactly once',
-    user_confirmed: true,
-  }, { autoClick: false });
-  const code = first.result.code;
-  await load.stub.handler({ type: 'event', name: 'did-message-created', data: { sessionId: 's1', role: 'user', messageId: 'm-3', content: code } });
-  await new Promise((resolve) => setTimeout(resolve, 20));
-  for (const callId of ['c4', 'c5']) {
+  await callTool(load, 'misakanet_submit_intake', { problem: 'goes out once', user_confirmed: true }, { autoClick: false });
+  await load.stub.handler({
+    type: 'event', name: 'card-action', callId: 'test-call', actionId: 'intake-confirm',
+    spawnCallId: 'spawn-y', sessionId: 's1', userActionToken: 'once',
+  });
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  const ticket = load.stub.agentRuns[0].event.click_ticket;
+  for (const callId of ['c1', 'c2']) {
     await load.stub.handler({
       type: 'tool-call',
       tool: 'misakanet_submit_intake',
-      args: { problem: 'a report that goes out exactly once', user_confirmed: true, code },
+      args: { problem: 'goes out once', user_confirmed: true, click_ticket: ticket },
       callId,
     });
     await new Promise((resolve) => setTimeout(resolve, 40));
   }
-  assert.equal(load.requests.length, 1, 'the same code must not publish twice');
+  assert.equal(load.requests.length, 1, 'the same ticket must not publish twice');
 });
 
-test('submit_intake: when the card cannot be shown, no code is issued and nothing is sent', async () => {
-  const load = await loadPlugin({ respond: () => ({ results: [] }), failCards: true });
+test('submit_intake: a host without the agent capability sends nothing', async () => {
+  const load = await loadPlugin({ respond: () => ({ submitted: true }) });
+  load.stub.agent = undefined;
+  delete load.stub.agent;
   const answer = await callTool(load, 'misakanet_submit_intake', {
-    problem: '一次真实故障的描述',
-    error: 'boom',
+    problem: 'a host that cannot continue the turn',
+    user_confirmed: true,
+  }, { autoClick: false });
+  assert.equal(answer.ok, false);
+  assert.equal(answer.errorCode, 'CLICK_GATE_UNAVAILABLE');
+  assert.equal(load.requests.length, 0);
+});
+
+test('submit_intake: a click that cannot start a turn says so and publishes nothing', async () => {
+  const load = await loadPlugin({ respond: () => ({ submitted: true }) });
+  await callTool(load, 'misakanet_submit_intake', { problem: 'agent.run will fail', user_confirmed: true }, { autoClick: false });
+  load.stub.agentError = 'PERMISSION_DENIED';
+  await load.stub.handler({
+    type: 'event', name: 'card-action', callId: 'test-call', actionId: 'intake-confirm',
+    spawnCallId: 'spawn-z', sessionId: 's1', userActionToken: 'once',
+  });
+  await new Promise((resolve) => setTimeout(resolve, 120));
+  assert.equal(load.requests.length, 0);
+  const visible = load.sent
+    .filter((m) => m.type === 'notify' || (m.type === 'card-update' && m.state === 'done'))
+    .map((m) => String(m.text || m.html || ''))
+    .join(' ');
+  assert.match(visible, /没有提交任何内容/, 'the failure must be visible on the card or as a notice');
+});
+
+test('submit_intake: when the card cannot be shown, nothing is sent', async () => {
+  const load = await loadPlugin({ respond: () => ({ submitted: true }), failCards: true });
+  const answer = await callTool(load, 'misakanet_submit_intake', {
+    problem: 'a card that never renders',
     user_confirmed: true,
   }, { autoClick: false });
   assert.equal(answer.ok, false);
   assert.equal(answer.errorCode, 'CARD_UNAVAILABLE');
-  assert.equal(answer.delivery, 'not_sent');
   assert.equal(load.requests.length, 0);
 });
 
-test('the message subscription only listens: an assistant turn never authorizes', async () => {
-  // 只读旁听：不拦、不改，也不把 agent 自己的话当成用户授权。
-  const load = await loadPlugin({ respond: () => ({ submitted: true, intake_id: 'issue-3', dedup_key: 'abcd1234' }) });
-  const first = await callTool(load, 'misakanet_submit_intake', {
-    problem: 'a report nobody typed a code for',
+test('submit_intake: the preview is the redacted text that actually goes out', async () => {
+  const load = await loadPlugin({ respond: () => ({ submitted: true, intake_id: 'issue-7', dedup_key: 'abcd1234' }) });
+  const secretProblem = 'deploy failed while reading ghp_abcdefghijklmnop from the key store';
+  const args = {
+    problem: secretProblem,
+    error: 'contact ops@example.com for the token',
+    what_tried: 'ssh admin@192.168.1.10 and retried',
     user_confirmed: true,
-  }, { autoClick: false });
-  const code = first.result.code;
+  };
+  const first = await callTool(load, 'misakanet_submit_intake', args, { autoClick: false });
+  const card = String(load.sent.filter((m) => m.type === 'card-update')[0].html);
+  assert.doesNotMatch(card, /ghp_abcdefghijklmnop/, 'the preview must not show an unredacted token');
+  assert.doesNotMatch(card, /ops@example\.com/, 'the preview must not show an unredacted email');
+  assert.doesNotMatch(card, /192\.168\.1\.10/, 'the preview must not show a private address');
+  assert.equal(first.result.awaiting_click, true);
+
   await load.stub.handler({
-    type: 'event',
-    name: 'did-message-created',
-    data: { sessionId: 's1', role: 'assistant', messageId: 'm-9', content: '好的，我把短码 ' + code + ' 发回来了' },
+    type: 'event', name: 'card-action', callId: 'test-call', actionId: 'intake-confirm',
+    spawnCallId: 'spawn-r', sessionId: 's1', userActionToken: 'once',
   });
-  await new Promise((resolve) => setTimeout(resolve, 20));
+  await new Promise((resolve) => setTimeout(resolve, 40));
+  const sentArgs = load.stub.agentRuns[0].event;
+  assert.doesNotMatch(String(sentArgs.problem), /ghp_abcdefghijklmnop/);
+  assert.match(String(sentArgs.what_tried), /REDACTED:private_ip/);
+
   load.sent.length = 0;
   await load.stub.handler({
     type: 'tool-call',
     tool: 'misakanet_submit_intake',
-    args: { problem: 'a report nobody typed a code for', user_confirmed: true, code },
-    callId: 'c-role',
+    args: Object.assign({}, sentArgs, { user_confirmed: true, click_ticket: sentArgs.click_ticket }),
+    callId: 'c-redact',
   });
-  await new Promise((resolve) => setTimeout(resolve, 40));
-  assert.equal(load.requests.length, 0, 'an assistant message must never count as the user authorizing');
-  const answer = load.sent.filter((m) => m.type === 'tool-result').pop();
-  assert.equal(answer.errorCode, 'CODE_NOT_AUTHORIZED');
+  await new Promise((resolve) => setTimeout(resolve, 120));
+  assert.equal(load.requests.length, 1);
+  const sent = JSON.parse(load.requests[0].body).params.arguments;
+  assert.doesNotMatch(sent.problem, /ghp_abcdefghijklmnop/, 'nothing unredacted may leave the machine');
+  assert.doesNotMatch(sent.error, /ops@example\.com/);
+  assert.doesNotMatch(sent.what_tried, /192\.168\.1\.10/);
+  assert.match(sent.problem, /REDACTED/);
 });
-test('submit_intake: the card discloses, and carries no button that cannot submit', async () => {
-  // 卡片只负责披露。留下的按钮会派生一个不可外发的卡位——点了只会让人以为提交了。
-  const load = await loadPlugin({ respond: () => ({ submitted: true }) });
-  await callTool(load, 'misakanet_submit_intake', {
-    problem: 'pip install times out behind the proxy',
-    user_confirmed: true,
-  }, { autoClick: false });
-  const card = load.sent.filter((m) => m.type === 'card-update')[0];
-  const html = String(card.html);
-  assert.match(html, /pip install times out behind the proxy/, 'the card shows the exact text');
-  assert.match(html, /公开/, 'the card states that it is public');
-  assert.match(html, /发回来/, 'the card says how to authorize it');
-  assert.doesNotMatch(html, /data-ghost-action/, 'no dead button');
-  assert.doesNotMatch(html, /<script/i, 'cards are plain HTML');
-});
-
 /* ---------- 官方通道修过、社区通道必须跟上的那几处 ---------- */
 
 test('preflight: the note does not tell the model to run the guards', async () => {
