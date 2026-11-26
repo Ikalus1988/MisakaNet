@@ -14,12 +14,7 @@ All notable changes to the Misaka Network project are documented here.
 
 * **cindy-plugin:** 1.5.20 —— 上报确认改成「一键点卡」：点击 → 一次性票据 → 一轮 agent ([#5782](https://github.com/Ikalus1988/MisakaNet/issues/5782)) ([39c441e](https://github.com/Ikalus1988/MisakaNet/commit/39c441ec901ca0f126a0134103f6b2eed5efdef5))
 * **lessons:** intake batch 2026-11-25 ([#5772](https://github.com/Ikalus1988/MisakaNet/issues/5772)) ([5877f97](https://github.com/Ikalus1988/MisakaNet/commit/5877f97a9d99966128c247e46ec8d8fe9a26ee18))
-* **lessons:** intake batch 2026-11-25 ([#5788](https://github.com/Ikalus1988/MisakaNet/issues/5788)) ([57d7278](https://github.com/Ikalus1988/MisakaNet/commit/57d72786bdd0877240cfb6e37b0023978e1b7bb4))
-* **lessons:** intake batch 2026-11-25 ([#5815](https://github.com/Ikalus1988/MisakaNet/issues/5815)) ([2635ce6](https://github.com/Ikalus1988/MisakaNet/commit/2635ce6ea8aad60098a4dcd62b459770bc1bfc45))
 * **lessons:** intake batch 2026-11-26 ([#5824](https://github.com/Ikalus1988/MisakaNet/issues/5824)) ([11bb2fe](https://github.com/Ikalus1988/MisakaNet/commit/11bb2fe874ec2731d9ab3fa08462d1e716b0b039))
-* **lessons:** intake batch 2026-11-26 ([#5828](https://github.com/Ikalus1988/MisakaNet/issues/5828)) ([64312bf](https://github.com/Ikalus1988/MisakaNet/commit/64312bfa0cb2650cd659782dd839ca89277412aa))
-* **lessons:** intake batch 2026-11-26 ([#5839](https://github.com/Ikalus1988/MisakaNet/issues/5839)) ([ccb8359](https://github.com/Ikalus1988/MisakaNet/commit/ccb8359e4f8644c389099ecaa8bbf4ae6cda112b))
-* **lessons:** intake batch 2026-11-26 ([#5842](https://github.com/Ikalus1988/MisakaNet/issues/5842)) ([38feda7](https://github.com/Ikalus1988/MisakaNet/commit/38feda715d36453941a7f2864473735e56ef0647))
 * **site:** 1,164 个 lesson 页补 JSON-LD（TechArticle + 面包屑），[#5799](https://github.com/Ikalus1988/MisakaNet/issues/5799) 拆出来的那部分 ([#5846](https://github.com/Ikalus1988/MisakaNet/issues/5846)) ([11bb215](https://github.com/Ikalus1988/MisakaNet/commit/11bb215595a36b261c919c50aee015ed4afbda03))
 * **site:** 首页「最近合并」→「最近排雷案例」；feed 着陆顺序先给人类条目 ([#5834](https://github.com/Ikalus1988/MisakaNet/issues/5834)) ([5c4bf5a](https://github.com/Ikalus1988/MisakaNet/commit/5c4bf5aff0102ab5e74e4d63d9ade5ea0f53513b))
 
