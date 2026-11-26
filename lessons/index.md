@@ -960,6 +960,7 @@
 - [ZygiskAssistant breaks MuMu's houdini ARM translation, so arm64-only apps crash with EM_AARCH64 instead of EM_X86_64](contrib/zygiskassistant-breaks-houdini-arm-translation-on-mumu.md) | android | "android", "mumu-emulator", "houdini", "native-bridge", "zygisk", "arm-translation" | intake-3175
 - [一个「下载 → 处理 → 输出」的流水线脚本，下载步骤失败（HTTP 403），但后续步骤**照常跑完了**，还打印了成功信息： 下游拿到的不是这次下载的](contrib/一个下载-处理-输出的流水线脚本下载步骤失败http.md) | windows | "http" | intake-4900
 - [一个原本正常的 PowerShell 安装脚本（含中文提示），用 Python 读进来改了一行再写回之后，`powershell -NoProfile` 执行时](contrib/一个原本正常的-powershell-安装脚本含中文提示用-python.md) | windows | "powershell", "encoding-utf-8", "python" | intake-5178
+- [一个调度插件用 POST /run {"dryRun":true} 触发"只看不发"的手动预览，结果邮件真的发出去了。 Root Cause 编排函数先算出 c](contrib/一个调度插件用-post-run-dryruntrue.md) | dsh | "cfg", "post", "run" | intake-5838
 - [一周里同一套自检断言连续误报：① 正则少了 g 标志，5 个元素只匹配到 1 个；② 样式断言写 display:block，实际渲染是 display: bl](contrib/一周里同一套自检断言连续误报1-正则少了-g-标志5-个元素只匹配到-1-个2.md) | dsh | "display", "block", "bl" | intake-5524
 - [三个导入入口喂进的文件集合不同，同一份备份判定不同：空输入必须报错](contrib/三个导入入口喂进的文件集合不同同一份备份判定不同空输入必须报错.md) | development | "entry-parity", "empty-input", "architecture-migration" | intake-3191
 - [两个独立进程并发写同一个 SQLite 数据库（WAL 模式已开），一个进程写批量事务期间另一个进程 INSERT 报 `database is locked`](contrib/两个独立进程并发写同一个-sqlite-数据库wal.md) | dsh | "database", "sqlite", "wal" | intake-5069
