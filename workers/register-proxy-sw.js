@@ -8757,12 +8757,19 @@ async function countDistinctRetrievingClients(env, { lessonId, lessonPath } = {}
     binds.push(`%/${stem}.md`);
   }
   if (clauses.length === 0) return null;
-  // The count changes only when someone searches, and this read is called ~386 times a day
-  // (measured 2026-11-25: 6,468 rows/call — 2.5M rows/day, 11.9% of every row the account read).
+  // The count changes only when someone searches, and it only ever goes up — so the memo is a
+  // freshness/dollars trade, not a correctness one. Measured 2026-11-26 (D1 analytics, by statement):
+  // this read was **7,137 rows/call × 213 calls = 1.52M rows in 9.7 hours**, the single largest reader
+  // of the day and 53% of it at 06:39. The previous fifteen-minute window was chosen when the daily
+  // total was 2.5M; after the corpus/ladder/analytics fixes the whole account reads ~9M a day, so that
+  // window became the top of the list. One hour makes it 24 misses a day per actively-read lesson.
+  //
   // The predicate is `top_id = ? OR top_id LIKE '%/<id>.md'`: the `OR` and the leading wildcard
-  // defeat `idx_search_signals_top`, so every call is a scan. It cannot be indexed away without
-  // denormalising `top_id`, so it gets a short durable memo instead — a badge that is fifteen
-  // minutes behind is not an error, and the miss path is unchanged.
+  // defeat `idx_search_signals_top`, so every miss is a scan of `search_signals`. The structural fix
+  // is still denormalising the stem into its own indexed column (then both branches are equality
+  // lookups); until that exists, the window is the only lever. An hour is safe for this number
+  // because E4, once earned, is permanent — a lesson that just gained a second client shows E3 for
+  // up to an hour, and nothing else changes.
   const cacheKey = `insights:lesson-clients:${String(lessonId || "")}:${String(lessonPath || "")}`;
   return getWithCache(env, cacheKey, async () => {
     const row = await d1.prepare(
@@ -8774,7 +8781,7 @@ async function countDistinctRetrievingClients(env, { lessonId, lessonPath } = {}
     ).bind(...binds).first();
     const clients = Number(row?.clients ?? 0);
     return Number.isFinite(clients) ? clients : 0;
-  }, { maxAgeMs: 15 * 60 * 1000 });
+  }, { maxAgeMs: 60 * 60 * 1000 });
 }
 
 // POST /api/search-signal — records that a search went unsolved. The query is

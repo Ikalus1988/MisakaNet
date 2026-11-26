@@ -139,6 +139,30 @@ test('the per-lesson client count is answered once per window, per lesson', asyn
     'a different lesson must not be answered from the first one\'s entry');
 });
 
+test('the per-lesson count survives thirty minutes but not ninety (2026-11-26)', async () => {
+  // The window is an hour since 2026-11-26. This scan was measured at 7,137 rows/call × 213 calls =
+  // 1.52M rows in 9.7 hours — the largest single reader of that day (53% of it at 06:39) — because
+  // `top_id = ? OR top_id LIKE '%/<id>.md'` cannot use an index and the memo only held fifteen
+  // minutes. Both halves below are needed: a fresh answer must not rescan, and an hour-old one must,
+  // or "memoised" would have quietly become "frozen".
+  const key = 'insights:lesson-clients:a-lesson:';
+  const seed = (ageMs) => {
+    const d1 = storeD1([{ clients: 9 }]);
+    d1.state.store.set(key, JSON.stringify({ ts: Date.now() - ageMs, data: 4 }));
+    return d1;
+  };
+
+  const fresh = seed(30 * 60 * 1000);
+  assert.equal(await countDistinctRetrievingClients(envWith(fresh), { lessonId: 'a-lesson' }), 4);
+  assert.equal(fresh.state.sql.filter((s) => /FROM search_signals/.test(s)).length, 0,
+    'a thirty-minute-old count was re-scanned — the window is no longer an hour');
+
+  const stale = seed(90 * 60 * 1000);
+  assert.equal(await countDistinctRetrievingClients(envWith(stale), { lessonId: 'a-lesson' }), 9);
+  assert.equal(stale.state.sql.filter((s) => /FROM search_signals/.test(s)).length, 1,
+    'a ninety-minute-old count was served from the cache — the window is not bounded');
+});
+
 test('a count of zero is not cached as an answer for the next client', async () => {
   // The store refuses to cache falsy payloads, which is what keeps "nobody has retrieved this yet"
   // from being pinned for fifteen minutes — the same rule the search corpus follows.
