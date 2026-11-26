@@ -4,13 +4,21 @@
 > MisakaNet is a zero-bounty open-source project — **this repository pays nothing and promises
 > nothing**. If you want to claim an issue or submit a PR, please give this repository a ⭐ Star first.
 > This helps us grow and ensures we can review your PRs faster!
->
-> **About reward banners on issues.** Some issues carry an Opire banner (`/reward`, `/try`,
-> `/claim`) advertising a third-party payout. We attach it automatically in
-> `scripts/question_autopilot.py`; we do not administer those payments, and Opire is not part of
-> this project's contribution policy. Treat any such offer as **unverified** and confirm it
-> independently before planning around it. Merging a PR is the only reward this repository has ever
-> paid out. See [#2903](https://github.com/Ikalus1988/MisakaNet/issues/2903).
+
+## Rewards
+
+**This repository pays nothing, and it does not administer anyone else's reward.** Individual issues
+may carry a third-party **Opire** banner (`/reward`, `/try`, `/claim`) advertising a payout. We attach
+that banner automatically in [`scripts/question_autopilot.py`](scripts/question_autopilot.py); we do
+**not administer** those payments, and Opire is not part of this project's contribution policy. Treat
+any such offer as **unverified** and confirm it independently before planning work around it.
+Merging a PR is the only reward this repository has ever paid out.
+
+Why this is written down rather than assumed: on 2026-10-06 the policy above said "zero bounty" while
+the banner advertised one on every issue we file, and one account posted 475 identical payout claims
+across two issues at roughly one every 97 seconds — burying a real contributor's correctly-formatted
+`/try` for about a day ([#2903](https://github.com/Ikalus1988/MisakaNet/issues/2903)). The claim and
+the banner have to be stated in the same place, or they drift apart again.
 
 Thank you for your interest in contributing! There are several ways to help:
 
