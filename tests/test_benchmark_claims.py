@@ -68,6 +68,9 @@ from scripts.benchmark_workers_ai import METRIC_DEFINITION, METRIC_SUMMARY  # no
 
 SCRIPT = REPO / "scripts" / "benchmark_workers_ai.py"
 README = REPO / "README.md"
+# The setup (and therefore the scenario-source claim) moved off the README on 2026-11-26; the claim
+# stays gated, one level down, on the page that now carries it.
+NOTES = REPO / "docs" / "benchmarks" / "recitation-trend.md"
 ARTIFACT = REPO / "docs" / "benchmarks" / "latest.json"
 WORKFLOW = REPO / ".github" / "workflows" / "benchmark-workers-ai.yml"
 
@@ -147,14 +150,14 @@ def test_the_scenario_claim_is_asserted_only_while_the_code_derives_scenarios_fr
     """A claim that outlives its implementation is how this file's subject happened in the first place."""
     code = SCRIPT.read_text(encoding="utf-8")
     derives_from_title = "scene = (title or problem)" in code
-    claims_it = SCENARIO_CLAIM in README.read_text(encoding="utf-8")
+    claims_it = SCENARIO_CLAIM in NOTES.read_text(encoding="utf-8")
     if derives_from_title:
         assert claims_it, (
-            "`load_all_scenarios` still builds scenarios from lesson titles, so README must keep saying so "
-            f"({SCENARIO_CLAIM!r})")
+            "`load_all_scenarios` still builds scenarios from lesson titles, so "
+            f"docs/benchmarks/recitation-trend.md must keep saying so ({SCENARIO_CLAIM!r})")
     else:
         assert not claims_it, (
-            "the script no longer derives scenarios from lesson titles — update or drop the README sentence "
+            "the script no longer derives scenarios from lesson titles — update or drop the sentence "
             f"({SCENARIO_CLAIM!r})")
 
 

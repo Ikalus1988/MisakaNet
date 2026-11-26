@@ -52,6 +52,9 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 GENERATOR = REPO_ROOT / "scripts" / "update_readme_benchmark.py"
 BENCH_SCRIPT = REPO_ROOT / "scripts" / "benchmark_workers_ai.py"
+# The generated block moved off the README on 2026-11-26; the README keeps a stub and this page
+# owns the block. Both are read here so the block can neither go stale nor come back a second time.
+TREND = REPO_ROOT / "docs" / "benchmarks" / "recitation-trend.md"
 README = REPO_ROOT / "README.md"
 
 BEGIN = "<!-- BEGIN generated: benchmark-trend -->"
@@ -104,20 +107,26 @@ def _run_rec(when: str, condition: str, rate: float) -> dict:
 
 # ── the shipped state ───────────────────────────────────────────────────────
 
-def test_readme_block_is_current():
+def test_the_trend_block_is_current():
     """The half that keeps the second source of truth from returning."""
     result = _run("--check")
     assert result.returncode == 0, (
-        "README.md benchmark table is stale — run `python3 scripts/update_readme_benchmark.py`. "
+        "docs/benchmarks/recitation-trend.md is stale — run `python3 scripts/update_readme_benchmark.py`. "
         f"stdout: {result.stdout.strip()} stderr: {result.stderr.strip()}"
     )
 
 
-def test_readme_has_exactly_one_generated_block():
-    text = README.read_text(encoding="utf-8")
-    assert text.count(BEGIN) == 1, f"{BEGIN} appears {text.count(BEGIN)} times"
-    assert text.count(END) == 1, f"{END} appears {text.count(END)} times"
+def test_the_block_lives_in_exactly_one_place():
+    """Moved 2026-11-26: the anchor lives on the trend page, and the README must not grow a copy."""
+    text = TREND.read_text(encoding="utf-8")
+    assert text.count(BEGIN) == 1, f"{BEGIN} appears {text.count(BEGIN)} times in the trend page"
+    assert text.count(END) == 1, f"{END} appears {text.count(END)} times in the trend page"
     assert BEGIN in text and text.index(BEGIN) < text.index(END)
+    readme = README.read_text(encoding="utf-8")
+    assert BEGIN not in readme and END not in readme, (
+        "README.md carries the generated block again — one producer, one file: the page.")
+    assert "docs/benchmarks/recitation-trend.md" in readme, (
+        "README.md no longer links the trend page, so the block it used to carry has no route to it.")
 
 
 def test_generator_is_idempotent(tmp_path):
@@ -138,14 +147,16 @@ def test_generator_is_idempotent(tmp_path):
     assert readme.read_bytes() == after_first, "the generator is not idempotent"
 
 
-def test_generator_does_not_touch_the_real_readme(tmp_path):
+def test_generator_does_not_touch_the_checkout(tmp_path):
     """The point of `--readme`: exercising the command must not rewrite the checkout."""
-    before = README.read_bytes()
+    before = TREND.read_bytes()
+    before_readme = README.read_bytes()
     corpus, readme = _fixture(tmp_path, [_run_rec("2026-10-05T09:00:00+00:00", "with_lesson", 0.9)])
     result = _run(readme=readme, benchmarks=corpus)
     assert result.returncode == 0, result.stderr
     assert readme.read_bytes() != before, "the temp copy was not rewritten — the run proved nothing"
-    assert README.read_bytes() == before, "the generator wrote to the real README.md"
+    assert TREND.read_bytes() == before, "the generator wrote to the real trend page"
+    assert README.read_bytes() == before_readme, "the generator wrote to README.md"
 
 
 def test_main_computes_rows_end_to_end(tmp_path):
