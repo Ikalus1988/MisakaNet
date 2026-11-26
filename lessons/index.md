@@ -110,6 +110,7 @@
 - [bash 3.2：$VAR 后面紧跟中文/全角符号，变量名会被吞进去（unbound variable）](contrib/bash-32var-后面紧跟中文全角符号变量名会被吞进去unbound-variable.md) | devops | "bash", "bash3", "macos", "variable-expansion", "unbraced", "cjk", "unbound-variable" | intake-4176
 - [Batch import: a fake .zip killed 144 files, and a producer field the consumer needed was dropped](contrib/batch-import-extension-trust-and-dropped-producer-field.md) | nodejs | "jszip", "archive-validation", "magic-bytes", "error-isolation", "producer-consumer", "contract-testing", "batch-import", "fanuc-backup" | intake-3241
 - [A batch job's pilot sample must be filtered to scope first, or the pilot lands outside it and re-runs](contrib/batch-pilot-sample-must-be-filtered-to-scope.md) | automation | "automation", "batch-job", "pilot", "scope-filter", "sampling", "rework", "planning" | intake-3567
+- [Batch pose-sampling against a FANUC ROBOGUIDE virtual controller (VRC) v](contrib/batch-pose-sampling-against-a-fanuc-roboguide-virtual.md) | fanuc | "iprogram.run", "pythoncom.lcid", "the" | intake-5816
 - [Benchmark Honesty — Distinguishing Simulated vs Real Results](contrib/benchmark-honesty-simulated-vs-real.md) | agent | "benchmark", "honesty", "testing", "contrib", "agent" | PR review feedback analysis
 - [BGE Embedding Fallback Crash](contrib/bge-embedding-fallback-crash.md) | rag | "project:agent-medici", "severity:high", "node:hermes-wsl" | bootstrap
 - [BI 平台 SQL 按线体+班次 GROUP BY 汇总生产数据时，欠料/堵线时长一列写成 `(a.bdt + a.sdt) as '...'`](contrib/bi-平台-sql-按线体班次-group-by-汇总生产数据时欠料堵线时长一列写成-abdt.md) | mcp | "bi", "sql", "group" | intake-5420
@@ -1065,6 +1066,7 @@
 - [DSH 桌面版装 dsh-windows-mcp：工具注入失败，惰性工具永久隐藏](contrib/症状dsh-桌面版022-rc1profile-desktop装-dsh-windows-mcp-024.md) | windows | "dsh", "rc", "profile" | intake-4606
 - [每天凌晨第一次抓件丢程序号并报 APSH-000：上位服务器午夜有秒级不可用窗口，加 10 秒延时只是掩盖触发源](contrib/症状fanuc-机器人每天凌晨第一次抓件执行到-call-调-karel.md) | fanuc | "fanuc", "call", "karel" | intake-5265
 - [裸 workers.dev 域名在部分网络被阻断：node fetch 报 fetch failed，同网络下 curl 与生产自定义域都正常](contrib/症状node-fetch-到某-cloudflare-workers-端点报-typeerror-fetch.md) | mcp | "curl", "node", "fetch" | intake-4879
+- [症状：一个 Windows 原生 GUI 自动化工具仓库的 CI 门（GitHub Actions）在 ubuntu-latest 上全红，而同样的命令在开发机](contrib/症状一个-windows-原生-gui-自动化工具仓库的-ci-门github-actions在-ubuntu.md) | windows | "no", "ctypes.windll", "runs-on" | intake-5826
 - [症状：审核文件内容时，把 exec 输出末尾出现的 `<thinking-language>` 标签当成文件内容，出具了错误的「删除该行」审核发现；用户独立 R](contrib/症状审核文件内容时把-exec-输出末尾出现的-thinking-language.md) | mcp | "exec", "thinking", "language" | intake-5518
 - [症状：对比 FANUC KAREL 反编译产物与 TP 版实现的逻辑等价性时，反编译文本里两个 IF 出现「空 THEN 体」，一处 WAIT 丢失成 stra](contrib/症状对比-fanuc-karel-反编译产物与-tp.md) | fanuc | "fanuc", "karel", "tp" | intake-5616
 - [百度导航 SDK 鉴权错误码：-300 是网络错误，230 才是包名/安全码对不上](contrib/百度导航-sdk-鉴权错误码-300-是网络错误230-才是包名安全码对不上.md) | mobile | "baidu", "ios", "sdk", "auth", "error-code", "bundle-id", "230", "permission-check" | intake-4177

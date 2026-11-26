@@ -1,43 +1,45 @@
 {
-  "generated_at": "2026-11-25T19:26:18.573364+00:00",
+  "generated_at": "2026-11-26T05:15:03.024537+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(lessons): intake batch 2026-11-25",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5815",
-      "timestamp": "2026-11-25T19:03:07Z",
+      "title": "feat(site): 首页「最近合并」→「最近排雷案例」；feed 着陆顺序先给人类条目",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5834",
+      "timestamp": "2026-11-26T05:14:51Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): 市场在售版本更新为社区 1.5.22（KV 已同步）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5802",
-      "timestamp": "2026-11-25T17:33:17Z",
+      "title": "feat(lessons): intake batch 2026-11-26",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5828",
+      "timestamp": "2026-11-26T03:33:18Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(cindy-plugin): 1.5.22 —— 随包手册改回与代码一致（旧闸门的残留）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5801",
-      "timestamp": "2026-11-25T16:49:54Z",
+      "title": "feat(lessons): intake batch 2026-11-26",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5824",
+      "timestamp": "2026-11-26T00:36:51Z",
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "perf(worker): /api/analytics 与每课客户端计数改为持久缓存（24h 再省 ~9.3M 行读，44%）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5796",
-      "timestamp": "2026-11-25T13:36:11Z",
-      "source": "github"
+      "type": "lesson",
+      "title": "Batch pose-sampling against a FANUC ROBOGUIDE virtual controller (VRC) v",
+      "url": "lessons/contrib/batch-pose-sampling-against-a-fanuc-roboguide-virtual.md",
+      "timestamp": "2026-11-26",
+      "domain": "fanuc",
+      "source": "lessons"
     },
     {
-      "type": "merged_pr",
-      "title": "chore(data): 市场在售版本更新为社区 1.5.21（KV 已同步）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5793",
-      "timestamp": "2026-11-25T10:30:04Z",
-      "source": "github"
+      "type": "lesson",
+      "title": "症状：一个 Windows 原生 GUI 自动化工具仓库的 CI 门（GitHub Actions）在 ubuntu-latest 上全红，而同样的命令在开发机",
+      "url": "lessons/contrib/症状一个-windows-原生-gui-自动化工具仓库的-ci-门github-actions在-ubuntu.md",
+      "timestamp": "2026-11-26",
+      "domain": "windows",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -61,22 +63,6 @@
       "url": "lessons/contrib/a-windows-credential-manager-enrollment-using-pywin32.md",
       "timestamp": "2026-11-25",
       "domain": "windows",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "GUI 截图验收批量出图中途机器自动锁屏：CopyFromScreen/PowerShell 全程无报错，10 张「验收截图」全部拍成锁屏壁纸，脚本报成功——假",
-      "url": "lessons/contrib/gui-截图验收批量出图中途机器自动锁屏copyfromscreenpowershell-全程无报错10.md",
-      "timestamp": "2026-11-25",
-      "domain": "windows",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "In a maintenance guest, Home Assistant Supervisor kept reporting supervisor_inte",
-      "url": "lessons/contrib/in-a-maintenance-guest-home-assistant-supervisor-kept.md",
-      "timestamp": "2026-11-25",
-      "domain": "mcp",
       "source": "lessons"
     },
     {
@@ -130,6 +116,20 @@
         "onboarding"
       ],
       "timestamp": "2026-08-23T14:53:19Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5835",
+      "timestamp": "2026-11-26T04:00:50Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "docs(handoff): vol 48 —— 确认闸门的最终形状（一键点卡），与三次「假工作」的清算",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5823",
+      "timestamp": "2026-11-26T00:32:17Z",
       "source": "github"
     }
   ]

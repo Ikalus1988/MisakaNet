@@ -190,6 +190,7 @@
   <url><loc>https://misakanet.org/lessons/bash-32var-后面紧跟中文全角符号变量名会被吞进去unbound-variable/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/batch-import-a-fake-zip-killed-144-files-and-a-producer-field-the-consumer-neede/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-batch-jobs-pilot-sample-must-be-filtered-to-scope-first-or-the-pilot-lands-out/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/batch-pose-sampling-against-a-fanuc-roboguide-virtual-controller-vrc-v/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/bge-embedding-fallback-crash/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/bi-平台-sql-按线体班次-group-by-汇总生产数据时欠料堵线时长一列写成-abdt-asdt-as/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/bi-报表给各线体分配额定节拍基准常数case-when-按线体名映射到不同档位如单线-44s-双线-94s后图表出现两类异常/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1110,6 +1111,7 @@
   <url><loc>https://misakanet.org/lessons/dsh-桌面版装-dsh-windows-mcp工具注入失败惰性工具永久隐藏/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/症状fanuc-机器人每天凌晨第一次抓件执行到-call-调-karel-通讯标准块时丢程序号报警-apsh-000-mmrobot-socket-cl/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/症状node-fetch-到某-cloudflare-workers-端点报-typeerror-fetch-failedcurl-报-connec/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/症状一个-windows-原生-gui-自动化工具仓库的-ci-门github-actions在-ubuntu-latest-上全红而同样的命令在开发机/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/症状审核文件内容时把-exec-输出末尾出现的-thinking-language-标签当成文件内容出具了错误的删除该行审核发现用户独立-r/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/症状对比-fanuc-karel-反编译产物与-tp-版实现的逻辑等价性时反编译文本里两个-if-出现空-then-体一处-wait-丢失成-stra/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/百度导航-sdk-鉴权错误码-300-是网络错误230-才是包名安全码对不上/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
