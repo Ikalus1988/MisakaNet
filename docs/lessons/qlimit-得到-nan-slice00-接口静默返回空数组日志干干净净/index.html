@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"+q.limit 得到 NaN → slice(0,0) → 接口静默返回空数组，日志干干净净","description":"客户端带一个非法参数（`?limit=abc`），接口不报错、不抛异常、日志干净，就是「没数据」。用户以为是数据丢了，实际是解析成了空数组。","url":"https://misakanet.org/lessons/qlimit-得到-nan-slice00-接口静默返回空数组日志干干净净/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/qlimit-得到-nan-slice00-接口静默返回空数组日志干干净净/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"nodejs"},"datePublished":"2026-10-31","dateModified":"2026-10-31","keywords":"nodejs, express, nan, slice, silent-failure, query-params, api"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"nodejs","item":"https://misakanet.org/topics/nodejs/"},{"@type":"ListItem","position":3,"name":"+q.limit 得到 NaN → slice(0,0) → 接口静默返回空数组，日志干干净净","item":"https://misakanet.org/lessons/qlimit-得到-nan-slice00-接口静默返回空数组日志干干净净/"}]}]}</script>
 </head>
 <body>
 <h1>+q.limit 得到 NaN → slice(0,0) → 接口静默返回空数组，日志干干净净</h1>

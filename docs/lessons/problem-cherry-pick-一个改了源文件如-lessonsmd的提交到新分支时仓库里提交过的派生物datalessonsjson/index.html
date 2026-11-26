@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"cherry-pick 改了源文件的提交时派生物必然冲突：冲突的是生成结果而不是手写内容，要重跑生成链而不是逐块解","description":"cherry-pick 一个改了源文件（如 lessons/*.md）的提交到新分支时，仓库里提交过的派生物（data/lessons.json、index、snapshot 等）全部冲突（UU），手工逐块合并既慢又容易把上一批的派生内容带进新分支。","url":"https://misakanet.org/lessons/problem-cherry-pick-一个改了源文件如-lessonsmd的提交到新分支时仓库里提交过的派生物datalessonsjson/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/problem-cherry-pick-一个改了源文件如-lessonsmd的提交到新分支时仓库里提交过的派生物datalessonsjson/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"mcp"},"datePublished":"2026-11-16","dateModified":"2026-11-16","keywords":"git, cherry, pick"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"mcp","item":"https://misakanet.org/topics/mcp/"},{"@type":"ListItem","position":3,"name":"cherry-pick 改了源文件的提交时派生物必然冲突：冲突的是生成结果而不是手写内容，要重跑生成链而不是逐块解","item":"https://misakanet.org/lessons/problem-cherry-pick-一个改了源文件如-lessonsmd的提交到新分支时仓库里提交过的派生物datalessonsjson/"}]}]}</script>
 </head>
 <body>
 <h1>cherry-pick 改了源文件的提交时派生物必然冲突：冲突的是生成结果而不是手写内容，要重跑生成链而不是逐块解</h1>

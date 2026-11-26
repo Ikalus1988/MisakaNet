@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"用脚本按大括号配对替换 JS 函数：模板字符串里的 ${} 会把配对带偏，整份文件被截断","description":"用一段\"找到函数起点、从起点数大括号到配对为止、把这段整体替换\"的脚本去改一个 JS 模块（sceneKit.js 里替换 doorway/mirror 两个函数）。脚本跑完报成功、文件大小也变了，但页面直接白屏。node 解析时报 `Unexpected token '=\"`，检查发现文件后半截被...","url":"https://misakanet.org/lessons/用脚本按大括号配对替换-js-函数模板字符串里的-会把配对带偏整份文件被截断/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/用脚本按大括号配对替换-js-函数模板字符串里的-会把配对带偏整份文件被截断/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"devops"},"datePublished":"2026-11-08","dateModified":"2026-11-08","keywords":"javascript, refactor, brace-matching, template-literal, file-corruption"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"devops","item":"https://misakanet.org/topics/devops/"},{"@type":"ListItem","position":3,"name":"用脚本按大括号配对替换 JS 函数：模板字符串里的 ${} 会把配对带偏，整份文件被截断","item":"https://misakanet.org/lessons/用脚本按大括号配对替换-js-函数模板字符串里的-会把配对带偏整份文件被截断/"}]}]}</script>
 </head>
 <body>
 <h1>用脚本按大括号配对替换 JS 函数：模板字符串里的 ${} 会把配对带偏，整份文件被截断</h1>

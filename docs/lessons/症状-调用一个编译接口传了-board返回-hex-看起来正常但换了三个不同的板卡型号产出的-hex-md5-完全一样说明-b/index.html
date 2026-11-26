@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"编译接口传了 board 却不生效、三种板卡产出同一个 hex：pydantic 默认 extra=ignore 把拼错的字段静默丢掉","description":"调用一个编译接口，传了 `board=...`，返回 hex 看起来正常。但换了三个不同的板卡型号，**产出的 hex md5 完全一样**——说明 `board` 参数从未生效，一直在用默认板卡编译。","url":"https://misakanet.org/lessons/症状-调用一个编译接口传了-board返回-hex-看起来正常但换了三个不同的板卡型号产出的-hex-md5-完全一样说明-b/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/症状-调用一个编译接口传了-board返回-hex-看起来正常但换了三个不同的板卡型号产出的-hex-md5-完全一样说明-b/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"dsh"},"datePublished":"2026-11-19","dateModified":"2026-11-19","keywords":"board, extra-ignore, board_fqbn"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"dsh","item":"https://misakanet.org/topics/dsh/"},{"@type":"ListItem","position":3,"name":"编译接口传了 board 却不生效、三种板卡产出同一个 hex：pydantic 默认 extra=ignore 把拼错的字段静默丢掉","item":"https://misakanet.org/lessons/症状-调用一个编译接口传了-board返回-hex-看起来正常但换了三个不同的板卡型号产出的-hex-md5-完全一样说明-b/"}]}]}</script>
 </head>
 <body>
 <h1>编译接口传了 board 却不生效、三种板卡产出同一个 hex：pydantic 默认 extra=ignore 把拼错的字段静默丢掉</h1>

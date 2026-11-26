@@ -95,6 +95,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Callable
@@ -208,7 +209,7 @@ HTML_TEMPLATE = """\
   .related a {{ display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }}
   .back {{ margin-top: 32px; font-size: var(--fs-xs); }}
 </style>
-</head>
+{json_ld}</head>
 <body>
 {body}
 <div class="back"><a href="/">← Back to MisakaNet</a> · <a href="/search/">Search lessons</a></div>
@@ -461,6 +462,73 @@ def lesson_link_resolver(assigned: dict[str, str], lessons: list) -> "Callable[[
     return resolve
 
 
+# ── structured data (2026-11-26) ────────────────────────────────────────────────
+# Every lesson page carried a title, a canonical URL, a date and a paragraph of description
+# that crawlers already read as plain text — and **none** of the 1,164 carried JSON-LD
+# (measured 2026-11-26: `application/ld+json` appeared 0 times on `/lessons/<slug>/`, while
+# the home page had one). The pages that are the product were the ones with no machine
+# description at all.
+#
+# Scope, and what is deliberately absent:
+# * `TechArticle` + `BreadcrumbList` in one `@graph`. The breadcrumb earns a visible SERP
+#   change on its own (a path instead of a raw URL); the article type is what lets a crawler
+#   tell a failure lesson from a blog post.
+# * No `author`, no `image`, no `publisher.logo`. The corpus has no per-lesson authorship a
+#   page can prove — `contributor` is a sweep over merged PRs, and the worker's
+#   `lesson_authors` table is not in the published bundle — and the only site image is a
+#   1200x630 card, not a logo. A placeholder there would be a structured claim with nothing
+#   behind it, which is the one thing the evidence ladder exists to prevent.
+# * A draft emits nothing: it is `noindex`, and structured data on a page we ask crawlers not
+#   to index is decoration.
+_DATE_ONLY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _iso_date(value: object) -> str:
+    """A `YYYY-MM-DD` string, or "" — `created`/`updated` are optional in the frontmatter."""
+    text = str(value or "").strip()
+    return text if _DATE_ONLY.match(text) else ""
+
+
+def lesson_json_ld(*, title: str, description: str, canonical: str, domain: str,
+                   tags: list, created: object = "", updated: object = "",
+                   is_published: bool = True) -> str:
+    if not is_published:
+        return ""
+    topic_slug = str(domain or "general").lower().replace(" ", "-").replace("/", "-")
+    article = {
+        "@type": "TechArticle",
+        "headline": title,
+        "description": description,
+        "url": canonical,
+        "mainEntityOfPage": {"@type": "WebPage", "@id": canonical},
+        "isPartOf": {"@type": "WebSite", "name": "MisakaNet", "url": f"{SITE_URL}/"},
+        "publisher": {"@type": "Organization", "name": "MisakaNet", "url": f"{SITE_URL}/"},
+        "about": {"@type": "Thing", "name": domain},
+    }
+    published, modified = _iso_date(created), _iso_date(updated)
+    if published:
+        article["datePublished"] = published
+    if modified:
+        article["dateModified"] = modified
+    if tags:
+        article["keywords"] = ", ".join(str(tag) for tag in tags[:8])
+    trail = {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "MisakaNet", "item": f"{SITE_URL}/"},
+            {"@type": "ListItem", "position": 2, "name": domain,
+             "item": f"{SITE_URL}/topics/{topic_slug}/"},
+            {"@type": "ListItem", "position": 3, "name": title, "item": canonical},
+        ],
+    }
+    payload = json.dumps({"@context": "https://schema.org", "@graph": [article, trail]},
+                         ensure_ascii=False, separators=(",", ":"))
+    # A `</script>` inside a lesson title would end the data block early. `\/` is legal JSON
+    # and still parses as `/`, so the escape costs nothing but the backslash.
+    return ('<script type="application/ld+json">'
+            + payload.replace("</", "<\\/") + "</script>\n")
+
+
 def build_lesson_page(lesson: dict, root: Path = REPO,
                       markup: dict[str, str] | None = None,
                       resolve: "Callable[[str], str | None] | None" = None) -> str:
@@ -560,7 +628,12 @@ def build_lesson_page(lesson: dict, root: Path = REPO,
     # reachable through them.
     robots = "" if is_published else '<meta name="robots" content="noindex, follow">\n'
     return HTML_TEMPLATE.format(title=title, description=description, canonical=canonical,
-                                 robots=robots, body=body, **blocks)
+                                 robots=robots, body=body,
+                                 json_ld=lesson_json_ld(
+                                     title=title, description=description, canonical=canonical,
+                                     domain=domain, tags=tags, created=lesson.get("created"),
+                                     updated=lesson.get("updated"), is_published=is_published),
+                                 **blocks)
 
 
 def build_topic_page(domain: str, lessons: list, description: str = "", root: Path = REPO,
