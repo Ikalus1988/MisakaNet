@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"Cloudflare Email Worker 邮件注册踩坑Notes — message.raw、MIME 与 SPF","description":"为 MisakaNet 添加无 GitHub 账号的注册通道，选用 Cloudflare Email Routing + Workers + KV 架构。用户发邮件到注册地址 → Worker 自动分配节点 ID → 存入 KV。","url":"https://misakanet.org/lessons/cloudflare-email-worker-registration-trap/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/cloudflare-email-worker-registration-trap/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"devops"},"datePublished":"2026-07-06","keywords":"cloudflare, email-worker, kv, turnstile, registration, spf"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"devops","item":"https://misakanet.org/topics/devops/"},{"@type":"ListItem","position":3,"name":"Cloudflare Email Worker 邮件注册踩坑Notes — message.raw、MIME 与 SPF","item":"https://misakanet.org/lessons/cloudflare-email-worker-registration-trap/"}]}]}</script>
 </head>
 <body>
 <h1>Cloudflare Email Worker 邮件注册踩坑Notes — message.raw、MIME 与 SPF</h1>

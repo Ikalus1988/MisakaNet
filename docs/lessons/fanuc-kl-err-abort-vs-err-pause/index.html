@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异","description":"在 FANUC KAREL 程序中处理 IPC（进程间通信）错误时，若未正确区分 `ERR_ABORT` 和 `ERR_PAUSE`，会导致所有运行中的任务被强制中止，进而造成程序号（Program Number）丢失、生产状态数据清空，以及需要人工干预才能恢复正常运行等严重后果。","url":"https://misakanet.org/lessons/fanuc-kl-err-abort-vs-err-pause/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/fanuc-kl-err-abort-vs-err-pause/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"fanuc"},"datePublished":"2026-05-03","keywords":"fanuc, abort, pause"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"fanuc","item":"https://misakanet.org/topics/fanuc/"},{"@type":"ListItem","position":3,"name":"FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异","item":"https://misakanet.org/lessons/fanuc-kl-err-abort-vs-err-pause/"}]}]}</script>
 </head>
 <body>
 <h1>FANUC KL: ERR_ABORT vs ERR_PAUSE 行为差异</h1>

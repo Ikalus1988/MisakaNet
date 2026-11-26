@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation","description":"当 GitHub Actions 的 `run:` 脚本中直接使用 `${{ github.event.issue.body }}` 或 `${{ github.event.pull_request.title }}` 等用户可控变量时，攻击者可以通过构造包含 shell 元字符（如 `` ` ``...","url":"https://misakanet.org/lessons/github-actions-code-injection/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/github-actions-code-injection/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"security"},"keywords":"github-actions, security, code-injection, codeql, ci"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"security","item":"https://misakanet.org/topics/security/"},{"@type":"ListItem","position":3,"name":"GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation","item":"https://misakanet.org/lessons/github-actions-code-injection/"}]}]}</script>
 </head>
 <body>
 <h1>GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation</h1>

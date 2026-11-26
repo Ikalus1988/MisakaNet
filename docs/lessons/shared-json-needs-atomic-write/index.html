@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"shared json needs atomic write","description":"多个自动化job同时写共享的运行时状态文件（如 latest.json），plain overwrite 会暴露半写状态导致并发读者解析失败。","url":"https://misakanet.org/lessons/shared-json-needs-atomic-write/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/shared-json-needs-atomic-write/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"development"},"datePublished":"2026-07-06","keywords":"json, atomic, race-condition, runtime"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"development","item":"https://misakanet.org/topics/development/"},{"@type":"ListItem","position":3,"name":"shared json needs atomic write","item":"https://misakanet.org/lessons/shared-json-needs-atomic-write/"}]}]}</script>
 </head>
 <body>
 <h1>shared json needs atomic write</h1>

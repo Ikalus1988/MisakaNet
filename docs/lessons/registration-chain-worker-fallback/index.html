@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"注册链路设计 — Worker 只创建 Issue，其余交给 Workflow","description":"MisakaNet 节点注册需要一条对国内外用户都通畅的链路。最初 Worker 既创建 Issue 又读写 counter.json，导致 Worker 和 register.yml 双重自增、竞态、Worker 权限过大等问题。","url":"https://misakanet.org/lessons/registration-chain-worker-fallback/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/registration-chain-worker-fallback/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"feishu"},"datePublished":"2026-07-06","keywords":"registration, worker, register, github-actions, feishu, fallback"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"feishu","item":"https://misakanet.org/topics/feishu/"},{"@type":"ListItem","position":3,"name":"注册链路设计 — Worker 只创建 Issue，其余交给 Workflow","item":"https://misakanet.org/lessons/registration-chain-worker-fallback/"}]}]}</script>
 </head>
 <body>
 <h1>注册链路设计 — Worker 只创建 Issue，其余交给 Workflow</h1>

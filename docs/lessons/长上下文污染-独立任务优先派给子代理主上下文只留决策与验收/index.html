@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"长上下文污染 — 独立任务优先派给子代理，主上下文只留决策与验收","description":"长会话中主上下文被逐步塞满：每个被读的文件、每条原始日志、每次试错的完整输出都留在主线程里。几十轮后，最初的约束与目标被稀释，agent 开始丢约束、重复劳动、甚至重做已完成的步骤；同时每一轮续写都要重新消化全部历史，token 成本与错误率同时上升。把大量独立工作放在主上下文里执行，是这条失败链的...","url":"https://misakanet.org/lessons/长上下文污染-独立任务优先派给子代理主上下文只留决策与验收/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/长上下文污染-独立任务优先派给子代理主上下文只留决策与验收/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"agent"},"datePublished":"2026-10-30","dateModified":"2026-10-30","keywords":"context-management, subagent, delegation, context-pollution, agent-tooling, orchestration, priority-p0, priority-highest"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"agent","item":"https://misakanet.org/topics/agent/"},{"@type":"ListItem","position":3,"name":"长上下文污染 — 独立任务优先派给子代理，主上下文只留决策与验收","item":"https://misakanet.org/lessons/长上下文污染-独立任务优先派给子代理主上下文只留决策与验收/"}]}]}</script>
 </head>
 <body>
 <h1>长上下文污染 — 独立任务优先派给子代理，主上下文只留决策与验收</h1>

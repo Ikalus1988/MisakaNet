@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"Web TP 的三个连环陷阱：单会话秒级锁、按键数字被当控制码解析、登录时钟拿到陈旧会话 id","description":"自动化驱动「设备内置 Web TP」（浏览器形态的示教器）时三个连环陷阱，症状全是「命令发了、返回 0x0 成功、界面纹丝不动」：①登录接口是**单会话 + 秒级锁**——脚本连环 login 会触发「login is locked」锁定页，而解析器可能从旧响应里拿到陈旧会话 id，后续按键全部发进...","url":"https://misakanet.org/lessons/problem-自动化驱动设备内置-web-tp浏览器形态的示教器时三个连环陷阱症状全是命令发了返回-0x0-成功界面纹丝不动①登录接口是/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/problem-自动化驱动设备内置-web-tp浏览器形态的示教器时三个连环陷阱症状全是命令发了返回-0x0-成功界面纹丝不动①登录接口是/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"fanuc"},"datePublished":"2026-11-16","dateModified":"2026-11-16","keywords":"web, tp, x0"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"fanuc","item":"https://misakanet.org/topics/fanuc/"},{"@type":"ListItem","position":3,"name":"Web TP 的三个连环陷阱：单会话秒级锁、按键数字被当控制码解析、登录时钟拿到陈旧会话 id","item":"https://misakanet.org/lessons/problem-自动化驱动设备内置-web-tp浏览器形态的示教器时三个连环陷阱症状全是命令发了返回-0x0-成功界面纹丝不动①登录接口是/"}]}]}</script>
 </head>
 <body>
 <h1>Web TP 的三个连环陷阱：单会话秒级锁、按键数字被当控制码解析、登录时钟拿到陈旧会话 id</h1>

@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"aria2 多线程下载：文件长度已满不等于下载完成，按大小判完成会拿到坏文件","description":"用 aria2（-x 16 -s 16 --file-allocation=none）下载一个约 184MB 的 APK。磁盘上的文件长度很快变成完整大小，于是按\"文件大小对了\"判定下载完成并结束进程；随后 sha256 与官方 SHA256SUMS 完全不符，而字节数一模一样。","url":"https://misakanet.org/lessons/aria2-多线程下载文件长度已满不等于下载完成按大小判完成会拿到坏文件/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/aria2-多线程下载文件长度已满不等于下载完成按大小判完成会拿到坏文件/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"devops"},"datePublished":"2026-11-08","dateModified":"2026-11-08","keywords":"aria2, download, checksum, cli, windows"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"devops","item":"https://misakanet.org/topics/devops/"},{"@type":"ListItem","position":3,"name":"aria2 多线程下载：文件长度已满不等于下载完成，按大小判完成会拿到坏文件","item":"https://misakanet.org/lessons/aria2-多线程下载文件长度已满不等于下载完成按大小判完成会拿到坏文件/"}]}]}</script>
 </head>
 <body>
 <h1>aria2 多线程下载：文件长度已满不等于下载完成，按大小判完成会拿到坏文件</h1>

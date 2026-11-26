@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"SwiftUI 里 Color.clear 不是「空占位」：会把整张卡片撑到屏幕高度","description":"为了给卡片右列留出「和另一张卡箭头同宽」的空位，写了 `Color.clear.frame(width: 14)` 放进 `HStack`。结果整张卡片被撑到接近屏幕高度，原本的 `frame(minHeight: 76)` 完全失效，两张并排的卡片背景块一大一小，看起来像布局崩了。","url":"https://misakanet.org/lessons/swiftui-里-colorclear-不是空占位会把整张卡片撑到屏幕高度/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/swiftui-里-colorclear-不是空占位会把整张卡片撑到屏幕高度/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"mobile"},"datePublished":"2026-10-31","dateModified":"2026-10-31","keywords":"swiftui, ios, layout, color-clear, spacer, hstack, flexible-view, geometry"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"mobile","item":"https://misakanet.org/topics/mobile/"},{"@type":"ListItem","position":3,"name":"SwiftUI 里 Color.clear 不是「空占位」：会把整张卡片撑到屏幕高度","item":"https://misakanet.org/lessons/swiftui-里-colorclear-不是空占位会把整张卡片撑到屏幕高度/"}]}]}</script>
 </head>
 <body>
 <h1>SwiftUI 里 Color.clear 不是「空占位」：会把整张卡片撑到屏幕高度</h1>

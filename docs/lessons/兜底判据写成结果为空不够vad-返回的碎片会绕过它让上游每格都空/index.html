@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"兜底判据写成“结果为空”不够：VAD 返回的碎片会绕过它，让上游每格都空","description":"自己写了一个 OpenAI 兼容的本地 ASR 服务（sherpa-onnx），切句逻辑是：先用 VAD 切，如果 VAD 没给结果，就退回固定窗口。测试正常（用 60 秒完整音频直接 POST，能返回 10 段、上百字）。但上游视频工具调用它时，每一格的台词都是空的。抓服务端日志才看到：上游传 4...","url":"https://misakanet.org/lessons/兜底判据写成结果为空不够vad-返回的碎片会绕过它让上游每格都空/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/兜底判据写成结果为空不够vad-返回的碎片会绕过它让上游每格都空/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"llm"},"datePublished":"2026-11-08","dateModified":"2026-11-08","keywords":"asr, vad, sherpa-onnx, fallback, silent-failure, audio"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"llm","item":"https://misakanet.org/topics/llm/"},{"@type":"ListItem","position":3,"name":"兜底判据写成“结果为空”不够：VAD 返回的碎片会绕过它，让上游每格都空","item":"https://misakanet.org/lessons/兜底判据写成结果为空不够vad-返回的碎片会绕过它让上游每格都空/"}]}]}</script>
 </head>
 <body>
 <h1>兜底判据写成“结果为空”不够：VAD 返回的碎片会绕过它，让上游每格都空</h1>

@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"pnpm 被文件锁卡死时的替代路径：把无依赖树包的 tarball 直接解进 node_modules","description":"给运行中的 Electron 宿主装一个新插件，`pnpm install` 反复 `ERR_PNPM_EPERM`（rename 临时目录 → 目标被宿主映射）。按常规手法把被锁目录改名让路，下一次 install 又撞别的包，第三次撞在一个**纯 JS 包**上——说明不是某个原生模块的问题，而...","url":"https://misakanet.org/lessons/pnpm-被文件锁卡死时的替代路径把无依赖树包的-tarball-直接解进-node-modules/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/pnpm-被文件锁卡死时的替代路径把无依赖树包的-tarball-直接解进-node-modules/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"devops"},"datePublished":"2026-11-08","dateModified":"2026-11-08","keywords":"pnpm, eperm, npm-registry, tarball, windows, plugin-install"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"devops","item":"https://misakanet.org/topics/devops/"},{"@type":"ListItem","position":3,"name":"pnpm 被文件锁卡死时的替代路径：把无依赖树包的 tarball 直接解进 node_modules","item":"https://misakanet.org/lessons/pnpm-被文件锁卡死时的替代路径把无依赖树包的-tarball-直接解进-node-modules/"}]}]}</script>
 </head>
 <body>
 <h1>pnpm 被文件锁卡死时的替代路径：把无依赖树包的 tarball 直接解进 node_modules</h1>

@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"带哈希 denylist 的仓库里直接 push 会泄露积压的未推历史：敏感串还留在工作注释和工位名里","description":"带 CI 敏感词门（哈希 denylist 滑窗扫描，零明文）的仓库里，多 agent 会话按「同步/推送仓库」的指令直接 `git push`，把本地积压的未推提交泄到公网——其中含内部机型名/内部项目名（工作注释、工位名、截图说明里带出）。扫描器报 `窗口命中(len=N @ offset)` ...","url":"https://misakanet.org/lessons/症状-带-ci-敏感词门哈希-denylist-滑窗扫描零明文的仓库里多-agent-会话按同步推送仓库的指令直接-git-push把本地积/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/症状-带-ci-敏感词门哈希-denylist-滑窗扫描零明文的仓库里多-agent-会话按同步推送仓库的指令直接-git-push把本地积/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"mcp"},"datePublished":"2026-11-19","dateModified":"2026-11-19","keywords":"git, ci, denylist"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"mcp","item":"https://misakanet.org/topics/mcp/"},{"@type":"ListItem","position":3,"name":"带哈希 denylist 的仓库里直接 push 会泄露积压的未推历史：敏感串还留在工作注释和工位名里","item":"https://misakanet.org/lessons/症状-带-ci-敏感词门哈希-denylist-滑窗扫描零明文的仓库里多-agent-会话按同步推送仓库的指令直接-git-push把本地积/"}]}]}</script>
 </head>
 <body>
 <h1>带哈希 denylist 的仓库里直接 push 会泄露积压的未推历史：敏感串还留在工作注释和工位名里</h1>
