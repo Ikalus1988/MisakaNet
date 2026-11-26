@@ -438,6 +438,7 @@
   <url><loc>https://misakanet.org/lessons/git-ls-remote-git-push-到-githubcom-间歇性挂起-2035-秒后失败报-recv-failure-conn/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-merge-conflict-resolution/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-push-without-shell-agent/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/git-push-报-remote-invalid-username-or-token-password-authentication-is-not/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-stash-is-repository-wide-not-worktree-local-a-bare-stash-pop-can-apply-anoth/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-tls-handshake-failure/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-worktree-dangling-commit-recovery/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
