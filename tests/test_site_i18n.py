@@ -23,6 +23,13 @@ harmless: it is the correct wording sitting one line away from the wrong one bei
 
 So: every key in the dictionaries must be reachable from the page, and every key the page reaches
 must exist in both.
+
+One surface was added to that pair on 2026-11-25: the homepage carries a small overlay of its own copy
+(`const PAGE_COPY = {…}`), for the tagline the dictionaries never had and for `latestListLabel`, whose
+meaning changed. The overlay is merged into the loaded dictionary before the page renders, so those keys
+travel the same `data-i18n` / `t()` path as everything else — which means the rule above has to see them,
+and the overlay is held to the same both-languages requirement the dictionaries are. An overlay key that
+exists in only one language is the same half-translation, one file further in.
 """
 from __future__ import annotations
 
@@ -67,6 +74,22 @@ def dictionary(lang: str) -> dict[str, str]:
     return json.loads(LOCALES[lang].read_text(encoding="utf-8"))
 
 
+# The page's own copy overlay, `const PAGE_COPY = { en: {…}, zh: {…} }` in its script. Read with a
+# regex for the same reason the search page's inline `I18N` object is: it is JavaScript, and the
+# question here is which keys it publishes, not what it evaluates to.
+PAGE_COPY = re.compile(r"const PAGE_COPY = \{(.*?)\n\};", re.S)
+
+
+def page_copy(page: str) -> dict[str, dict[str, str]]:
+    """The overlay as {lang: {key: value}} — the `en:` / `zh:` blocks, keys four spaces in."""
+    block = PAGE_COPY.search(page)
+    assert block, "the page's copy overlay is gone or moved; this gate reads its two language blocks"
+    return {
+        lang: dict(re.findall(r"^    (\w+): '([^']*)'", body, re.M))
+        for lang, body in re.findall(r"(\w+): \{(.*?)\n  \}", block.group(1), re.S)
+    }
+
+
 def referenced(page: str, keys: set[str]) -> set[str]:
     """The dictionary keys the page actually reaches.
 
@@ -97,13 +120,34 @@ def test_the_two_dictionaries_have_the_same_keys():
 
 
 def test_every_key_the_page_renders_exists_in_both_dictionaries(page):
-    problems = {lang: missing(page, set(dictionary(lang))) for lang in ("en", "zh")}
+    """Both dictionaries *plus* the page's own overlay — see the module docstring.
+
+    The overlay is a surface of its own, not an exemption: a key it adds is checked here exactly like a
+    key the JSON adds, so the only way to satisfy this is to state the copy in both languages.
+    """
+    overlay = page_copy(page)
+    provided = {lang: set(dictionary(lang)) | set(overlay.get(lang, {})) for lang in ("en", "zh")}
+    problems = {lang: missing(page, provided[lang]) for lang in ("en", "zh")}
     problems = {lang: keys for lang, keys in problems.items() if keys}
     assert not problems, (
         f"these keys are rendered but absent, so the page shows the identifier instead of the "
         f"copy (and `t(key) || 'fallback'` cannot save them: `t()` returns the key, which is "
         f"truthy): {problems}"
     )
+
+
+def test_the_page_copy_overlay_states_both_languages(page):
+    """The overlay's own parity rule: one language and not the other is the silent fallback again."""
+    overlay = page_copy(page)
+    assert set(overlay) == {"en", "zh"}, sorted(overlay)
+    assert overlay["en"], "the overlay parsed empty — the pattern stopped matching, not the copy"
+    assert set(overlay["en"]) == set(overlay["zh"]), sorted(set(overlay["en"]) ^ set(overlay["zh"]))
+    for key, value in overlay["en"].items():
+        assert value.strip() and overlay["zh"][key].strip(), f"the overlay's {key} is empty"
+        assert overlay["zh"][key] != value or not re.search(r"[A-Za-z]{3,}", value), (
+            f"the overlay's {key} is the English string in both languages, so Chinese mode would "
+            f"show it unchanged: {value!r}"
+        )
 
 
 def test_every_key_the_register_page_renders_exists_in_both_dictionaries(register_page):
