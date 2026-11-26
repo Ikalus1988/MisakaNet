@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"FANUC KAREL .pc 反编译：例程局部变量名在字节码里根本不存在","description":"反编译 FANUC KAREL 的 .pc（p-code）字节码还原源码时，例程局部变量名全部还原不出来，产物只能用 r<段>_lc<槽> 这类合成名。排查了很久才确认：不是反编译器没解出来，是字节码里根本没有。","url":"https://misakanet.org/lessons/fanuc-karel-pc-反编译例程局部变量名在字节码里根本不存在/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/fanuc-karel-pc-反编译例程局部变量名在字节码里根本不存在/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"fanuc"},"datePublished":"2026-11-09","dateModified":"2026-11-09","keywords":"problem, fanuc, karel"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"fanuc","item":"https://misakanet.org/topics/fanuc/"},{"@type":"ListItem","position":3,"name":"FANUC KAREL .pc 反编译：例程局部变量名在字节码里根本不存在","item":"https://misakanet.org/lessons/fanuc-karel-pc-反编译例程局部变量名在字节码里根本不存在/"}]}]}</script>
 </head>
 <body>
 <h1>FANUC KAREL .pc 反编译：例程局部变量名在字节码里根本不存在</h1>

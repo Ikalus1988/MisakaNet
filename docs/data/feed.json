@@ -1,28 +1,28 @@
 {
-  "generated_at": "2026-11-26T05:15:03.024537+00:00",
+  "generated_at": "2026-11-26T17:05:38.370674+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(site): 首页「最近合并」→「最近排雷案例」；feed 着陆顺序先给人类条目",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5834",
-      "timestamp": "2026-11-26T05:14:51Z",
+      "title": "feat(site): 1,164 个 lesson 页补 JSON-LD（TechArticle + 面包屑），#5799 拆出来的那部分",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5846",
+      "timestamp": "2026-11-26T14:56:56Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
       "title": "feat(lessons): intake batch 2026-11-26",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5828",
-      "timestamp": "2026-11-26T03:33:18Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5842",
+      "timestamp": "2026-11-26T11:46:28Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(lessons): intake batch 2026-11-26",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5824",
-      "timestamp": "2026-11-26T00:36:51Z",
+      "title": "perf(worker): 每课客户端计数的 memo 15 分钟 → 1 小时（今天是全账最大的一笔读）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5843",
+      "timestamp": "2026-11-26T11:43:39Z",
       "source": "github"
     },
     {
@@ -31,6 +31,22 @@
       "url": "lessons/contrib/batch-pose-sampling-against-a-fanuc-roboguide-virtual.md",
       "timestamp": "2026-11-26",
       "domain": "fanuc",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "`git push` 报 `remote: Invalid username or token. Password authentication is not",
+      "url": "lessons/contrib/git-push-报-remote-invalid-username-or-token-password.md",
+      "timestamp": "2026-11-26",
+      "domain": "mcp",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "一个调度插件用 POST /run {\"dryRun\":true} 触发\"只看不发\"的手动预览，结果邮件真的发出去了。 Root Cause 编排函数先算出 c",
+      "url": "lessons/contrib/一个调度插件用-post-run-dryruntrue.md",
+      "timestamp": "2026-11-26",
+      "domain": "dsh",
       "source": "lessons"
     },
     {
@@ -47,22 +63,6 @@
       "url": "lessons/contrib/a-cold-boot-witness-timed-out-even-though-its-stored.md",
       "timestamp": "2026-11-25",
       "domain": "mcp",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A restored integration remained not_loaded in isolated Home Assistant Core even",
-      "url": "lessons/contrib/a-restored-integration-remained-not-loaded-in-isolated-home.md",
-      "timestamp": "2026-11-25",
-      "domain": "mcp",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "A Windows Credential Manager enrollment using pywin32 rejected an already encode",
-      "url": "lessons/contrib/a-windows-credential-manager-enrollment-using-pywin32.md",
-      "timestamp": "2026-11-25",
-      "domain": "windows",
       "source": "lessons"
     },
     {
@@ -120,16 +120,16 @@
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5835",
-      "timestamp": "2026-11-26T04:00:50Z",
+      "title": "docs(maintainer): §9 的删除清单少了一条读取者（设计收敛门禁），补 §9.5",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5847",
+      "timestamp": "2026-11-26T16:25:40Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "docs(handoff): vol 48 —— 确认闸门的最终形状（一键点卡），与三次「假工作」的清算",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5823",
-      "timestamp": "2026-11-26T00:32:17Z",
+      "title": "docs(readme): 首页瘦身 —— Recitation 下沉、Opire 归位、双包折叠、徽章 15→13",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5840",
+      "timestamp": "2026-11-26T09:32:55Z",
       "source": "github"
     }
   ]

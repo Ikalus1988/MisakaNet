@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"脱离父子关系的脚本仍随宿主退出被杀：别指望“等宿主关掉再干活”","description":"要在一个 Electron 宿主（DeepSeek Harness）完全退出之后，对它的 node_modules 跑一次 pnpm install（宿主运行时会锁住已加载的原生模块）。做法是写个\"守夜\"脚本：用 WMI `Win32_Process.Create` 拉起，脱离父子关系，循环检测宿主...","url":"https://misakanet.org/lessons/脱离父子关系的脚本仍随宿主退出被杀别指望等宿主关掉再干活/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/脱离父子关系的脚本仍随宿主退出被杀别指望等宿主关掉再干活/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"devops"},"datePublished":"2026-11-08","dateModified":"2026-11-08","keywords":"windows, job-object, wmi, electron, detached-process"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"devops","item":"https://misakanet.org/topics/devops/"},{"@type":"ListItem","position":3,"name":"脱离父子关系的脚本仍随宿主退出被杀：别指望“等宿主关掉再干活”","item":"https://misakanet.org/lessons/脱离父子关系的脚本仍随宿主退出被杀别指望等宿主关掉再干活/"}]}]}</script>
 </head>
 <body>
 <h1>脱离父子关系的脚本仍随宿主退出被杀：别指望“等宿主关掉再干活”</h1>

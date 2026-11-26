@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Regenerate the README benchmark trend table and chart from `docs/benchmarks/latest.json`.
+"""Regenerate the recitation-benchmark trend table and chart from `docs/benchmarks/latest.json`.
+
+The block lives in `docs/benchmarks/recitation-trend.md`, not in `README.md` (moved 2026-11-26).
+The README carried it until the table grew to twenty lines of a paused benchmark on the front page;
+the anchor comments and this producer are unchanged, so the move cost no evidence — the generator,
+`tests/test_readme_benchmark_is_generated.py` and `tests/test_benchmark_claims.py` all point at the
+new page, and the README keeps a four-line stub that still says paused, still links the snapshot,
+and still disclaims itself.
 
 The problem this exists to fix
 -----------------------------
@@ -20,19 +27,20 @@ Honesty about the output
 ------------------------
 **Pre-existing runs have no `run_at` and cannot be dated.** 1155 of them are in the shipped
 `latest.json`. They are never guessed at or interpolated: `unstamped` reports how many were skipped,
-and while every run is unstamped this script refuses to touch the README at all, because emitting an
+and while every run is unstamped this script refuses to touch the page at all, because emitting an
 empty table over real history would be worse than leaving the old one visible.
 
 So the table starts empty and fills in from the first Monday's run onward. The five historical rows
-below are the values the README carried, kept as a seed with their provenance noted — they are not
-computed and they are not claimed to be.
+below are the values the README carried before the move, kept as a seed with their provenance noted
+— they are not computed and they are not claimed to be.
 
 Usage
 -----
     python3 scripts/update_readme_benchmark.py            # rewrite the block
     python3 scripts/update_readme_benchmark.py --check    # exit 1 if the block is stale
 
-`--readme` / `--benchmarks` take alternate paths. They exist so the tests can drive the whole
+`--readme` / `--benchmarks` take alternate paths (the flag name is historical: it names the file
+ that holds the block, which used to be `README.md` and is now the recitation page). They exist so the tests can drive the whole
 command against a temp copy: without them, exercising `main()` means writing to the checkout,
 which turns "is this test passing for the right reason?" into a question with a dirty worktree
 as the only evidence.
@@ -49,7 +57,10 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 BENCHMARKS = REPO_ROOT / "docs" / "benchmarks" / "latest.json"
-README = REPO_ROOT / "README.md"
+# The file that holds the generated block. It was `README.md` until 2026-11-26; the block moved to
+# `docs/benchmarks/recitation-trend.md` and the README keeps a stub. One block, one producer, one
+# owner — `tests/test_readme_benchmark_is_generated.py` fails if the README ever grows a second one.
+TARGET = REPO_ROOT / "docs" / "benchmarks" / "recitation-trend.md"
 
 BEGIN = "<!-- BEGIN generated: benchmark-trend -->"
 END = "<!-- END generated: benchmark-trend -->"
@@ -159,9 +170,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--check", action="store_true",
-                    help="exit 1 if the README block is stale, without writing")
-    ap.add_argument("--readme", type=Path, default=README,
-                    help=f"README to rewrite (default: {README.relative_to(REPO_ROOT)})")
+                    help="exit 1 if the generated block is stale, without writing")
+    ap.add_argument("--readme", type=Path, default=TARGET,
+                    help=f"file holding the block to rewrite (default: {TARGET.relative_to(REPO_ROOT)})")
     ap.add_argument("--benchmarks", type=Path, default=BENCHMARKS,
                     help=f"benchmark corpus to read (default: {BENCHMARKS.relative_to(REPO_ROOT)})")
     args = ap.parse_args()
@@ -201,17 +212,17 @@ def main() -> int:
         return 1
 
     if updated == readme:
-        print(f"README benchmark table is current ({len(seeded)} seeded + {len(rows)} computed, "
+        print(f"recitation trend table is current ({len(seeded)} seeded + {len(rows)} computed, "
               f"{unstamped} unstamped runs excluded).")
         return 0
 
     if args.check:
-        print("::error::README.md benchmark table is stale — run "
+        print(f"::error::{args.readme} recitation trend table is stale — run "
               "`python3 scripts/update_readme_benchmark.py`", file=sys.stderr)
         return 1
 
     args.readme.write_text(updated, encoding="utf-8", newline="")
-    print(f"README benchmark table rewritten: {len(seeded)} seeded + {len(rows)} computed "
+    print(f"recitation trend table rewritten in {args.readme}: {len(seeded)} seeded + {len(rows)} computed "
           f"row(s); {unstamped} unstamped run(s) excluded.")
     return 0
 

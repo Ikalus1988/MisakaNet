@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"WMI 拉起的进程工作目录是 system32：pnpm 报 ERR_PNPM_NO_PKG_MANIFEST","description":"写了个守夜脚本，用 Win32_Process.Create 把自己脱离成独立进程（这样宿主关掉也带不走它），脚本里 `& node pnpm.mjs install` 连跑两轮都立刻失败：`[ERR_PNPM_NO_PKG_MANIFEST] No package.json found in <P...","url":"https://misakanet.org/lessons/wmi-拉起的进程工作目录是-system32pnpm-报-err-pnpm-no-pkg-manifest/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/wmi-拉起的进程工作目录是-system32pnpm-报-err-pnpm-no-pkg-manifest/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"devops"},"datePublished":"2026-11-08","dateModified":"2026-11-08","keywords":"windows, wmi, powershell, pnpm, working-directory"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"devops","item":"https://misakanet.org/topics/devops/"},{"@type":"ListItem","position":3,"name":"WMI 拉起的进程工作目录是 system32：pnpm 报 ERR_PNPM_NO_PKG_MANIFEST","item":"https://misakanet.org/lessons/wmi-拉起的进程工作目录是-system32pnpm-报-err-pnpm-no-pkg-manifest/"}]}]}</script>
 </head>
 <body>
 <h1>WMI 拉起的进程工作目录是 system32：pnpm 报 ERR_PNPM_NO_PKG_MANIFEST</h1>

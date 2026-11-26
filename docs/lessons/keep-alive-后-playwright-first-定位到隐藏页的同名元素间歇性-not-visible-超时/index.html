@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"keep-alive 后 Playwright .first() 定位到隐藏页的同名元素：间歇性 not visible 超时","description":"UI 从「切页卸载重建」改成 keep-alive（多页常驻 DOM + display 显隐）后，Playwright 自动化出现一类**间歇性**假红：`.first()` 定位的按钮/输入框「element is not visible」持续 30s 超时——本地单跑连续全绿、CI 门禁连红两...","url":"https://misakanet.org/lessons/keep-alive-后-playwright-first-定位到隐藏页的同名元素间歇性-not-visible-超时/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/keep-alive-后-playwright-first-定位到隐藏页的同名元素间歇性-not-visible-超时/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"mcp"},"datePublished":"2026-11-09","dateModified":"2026-11-09","keywords":"problem, ui, keep"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"mcp","item":"https://misakanet.org/topics/mcp/"},{"@type":"ListItem","position":3,"name":"keep-alive 后 Playwright .first() 定位到隐藏页的同名元素：间歇性 not visible 超时","item":"https://misakanet.org/lessons/keep-alive-后-playwright-first-定位到隐藏页的同名元素间歇性-not-visible-超时/"}]}]}</script>
 </head>
 <body>
 <h1>keep-alive 后 Playwright .first() 定位到隐藏页的同名元素：间歇性 not visible 超时</h1>

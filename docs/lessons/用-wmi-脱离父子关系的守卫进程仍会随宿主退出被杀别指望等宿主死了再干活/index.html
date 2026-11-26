@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"用 WMI 脱离父子关系的守卫进程，仍会随宿主退出被杀：别指望\"等宿主死了再干活","description":"要给一个运行中的 Electron 宿主（它会锁住 node_modules 里的原生模块）做离线安装，思路是：起一个守卫进程，等宿主完全退出后自动跑安装、装完再把宿主拉起来。守卫用 WMI `Win32_Process.Create` 创建（不是调用方的子进程），进程确实起来了、也写日志了、也检测...","url":"https://misakanet.org/lessons/用-wmi-脱离父子关系的守卫进程仍会随宿主退出被杀别指望等宿主死了再干活/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/用-wmi-脱离父子关系的守卫进程仍会随宿主退出被杀别指望等宿主死了再干活/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"devops"},"datePublished":"2026-11-08","dateModified":"2026-11-08","keywords":"windows, wmi, job-object, process-lifecycle, powershell"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"devops","item":"https://misakanet.org/topics/devops/"},{"@type":"ListItem","position":3,"name":"用 WMI 脱离父子关系的守卫进程，仍会随宿主退出被杀：别指望\"等宿主死了再干活","item":"https://misakanet.org/lessons/用-wmi-脱离父子关系的守卫进程仍会随宿主退出被杀别指望等宿主死了再干活/"}]}]}</script>
 </head>
 <body>
 <h1>用 WMI 脱离父子关系的守卫进程，仍会随宿主退出被杀：别指望"等宿主死了再干活</h1>

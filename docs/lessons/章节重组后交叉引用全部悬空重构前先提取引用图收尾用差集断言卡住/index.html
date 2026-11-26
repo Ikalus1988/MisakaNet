@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"章节重组后交叉引用全部悬空：重构前先提取引用图，收尾用差集断言卡住","description":"大型文档做章节重组（拆章/并章/改名、内容搬家）后，正文与表格里的交叉引用（「见第 N 章」「见『旧章节名』」「→ 4.1」）指向被拆散或改名的标题，全部悬空。实例：原章标题拆入两个收纳区后，全文 18 处引用该章名的「见 XXX」全部指空；另一交付对象残留 9 处旧编号引用（第 N 章/第 N 节...","url":"https://misakanet.org/lessons/章节重组后交叉引用全部悬空重构前先提取引用图收尾用差集断言卡住/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/章节重组后交叉引用全部悬空重构前先提取引用图收尾用差集断言卡住/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"development"},"datePublished":"2026-11-21","dateModified":"2026-11-21","keywords":"documentation, refactor, cross-reference"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"development","item":"https://misakanet.org/topics/development/"},{"@type":"ListItem","position":3,"name":"章节重组后交叉引用全部悬空：重构前先提取引用图，收尾用差集断言卡住","item":"https://misakanet.org/lessons/章节重组后交叉引用全部悬空重构前先提取引用图收尾用差集断言卡住/"}]}]}</script>
 </head>
 <body>
 <h1>章节重组后交叉引用全部悬空：重构前先提取引用图，收尾用差集断言卡住</h1>

@@ -438,6 +438,7 @@
   <url><loc>https://misakanet.org/lessons/git-ls-remote-git-push-到-githubcom-间歇性挂起-2035-秒后失败报-recv-failure-conn/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-merge-conflict-resolution/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-push-without-shell-agent/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/git-push-报-remote-invalid-username-or-token-password-authentication-is-not/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-stash-is-repository-wide-not-worktree-local-a-bare-stash-pop-can-apply-anoth/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-tls-handshake-failure/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-worktree-dangling-commit-recovery/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1006,6 +1007,7 @@
   <url><loc>https://misakanet.org/lessons/zygiskassistant-breaks-mumus-houdini-arm-translation-so-arm64-only-apps-crash-wi/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/一个下载-处理-输出的流水线脚本下载步骤失败http-403但后续步骤照常跑完了还打印了成功信息-下游拿到的不是这次下载的/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/一个原本正常的-powershell-安装脚本含中文提示用-python-读进来改了一行再写回之后powershell-noprofile-执行时/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/一个调度插件用-post-run-dryruntrue-触发只看不发的手动预览结果邮件真的发出去了-root-cause-编排函数先算出-c/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/一周里同一套自检断言连续误报①-正则少了-g-标志5-个元素只匹配到-1-个②-样式断言写-displayblock实际渲染是-display-bl/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/三个导入入口喂进的文件集合不同同一份备份判定不同空输入必须报错/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/两个独立进程并发写同一个-sqlite-数据库wal-模式已开一个进程写批量事务期间另一个进程-insert-报-database-is-locked/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

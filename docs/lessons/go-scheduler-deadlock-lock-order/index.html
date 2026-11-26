@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"Go Scheduler Deadlock — Nested Lock Acquisition in gocron v1","description":"A Go application using the `go-co-op/gocron` v1 scheduler would hang indefinitely when a scheduled job tried to remove itself and schedule a new repla...","url":"https://misakanet.org/lessons/go-scheduler-deadlock-lock-order/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/go-scheduler-deadlock-lock-order/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"go"},"datePublished":"2026-07-21","keywords":"deadlock, mutex, sync, scheduler, gocron"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"go","item":"https://misakanet.org/topics/go/"},{"@type":"ListItem","position":3,"name":"Go Scheduler Deadlock — Nested Lock Acquisition in gocron v1","item":"https://misakanet.org/lessons/go-scheduler-deadlock-lock-order/"}]}]}</script>
 </head>
 <body>
 <h1>Go Scheduler Deadlock — Nested Lock Acquisition in gocron v1</h1>

@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"控制器系统变量数组的下标不跨机器人稳定：按另一台解码出的 $SERVENT[8] 写入，读回校验全过，打中的却是 TP_INPUT","description":"自动化脚本按「另一台机器人解码出的下标」写控制器系统变量数组（例：$SERVENT[8]），本意是关掉 PMON 服务条目；写入成功、读回校验也通过——但实际打到的是另一台机器人的 TP_INPUT 服务条目（目标完全错了，还留下了副作用）。","url":"https://misakanet.org/lessons/problem-自动化脚本按另一台机器人解码出的下标写控制器系统变量数组例servent8本意是关掉-pmon-服务条目写入成功读回校验也/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/problem-自动化脚本按另一台机器人解码出的下标写控制器系统变量数组例servent8本意是关掉-pmon-服务条目写入成功读回校验也/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"mcp"},"datePublished":"2026-11-16","dateModified":"2026-11-16","keywords":"servent, pmon"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"mcp","item":"https://misakanet.org/topics/mcp/"},{"@type":"ListItem","position":3,"name":"控制器系统变量数组的下标不跨机器人稳定：按另一台解码出的 $SERVENT[8] 写入，读回校验全过，打中的却是 TP_INPUT","item":"https://misakanet.org/lessons/problem-自动化脚本按另一台机器人解码出的下标写控制器系统变量数组例servent8本意是关掉-pmon-服务条目写入成功读回校验也/"}]}]}</script>
 </head>
 <body>
 <h1>控制器系统变量数组的下标不跨机器人稳定：按另一台解码出的 $SERVENT[8] 写入，读回校验全过，打中的却是 TP_INPUT</h1>

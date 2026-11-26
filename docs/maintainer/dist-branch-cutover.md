@@ -515,6 +515,26 @@ gh workflow run publish-dist.yml && gh run watch
 # 线上：§5 的对照命令（这次基线是删除后的 main 与 dist）
 ```
 
+### 9.5 这份清单已经过期（2026-11-26 实测）
+
+§9.3 写于这份文件成稿那天，此后有一条读取者**没有**被记进去：2026-11-14 那次把生成页纳入了
+设计收敛门禁的判据（`scripts/site_page_scope.py` 的 `generated_pages()`），而那条门禁的测试
+直接对着 `main` 的树断言：
+
+| 位置 | 断言 | 删页之后会怎样 |
+|---|---|---|
+| `tests/test_site_design_convergence.py:62` | `assert len(generated) > 500` | 立刻红 |
+| `tests/test_site_design_convergence.py:557` | 逐页断言「带设计 token 块 + footer」 | 一条判据凭空消失 |
+| `tests/test_site_design_convergence.py:601` | 逐页与生成器输出比对 | 没有任何对象可比 |
+
+所以删除 PR 的清单要在 §9.3 之外**再加一条**：把这三条改成对着 `dist` 的产物（发布器产物）
+或生成器的内存输出断言 —— 关键是「每个生成页都带设计 token 与 footer」这条判据不能随着搬家
+一起消失，它是 2026-11-14 补上的那个洞（当时门禁只读 14 个手写页面就宣布站点收敛）。
+
+一条能省事的实测：删除前跑 `python3 scripts/build_lesson_pages.py` 是 **no-op**
+（`Wrote/updated 0 pages, pruned 0 stale pages`，2026-11-26），所以「先重生成、再删除」这条路
+是通的；生成器在 Linux 上幂等，不要信 Windows 上那份 `docs/.generated-pages.json` 的 CRLF 假红。
+
 ---
 
 ## 10. 未验证 / 需要 owner 拍板

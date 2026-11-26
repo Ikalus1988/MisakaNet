@@ -382,6 +382,7 @@
 - [`git ls-remote` / `git push` 到 github.com 间歇性挂起 20–35 秒后失败，报 `Recv failure: Conn](contrib/git-ls-remote-git-push-到-githubcom-间歇性挂起-2035-秒后失败报-recv.md) | dsh | "git", "http.sslbackend-openssl", "schannel" | intake-4985
 - [Git 合并ConflictHandling — 手动解决最佳实践](contrib/git-merge-conflict-resolution.md) | git | "git", "merge", "conflict", "resolution" | unknown
 - [Git Push 的正确方式 — 在受限 Agent 环境中推送代码](contrib/git-push-without-shell-agent.md) | git | "git", "push", "agent", "gh-cli", "lesson" | unknown
+- [`git push` 报 `remote: Invalid username or token. Password authentication is not](contrib/git-push-报-remote-invalid-username-or-token-password.md) | mcp | "git", "gh", "using" | intake-5841
 - [git stash is repository-wide, not worktree-local — a bare stash pop can apply another session's work](contrib/git-stash-is-repository-wide.md) | git | "git", "stash", "worktree", "multi-agent", "data-loss", "reflog", "recovery" | intake-2606
 - [GitHub TLS 握手失败 — gnutls_handshake() Error](contrib/git-tls-handshake-failure.md) | git | "git", "handshake", "failure" | unknown
 - [git worktree commit lost after pushing from the wrong directory](contrib/git-worktree-dangling-commit-recovery.md) | development | "git", "worktree", "reflog", "recovery", "branch" | 
@@ -960,6 +961,7 @@
 - [ZygiskAssistant breaks MuMu's houdini ARM translation, so arm64-only apps crash with EM_AARCH64 instead of EM_X86_64](contrib/zygiskassistant-breaks-houdini-arm-translation-on-mumu.md) | android | "android", "mumu-emulator", "houdini", "native-bridge", "zygisk", "arm-translation" | intake-3175
 - [一个「下载 → 处理 → 输出」的流水线脚本，下载步骤失败（HTTP 403），但后续步骤**照常跑完了**，还打印了成功信息： 下游拿到的不是这次下载的](contrib/一个下载-处理-输出的流水线脚本下载步骤失败http.md) | windows | "http" | intake-4900
 - [一个原本正常的 PowerShell 安装脚本（含中文提示），用 Python 读进来改了一行再写回之后，`powershell -NoProfile` 执行时](contrib/一个原本正常的-powershell-安装脚本含中文提示用-python.md) | windows | "powershell", "encoding-utf-8", "python" | intake-5178
+- [一个调度插件用 POST /run {"dryRun":true} 触发"只看不发"的手动预览，结果邮件真的发出去了。 Root Cause 编排函数先算出 c](contrib/一个调度插件用-post-run-dryruntrue.md) | dsh | "cfg", "post", "run" | intake-5838
 - [一周里同一套自检断言连续误报：① 正则少了 g 标志，5 个元素只匹配到 1 个；② 样式断言写 display:block，实际渲染是 display: bl](contrib/一周里同一套自检断言连续误报1-正则少了-g-标志5-个元素只匹配到-1-个2.md) | dsh | "display", "block", "bl" | intake-5524
 - [三个导入入口喂进的文件集合不同，同一份备份判定不同：空输入必须报错](contrib/三个导入入口喂进的文件集合不同同一份备份判定不同空输入必须报错.md) | development | "entry-parity", "empty-input", "architecture-migration" | intake-3191
 - [两个独立进程并发写同一个 SQLite 数据库（WAL 模式已开），一个进程写批量事务期间另一个进程 INSERT 报 `database is locked`](contrib/两个独立进程并发写同一个-sqlite-数据库wal.md) | dsh | "database", "sqlite", "wal" | intake-5069

@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"RK3566 上 YOLO 常驻检测 + 分割按需量测的两阶段架构：实测代价与 9 条隐患","description":"在 RK3566（单核 NPU、3.8GB 无 swap）上要同时做「YOLO 常驻视频流检测」和「分割模型毫米量测」，设计阶段无法判断可行性：YOLOv8n 在这块 NPU 上到底多快没有实测数据，而且按检测框裁剪后再量测是否会让结果变差也不确定。","url":"https://misakanet.org/lessons/rk3566-上-yolo-常驻检测-分割按需量测的两阶段架构实测代价与-9-条隐患/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/rk3566-上-yolo-常驻检测-分割按需量测的两阶段架构实测代价与-9-条隐患/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"llm"},"datePublished":"2026-10-30","dateModified":"2026-10-30","keywords":"rk3566, yolov8, npu, edge-inference, two-stage, crack-measurement, latency-benchmark"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"llm","item":"https://misakanet.org/topics/llm/"},{"@type":"ListItem","position":3,"name":"RK3566 上 YOLO 常驻检测 + 分割按需量测的两阶段架构：实测代价与 9 条隐患","item":"https://misakanet.org/lessons/rk3566-上-yolo-常驻检测-分割按需量测的两阶段架构实测代价与-9-条隐患/"}]}]}</script>
 </head>
 <body>
 <h1>RK3566 上 YOLO 常驻检测 + 分割按需量测的两阶段架构：实测代价与 9 条隐患</h1>

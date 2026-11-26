@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"api rate limit handling best practices","description":"大批量API任务没有提前测试限流，任务中途被截断，无法续命。例如：向某第三方API批量发送10000条请求，跑到第3000条时触发429错误，整个任务崩溃，已处理数据全部丢失，只能从头重跑，浪费大量时间和资源。","url":"https://misakanet.org/lessons/api-rate-limit-handling-best-practices/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/api-rate-limit-handling-best-practices/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"api"},"datePublished":"2026-07-06","keywords":"rate, limit, handling, best, practices"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"api","item":"https://misakanet.org/topics/api/"},{"@type":"ListItem","position":3,"name":"api rate limit handling best practices","item":"https://misakanet.org/lessons/api-rate-limit-handling-best-practices/"}]}]}</script>
 </head>
 <body>
 <h1>api rate limit handling best practices</h1>

@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"FANUC KL: BYTES_AHEAD 是 Karel 内置 Procedure","description":"在调试 KL 编译错误时，开发者可能会误判 `BYTES_AHEAD` 为非法标识符或禁用保留字，进而将其从 `MM_RCV_NTFY.kl` 中删除。这种误操作会导致程序逻辑缺失，无法正确判断通信缓冲区中的待读字节数，引发运行时通信异常或死循环。","url":"https://misakanet.org/lessons/fanuc-kl-bytes-ahead-is-builtin-procedure/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/fanuc-kl-bytes-ahead-is-builtin-procedure/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"fanuc"},"datePublished":"2026-05-03","dateModified":"2026-07-06","keywords":"fanuc, karel, ktrans, reserved-words, built-in"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"fanuc","item":"https://misakanet.org/topics/fanuc/"},{"@type":"ListItem","position":3,"name":"FANUC KL: BYTES_AHEAD 是 Karel 内置 Procedure","item":"https://misakanet.org/lessons/fanuc-kl-bytes-ahead-is-builtin-procedure/"}]}]}</script>
 </head>
 <body>
 <h1>FANUC KL: BYTES_AHEAD 是 Karel 内置 Procedure</h1>

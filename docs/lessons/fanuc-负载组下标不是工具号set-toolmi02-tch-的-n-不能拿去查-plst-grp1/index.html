@@ -181,6 +181,7 @@
   .related a { display: block; padding: 8px 0; border-bottom: 1px solid rgba(0,229,255,0.1); }
   .back { margin-top: 32px; font-size: var(--fs-xs); }
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"TechArticle","headline":"FANUC 负载组下标不是工具号：SET_TOOL/MI02_TCH 的 N 不能拿去查 $PLST_GRP1","description":"从 FANUC 汽车产线机器人备份里做「负载超限」批量校核时，需要判定每个 `$PLST_GRP1[n]` 负载组是否真的在生产中被启用（备份里存的是全部配置，含人配了但程序没用的闲置组）。直觉做法是从 PNS 主程序调用链里抓 `MI02_TCH(\"ChangeTool\"=7,\"ToolNo.\"=...","url":"https://misakanet.org/lessons/fanuc-负载组下标不是工具号set-toolmi02-tch-的-n-不能拿去查-plst-grp1/","mainEntityOfPage":{"@type":"WebPage","@id":"https://misakanet.org/lessons/fanuc-负载组下标不是工具号set-toolmi02-tch-的-n-不能拿去查-plst-grp1/"},"isPartOf":{"@type":"WebSite","name":"MisakaNet","url":"https://misakanet.org/"},"publisher":{"@type":"Organization","name":"MisakaNet","url":"https://misakanet.org/"},"about":{"@type":"Thing","name":"fanuc"},"datePublished":"2026-11-09","dateModified":"2026-11-09","keywords":"problem, fanuc, plst"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"MisakaNet","item":"https://misakanet.org/"},{"@type":"ListItem","position":2,"name":"fanuc","item":"https://misakanet.org/topics/fanuc/"},{"@type":"ListItem","position":3,"name":"FANUC 负载组下标不是工具号：SET_TOOL/MI02_TCH 的 N 不能拿去查 $PLST_GRP1","item":"https://misakanet.org/lessons/fanuc-负载组下标不是工具号set-toolmi02-tch-的-n-不能拿去查-plst-grp1/"}]}]}</script>
 </head>
 <body>
 <h1>FANUC 负载组下标不是工具号：SET_TOOL/MI02_TCH 的 N 不能拿去查 $PLST_GRP1</h1>
