@@ -382,6 +382,7 @@
 - [`git ls-remote` / `git push` 到 github.com 间歇性挂起 20–35 秒后失败，报 `Recv failure: Conn](contrib/git-ls-remote-git-push-到-githubcom-间歇性挂起-2035-秒后失败报-recv.md) | dsh | "git", "http.sslbackend-openssl", "schannel" | intake-4985
 - [Git 合并ConflictHandling — 手动解决最佳实践](contrib/git-merge-conflict-resolution.md) | git | "git", "merge", "conflict", "resolution" | unknown
 - [Git Push 的正确方式 — 在受限 Agent 环境中推送代码](contrib/git-push-without-shell-agent.md) | git | "git", "push", "agent", "gh-cli", "lesson" | unknown
+- [`git push` 报 `remote: Invalid username or token. Password authentication is not](contrib/git-push-报-remote-invalid-username-or-token-password.md) | mcp | "git", "gh", "using" | intake-5841
 - [git stash is repository-wide, not worktree-local — a bare stash pop can apply another session's work](contrib/git-stash-is-repository-wide.md) | git | "git", "stash", "worktree", "multi-agent", "data-loss", "reflog", "recovery" | intake-2606
 - [GitHub TLS 握手失败 — gnutls_handshake() Error](contrib/git-tls-handshake-failure.md) | git | "git", "handshake", "failure" | unknown
 - [git worktree commit lost after pushing from the wrong directory](contrib/git-worktree-dangling-commit-recovery.md) | development | "git", "worktree", "reflog", "recovery", "branch" | 
