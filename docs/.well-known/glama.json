@@ -10,7 +10,7 @@
   "version": "3.23.0",
   "repository": "https://github.com/Ikalus1988/MisakaNet",
   "homepage": "https://misakanet.org",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "tags": [
     "failure-memory",
     "debugging",

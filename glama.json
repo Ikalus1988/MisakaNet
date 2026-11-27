@@ -11,7 +11,7 @@
     "transport": "streamable-http"
   },
   "repository": "https://github.com/Ikalus1988/MisakaNet",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "tags": [
     "failure-memory",
     "debugging",

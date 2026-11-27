@@ -130,29 +130,73 @@ def record(query: str, samples: int) -> dict:
 
 
 def check() -> int:
+    """Is the snapshot still usable as a recording? Structure only — **no counts.**
+
+    A first version of this compared the snapshot's lesson count against `data/lessons.json` and
+    failed on any difference. That gate was red within minutes of landing and would have stayed red
+    forever: the corpus grows whenever the intake batch converts anything, several times a day, so a
+    recorded count is stale by construction — and the picture had already stopped printing it.
+
+    What is checkable without the network, and worth failing on:
+
+    * the recording is dated and says what made it (an undated number is a claim about no day);
+    * the grade it shows is a grade the corpus uses at all, so a typo like `E5` cannot render as
+      authoritative-looking nonsense;
+    * the latency samples are positive integers and the recorded p50 agrees with them;
+    * both SVGs on disk are exactly what the renderer produces from this snapshot — the property
+      that keeps the picture a function of its input instead of a hand-editable asset.
+
+    Corpus counts are deliberately **not** compared: they live in `data/badges/lessons.json`, which
+    `update-badges.yml` regenerates on its own schedule, and a picture that restates them is wrong
+    within hours.
+    """
     if not SNAPSHOT.exists():
         print(f"missing {SNAPSHOT.relative_to(REPO)}", file=sys.stderr)
         return 1
     recorded = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
-    live = corpus_facts()
-    problems = []
-    if recorded.get("corpus", {}).get("lessons") != live["lessons"]:
-        problems.append(
-            f"lesson count in the snapshot is {recorded.get('corpus', {}).get('lessons')}, "
-            f"data/lessons.json says {live['lessons']}")
-    if recorded.get("corpus", {}).get("evidence") != live["evidence"]:
-        problems.append(
-            "evidence distribution moved:\n"
-            f"  snapshot: {recorded.get('corpus', {}).get('evidence')}\n"
-            f"  live:     {live['evidence']}")
-    if problems:
-        print("the hero snapshot no longer matches the corpus — re-record it:\n"
-              "    python3 scripts/record_hero_snapshot.py\n"
-              + "\n".join(f"  - {p}" for p in problems), file=sys.stderr)
-        return 1
-    print(f"hero snapshot matches the corpus ({live['lessons']} lessons)")
-    return 0
+    problems: list[str] = []
 
+    stamp = str(recorded.get("recorded_at") or "")
+    if len(stamp) != 20 or not stamp.endswith("Z") or "T" not in stamp:
+        problems.append(f"recorded_at is not an ISO-8601 UTC stamp: {stamp!r}")
+
+    level = (recorded.get("top_hit") or {}).get("evidence_level")
+    if level not in ("E0", "E1", "E2", "E3", "E4"):
+        problems.append(f"top_hit.evidence_level is {level!r}, which is not a grade the corpus uses")
+
+    samples = recorded.get("latency_ms_samples") or []
+    if not samples or not all(isinstance(value, int) and value > 0 for value in samples):
+        problems.append(f"latency_ms_samples are not positive integers: {samples!r}")
+    else:
+        ordered = sorted(samples)
+        middle = len(ordered) // 2
+        expected = (ordered[middle] if len(ordered) % 2
+                    else (ordered[middle - 1] + ordered[middle]) // 2)
+        if abs(int(recorded.get("latency_ms_p50") or 0) - expected) > 1:
+            problems.append(
+                f"latency_ms_p50 is {recorded.get('latency_ms_p50')} but the samples give {expected}")
+
+    try:
+        sys.path.insert(0, str(REPO / "scripts"))
+        import render_hero_svg as hero
+        for theme, path in (("dark", SNAPSHOT.parent / "hero-dark.svg"),
+                            ("light", SNAPSHOT.parent / "hero-light.svg")):
+            if not path.exists():
+                problems.append(f"{path.name} is missing — run scripts/render_hero_svg.py")
+            elif path.read_text(encoding="utf-8") != hero.render(recorded, theme):
+                problems.append(
+                    f"{path.name} differs from what scripts/render_hero_svg.py produces now — "
+                    "re-run that script rather than editing the SVG by hand")
+    except Exception as exc:  # noqa: BLE001 — a renderer that cannot run is itself the finding
+        problems.append(f"could not re-render to compare: {exc}")
+
+    if problems:
+        print("the hero snapshot is not usable as a recording:", file=sys.stderr)
+        for problem in problems:
+            print(f"  - {problem}", file=sys.stderr)
+        return 1
+    print(f"hero snapshot is structurally sound ({len(samples)} latency sample(s), top hit {level})")
+    return 0
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])

@@ -123,6 +123,21 @@ def version_problems(root: Path) -> list[str]:
             f"docs/.well-known/glama.json names {served['name']} and glama.json names "
             f"{manifest['name']} — they are two listings then"
         )
+
+    # The licence is the one field here that is a *legal* statement rather than a description, and
+    # until 2026-11-27 nothing compared it. Both Glama manifests said `MIT` while `LICENSE`,
+    # `pyproject.toml` and `package.json` all said `Apache-2.0` — so two external platforms were
+    # told the project is MIT-licensed, which is a claim a reader could act on (vendoring it under
+    # terms it does not grant). Version and name were gated because a release bumps them together;
+    # the licence changes on no schedule at all, which is exactly why it drifted unwatched.
+    expected_license = package.get("license")
+    for label, document in (("glama.json", manifest), ("docs/.well-known/glama.json", served)):
+        if document.get("license") != expected_license:
+            problems.append(
+                f"{label} declares license {document.get('license')!r} but package.json declares "
+                f"{expected_license!r} — LICENSE at the repository root is the authority, and an "
+                f"external listing that contradicts it is a legal misstatement"
+            )
     return problems
 
 

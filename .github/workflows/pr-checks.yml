@@ -604,6 +604,26 @@ jobs:
           echo "=== Site Facts Consistency (homepage commands + tool count) ==="
           python3 scripts/sync_site_facts.py --check
 
+      # ── Hero Snapshot Check (#5871) ──
+      # The README hero is an SVG rendered from `docs/assets/hero.json`, which
+      # `scripts/record_hero_snapshot.py` writes from a real call. `--check` re-derives the corpus
+      # half of that snapshot (lesson count + evidence distribution) from `data/lessons.json` and
+      # fails when they disagree.
+      #
+      # This step exists because the first version of that change shipped `--check` with **no
+      # caller**: the script could have detected a stale hero since the day it landed, and nothing
+      # ever ran it. That is the shape `scripts/doctor.py` was in until #1822 ("three checks, one
+      # CI caller, and the important one ran nowhere"), and it is worse than not writing the check
+      # at all, because the file reads as coverage.
+      #
+      # Only the corpus half is checkable here: latency is a measurement of one day and cannot be
+      # re-derived without calling the network, so it is dated in the snapshot instead.
+      - name: Hero Snapshot Check
+        if: steps.scope.outputs.scope == 'full'
+        run: |
+          echo "=== README hero snapshot vs data/lessons.json ==="
+          python3 scripts/record_hero_snapshot.py --check
+
       - name: Validate lessons.json schema
         run: |
           echo "=== lessons.json Schema Validation (Issue #1374) ==="
