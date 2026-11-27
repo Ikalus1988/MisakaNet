@@ -1050,6 +1050,7 @@
 - [用 CDP 驱动网页编辑器改完一篇文章并提交后，读回同一篇文章页面拿到的是**旧版正文**（关键小标题没变），差点据此判定「更新没生效」并反复重试同一个提交动作](contrib/用-cdp.md) | mcp | "fetch-url", "fetch", "cdp" | intake-4094
 - [用 CronCreate 建了每 15 分钟一轮的跟踪任务后会话闲置十几小时，恢复时一次性收到 48 条相同的排队触发消息，每条都会再执行一遍任](contrib/用-croncreate-建了每-15.md) | mcp | "croncreate" | intake-4976
 - [用 ego/agent 浏览器做「扫码登录」流程时，二维码截图给用户扫，用户回来时二维码永远已失效；再想复用那个标签页时报 `no active tab to](contrib/用-egoagent.md) | dsh | "ego", "agent", "no" | intake-4496
+- [用 grep/regex 在大文本（如百万行导出/转储文件）里搜复合后缀的标识符（如 `$UPPERLIMS`、`$LOWERLIMS`）没搜到](contrib/用-grepregex-在大文本如百万行导出转储文件里搜复合后缀的标识符如.md) | mcp | "upperlims", "lowerlims", "grep" | intake-5869
 - [用 p5.brush 做逐帧无头渲染（CDP 里调 window.renderAt(t)，输出帧序列），字幕等叠加层通过引擎的 letter() 队列绘制。短跑](contrib/用-p5brush-做逐帧无头渲染cdp-里调.md) | dsh | "p5", "brush", "cdp" | intake-4862
 - [用 PowerShell 对源码做批量字符串替换后：中文注释全部变乱码，且部分代码行凭空消失——下一行被并进了注释里（例如 `const k = ...` 整行](contrib/用-powershell.md) | windows | "function", "node", "powershell" | intake-4861
 - [用 tia-portal-mcp 1.1.0 连本机 TIA Portal V16（装在 <PATH> V16，不在 C 盘）时依次卡三处： 1. connec](contrib/用-tia-portal-mcp-110-连本机-tia-portal-v16装在-path-v16不在-c.md) | windows | "tia", "portal", "mcp" | intake-4368
