@@ -31,13 +31,6 @@ dependencies = [
 keywords = ["ai-agent", "knowledge-base", "bm25", "rag", "distributed"]
 classifiers = [
     "Development Status :: 4 - Beta",
-    # PyPI renders the licence from this classifier, not from `license = "Apache-2.0"` above. Measured
-    # 2026-11-27: the built wheel carries `License-Expression: Apache-2.0` (PEP 639, setuptools writes
-    # it), but the PyPI *page* showed no licence at all — the page's licence cell and the classifiers
-    # list both read from `Classifier`, and PyPI's JSON API reports `license: None`. So the metadata was
-    # right and the public page was silent, which for a licence is the worse failure: a reader deciding
-    # whether they may vendor this had nothing to read on the page they land on.
-    "License :: OSI Approved :: Apache Software License",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
