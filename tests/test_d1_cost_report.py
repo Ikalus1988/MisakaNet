@@ -97,3 +97,28 @@ def test_the_workflow_wires_the_token_and_says_why_wrangler_is_absent():
         "the file should keep the reason it does not use a deploy credential")
     # The report is one issue: enumerated failure paths must not create a new one per run.
     assert "gh issue list" in workflow and "gh issue reopen" in workflow
+
+
+def test_the_issue_writer_uses_the_token_that_can_actually_write_issues():
+    """`SHELDON_PAT` cannot comment on an issue — and that failure is silent in the green case.
+
+    Measured 2026-11-26: `d1-cost.yml` failed on 11-25 and 11-26 with
+
+        GraphQL: Resource not accessible by personal access token (addComment)
+
+    while the *read* step succeeded both times. So the watch measured a problem and could not report
+    it — the exact "goes quiet" failure this workflow exists to prevent, arriving through the
+    credential instead of the query. `update-lessons.yml` lost 313 receipts over three green days the
+    same way (#1528).
+
+    The assertion is on the whole file rather than the one `env:` line, because a second
+    `GH_TOKEN: ${{ secrets.SHELDON_PAT }}` anywhere in the job reintroduces it.
+    """
+    workflow = (REPO / ".github" / "workflows" / "d1-cost.yml").read_text(encoding="utf-8")
+    wired = [line.strip() for line in workflow.splitlines()
+             if line.strip().startswith(("GH_TOKEN:", "GH_TOKEN :"))]
+    assert wired, "the job declares no GH_TOKEN at all"
+    assert wired == ["GH_TOKEN: ${{ github.token }}"], (
+        f"d1-cost.yml wires {wired} — the PAT cannot comment on issues (two-day outage, "
+        "11-25 and 11-26); `github.token` plus the job's `issues: write` can")
+    assert "issues: write" in workflow, "and it still needs the permission that makes github.token enough"
