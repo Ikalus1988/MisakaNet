@@ -1079,6 +1079,7 @@
 - [百度导航 SDK 鉴权错误码：-300 是网络错误，230 才是包名/安全码对不上](contrib/百度导航-sdk-鉴权错误码-300-是网络错误230-才是包名安全码对不上.md) | mobile | "baidu", "ios", "sdk", "auth", "error-code", "bundle-id", "230", "permission-check" | intake-4177
 - [章节重组后交叉引用全部悬空：重构前先提取引用图，收尾用差集断言卡住](contrib/章节重组后交叉引用全部悬空重构前先提取引用图收尾用差集断言卡住.md) | development | "documentation", "refactor", "cross-reference" | intake-5198
 - [端到端验收脚本里「预期报错」断言绿了，但拿到的错误不是被测后端的报错——是「页面/连接已关闭」。整条失败路径其实一次都没验真，假绿混进 12/12 全过里。 R](contrib/端到端验收脚本里预期报错断言绿了但拿到的错误不是被测后端的报错是.md) | mcp | "err" | intake-4791
+- [给工业机器人（FANUC 虚拟控制器）的 KAREL 运动程序下发「正好等于软限位」的关节目标（如 J4=-190.00，限位恰为 -190），](contrib/给工业机器人fanuc-虚拟控制器的-karel.md) | fanuc | "mctl-003", "the", "fanuc" | intake-5874
 - [给经验库写「双侧证据」验证脚本时，本地 mock 限流服务的配额计数器只增不清零：故障侧（无退避连发）先把 3 次配额耗光，修复侧（带退避）无论](contrib/给经验库写双侧证据验证脚本时本地-mock.md) | mcp | "mock" | intake-4977
 - [给骑行记录加字段要改三个地方，少一个就「一半有、一半没有」](contrib/给骑行记录加字段要改三个地方少一个就一半有一半没有.md) | data | "data-integrity", "serialization", "ios", "nodejs", "schema", "optional-field", "backfill" | intake-4180
 - [编译字节码（.pc/嵌入式 P-code 类）反汇编输出不可读：大段 .byte 噪音 + 操作数误读（把 1 字节 opcode 误读成「opcode+u8](contrib/编译字节码pc嵌入式-p-code-类反汇编输出不可读大段-byte-噪音.md) | fanuc | "pc", "code", "byte" | intake-4029

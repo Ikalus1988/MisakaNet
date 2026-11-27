@@ -1124,6 +1124,7 @@
   <url><loc>https://misakanet.org/lessons/百度导航-sdk-鉴权错误码-300-是网络错误230-才是包名安全码对不上/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/章节重组后交叉引用全部悬空重构前先提取引用图收尾用差集断言卡住/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/端到端验收脚本里预期报错断言绿了但拿到的错误不是被测后端的报错是页面连接已关闭整条失败路径其实一次都没验真假绿混进-1212-全过里-r/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/给工业机器人fanuc-虚拟控制器的-karel-运动程序下发正好等于软限位的关节目标如-j4-19000限位恰为-190/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/给经验库写双侧证据验证脚本时本地-mock-限流服务的配额计数器只增不清零故障侧无退避连发先把-3-次配额耗光修复侧带退避无论/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/给骑行记录加字段要改三个地方少一个就一半有一半没有/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/编译字节码pc嵌入式-p-code-类反汇编输出不可读大段-byte-噪音-操作数误读把-1-字节-opcode-误读成opcodeu8/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
