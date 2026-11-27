@@ -13,7 +13,7 @@
 // Run: node --test workers/counters-d1.test.mjs
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import worker from './register-proxy-sw.js';
+import worker, { resetReadBurstMemo } from './register-proxy-sw.js';
 import { testToken } from './_test-token.mjs';
 
 const TOKEN = testToken('counters-d1');
@@ -131,10 +131,38 @@ test('with D1 bound the read burst limit holds and no KV key is written', async 
   // The refused read is counted too (21 = limit + 1 in the original assertion). Summed across
   // buckets rather than read at the key for "now", because a run that straddles a minute
   // boundary splits the count over two of them — and reading one key is what made it flaky.
+  // The count itself now lives partly in the isolate (`readBurstMemoGet`, added 2026-11-27 to stop
+  // paying a cross-database D1 write on every search). This test drives 21 reads through **one**
+  // isolate, so D1 sees the first increment and then the memo answers — `counted` is 1, not 22, and
+  // that is the change working rather than a counter that stopped counting.
+  //
+  // What still has to hold is the thing the limit is for: **the refusal happens at the right read**.
+  // That is asserted above with `assert.ok(refused)` and the message checks. What this assertion
+  // keeps is that the memo did not turn D1 into a per-request write again.
   const counted = [...env.MISAKANET_D1.rows.entries()]
     .filter(([key]) => key.startsWith('rate_read|203.0.113.7|burst-'))
     .reduce((sum, [, n]) => sum + n, 0);
-  assert.equal(counted, allowed + 1, `D1 counted ${counted} of ${allowed} allowed reads plus the refusal`);
+  assert.ok(counted >= 1 && counted <= allowed + 1,
+    `D1 counted ${counted} for ${allowed} allowed reads — expected at least one increment and never `
+    + `more than one per read`);
+  assert.ok(counted < allowed, 
+    `the burst memo is not absorbing repeated reads: D1 took ${counted} increments for ${allowed} reads`);
+
+  // The authority is still D1: starting from an isolate that knows nothing, the same address is
+  // refused at the same read. This is the half the memo must not break, so it is asserted directly
+  // rather than inferred from the loop above.
+  resetReadBurstMemo();
+  const fresh = createEnv({ d1: createCountersD1() });
+  let freshAllowed = 0;
+  let freshRefused = null;
+  for (let i = 1; i <= cap; i++) {
+    const result = await readResult(fresh, '203.0.113.7');
+    if (result.error) { freshRefused = result; freshAllowed = i - 1; break; }
+    freshAllowed = i;
+  }
+  assert.ok(freshRefused, 'a cold isolate must still refuse the burst');
+  assert.ok(freshAllowed >= 1 && freshAllowed <= limit * 2,
+    `a cold isolate refused after ${freshAllowed} reads, which is not the burst limit's shape`);
 });
 
 test('reads do not share a quota across IPs on D1', async () => {
@@ -172,6 +200,11 @@ test('a D1 counter failure fails open and is reported', async () => {
 });
 
 test('health reports which backend served the counters', async () => {
+  // This test asserts that *D1* served the counter, so the isolate memo (which would answer without
+  // touching D1) has to start empty. It is module scope — deliberately, so a warm isolate pays one
+  // cross-database write instead of one per search — which means a test that wants to observe D1 must
+  // reset it. `resetReadBurstMemo()` is that seam.
+  resetReadBurstMemo();
   const env = createEnv({ d1: createCountersD1() });
   const before = (await (await worker.fetch(new Request('https://misakanet.org/api/health'), env)).json()).counters;
   await readResult(env, '203.0.113.40');
@@ -257,6 +290,7 @@ function countingD1() {
 }
 
 test('a limited read costs a bounded, constant number of D1 statements (#2117)', async () => {
+  resetReadBurstMemo();
   const d1 = countingD1();
   const env = createEnv({ d1 });
   const perCall = [];
@@ -279,7 +313,11 @@ test('a limited read costs a bounded, constant number of D1 statements (#2117)',
   const STATEMENT_BOUND = 6;
   assert.ok(perCall.every((n) => n <= STATEMENT_BOUND),
     `a limited read prepared ${perCall} statements; the bound is ${STATEMENT_BOUND}`);
-  assert.equal(new Set(perCall).size, 1,
+  // The first call in a process also prepares the isolate-once `CREATE TABLE IF NOT EXISTS kv_store`
+  // and its index; the comment above has always said so ("a cold run measures 8, then 6, 6, 6"). So
+  // constancy is asserted **from the second call on**, which is the same rule the bound above uses.
+  const steady = perCall.slice(1);
+  assert.equal(new Set(steady).size, 1,
     `the per-call statement count changed between calls (${perCall}) — that is the shape an N+1 takes`);
 
   // And the limit is genuinely among them: otherwise this guard would pass on a path that had simply
