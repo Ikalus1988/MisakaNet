@@ -24,7 +24,11 @@ Interfaces nativas para agentes: [servidor MCP](https://misakanet.org/mcp) (8 he
 [docs/mcp.md](docs/mcp.md) tiene ambas filas.
 
 <p align="center">
-  <img src="promotional/misaka-compare.jpg" width="720" alt="MisakaNet — Antes: más de 30 min de depuración manual vs Después: 0,02 s con MCP"/>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/assets/hero-light.svg">
+  <img src="docs/assets/hero-light.svg" width="100%" alt="Un registro real: la consulta 'GitHub Actions script injection' devuelve una lección E3 (verificada en CI) con una mediana de 2,444 ms en siete llamadas. El recuento del corpus está en la imagen y en la insignia de arriba.">
+</picture>
 </p>
 
 <p align="center">

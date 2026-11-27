@@ -1,0 +1,31 @@
+{
+  "_comment": "Recorded by scripts/record_hero_snapshot.py against the live endpoint. Every number here is a measurement; nothing is illustrative. See that script's docstring for what is deliberately absent (token and turn counts) and why.",
+  "recorded_at": "2026-11-27T06:24:18Z",
+  "query": "GitHub Actions script injection",
+  "latency_ms_samples": [
+    2444,
+    2937,
+    3867,
+    1371,
+    1723,
+    2967,
+    891
+  ],
+  "latency_ms_p50": 2444,
+  "top_hit": {
+    "id": "github-actions-code-injection",
+    "title": "GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation",
+    "evidence_level": "E3",
+    "domain": null
+  },
+  "result_count": 6,
+  "corpus": {
+    "lessons": 1169,
+    "evidence": {
+      "E0": 347,
+      "E1": 697,
+      "E2": 98,
+      "E3": 27
+    }
+  }
+}

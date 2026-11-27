@@ -57,6 +57,44 @@ def test_no_errors_in_current_sections():
     assert data["pass"] is True, f"Found errors: {data['errors']}"
 
 
+# ── the number, not the part after the comma ─────────────────────────────────────────────────────
+def _count_pattern():
+    """The scanner's own regex, imported rather than copied.
+
+    A copy would pass while the real one drifted, which is the defect
+    `tests/test_doctor_reach.py` was written for one layer over.
+    """
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "check_doc_freshness", REPO_ROOT / "scripts" / "check_doc_freshness.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module._COUNT_PATTERN
+
+
+def test_a_thousands_separator_is_part_of_the_number():
+    """`1,169 lessons` is 1169, not 169 (measured 2026-11-27).
+
+    The pattern's `\\d{2,5}` stopped at the comma and matched the tail on its own, so a document that
+    wrote the count the way prose normally does was reported as *contradicting* the SSOT while being
+    exactly right. It surfaced on the README hero's alt text, which is a place a number is written for
+    a human — the prettiest form was the one the gate punished.
+    """
+    pattern = _count_pattern()
+    assert int(pattern.search("we ship 1,169 lessons").group(1).replace(",", "")) == 1169
+    assert int(pattern.search("we ship 1169 lessons").group(1)) == 1169
+    # Small counts keep working, with and without the separator.
+    assert int(pattern.search("250 lessons").group(1)) == 250
+    assert int(pattern.search("1,100 lessons").group(1).replace(",", "")) == 1100
+
+
+def test_a_wrong_grouped_count_is_still_caught():
+    """Widening the pattern must not make it blind: the number it extracts is still compared."""
+    pattern = _count_pattern()
+    assert int(pattern.search("1,000 lessons").group(1).replace(",", "")) == 1000
+
+
 if __name__ == "__main__":
     import pytest
     pytest.main([__file__, "-v"])
