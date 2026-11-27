@@ -1,29 +1,29 @@
 {
   "_comment": "Recorded by scripts/record_hero_snapshot.py against the live endpoint. Every number here is a measurement; nothing is illustrative. See that script's docstring for what is deliberately absent (token and turn counts) and why.",
-  "recorded_at": "2026-11-27T10:23:33Z",
-  "query": "GitHub Actions script injection",
+  "recorded_at": "2026-11-27T11:44:09Z",
+  "query": "database is locked",
   "latency_ms_samples": [
-    4362,
-    2879,
-    3833,
-    3125,
-    1298,
-    726,
-    1175
+    3787,
+    4006,
+    2991,
+    3434,
+    996,
+    1274,
+    3312
   ],
-  "latency_ms_p50": 2879,
+  "latency_ms_p50": 3312,
   "top_hit": {
-    "id": "github-actions-code-injection",
-    "title": "GitHub Actions Script Injection — Use env Variables Instead of Inline Interpolation",
-    "evidence_level": "E3",
+    "id": "两个独立进程并发写同一个-sqlite-数据库wal",
+    "title": "两个独立进程并发写同一个 SQLite 数据库（WAL 模式已开），一个进程写批量事务期间另一个进程 INSERT 报 `database is locked`",
+    "evidence_level": "E1",
     "domain": null
   },
-  "result_count": 6,
+  "result_count": 3,
   "corpus": {
-    "lessons": 1170,
+    "lessons": 1171,
     "evidence": {
       "E0": 347,
-      "E1": 698,
+      "E1": 699,
       "E2": 98,
       "E3": 27
     }

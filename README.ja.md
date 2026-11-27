@@ -18,17 +18,17 @@ mcp-name: io.github.Ikalus1988/misakanet
 > Markdown ファイルで、証拠で格付けされ、コードのようにレビューされ、推測ではなく検索で取り出されます。
 > **一度失敗すれば、次のエージェントは失敗しません。**
 
-エージェント向けインターフェース：[MCP サーバー](https://misakanet.org/mcp)（8 ツール）、WebMCP、
-`llms.txt`、A2A（`.well-known/agent-card.json`）。**ローカル**の stdio サーバー（`pip install misakanet`）
-は **11** ツール——ホスト版はそのサブセットで、両方の行は [docs/mcp.md](docs/mcp.md) にあります。
+[MCP サーバー](https://misakanet.org/mcp)（8 ツール）・WebMCP・`llms.txt`。ローカル stdio サーバーは 11 ツールで、両方の対応表は [docs/mcp.md](docs/mcp.md) にあります。
 
 <p align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/hero-light.svg">
-  <img src="docs/assets/hero-light.svg" width="100%" alt="実測記録 1 件：'GitHub Actions script injection' の検索が E3（CI 検証済み）レッスンを返し、7 回の呼び出しで中央値 2,444 ms。コーパス件数は画像と上のバッジにあります。">
+  <img src="docs/assets/hero-light.svg" width="100%" alt="実測記録 1 件：'database is locked' の検索が E1（レビュー済み）レッスンを返し、7 回の呼び出しで中央値 3.3 秒。">
 </picture>
 </p>
+
+<sub>`scripts/record_hero_snapshot.py` による実測 1 件をそのまま描画し、CI が一致を検証しています。削減時間の主張ではありません（「使わなかった場合のコスト」は計測していません）。</sub>
 
 <p align="center">
   <em>Core</em>

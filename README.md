@@ -22,19 +22,13 @@ mcp-name: io.github.Ikalus1988/misakanet
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/hero-light.svg">
-  <img src="docs/assets/hero-light.svg" width="100%" alt="One recorded search: the query 'GitHub Actions script injection' returns an E3 CI-verified lesson, in a median of 2,444 ms across seven calls. The corpus count is in the picture and in the badge above.">
+  <img src="docs/assets/hero-light.svg" width="100%" alt="One recorded search: the query 'database is locked' returns an E1 reviewed lesson in a median of 2.4 s across seven calls.">
 </picture>
 </p>
 
-Every number in that picture is a recording — `scripts/record_hero_snapshot.py` writes
-`docs/assets/hero.json`, `scripts/render_hero_svg.py` draws it, and CI fails if the files disagree. It
-is not a savings claim: what a session *would* have cost without a lookup is not something this
-repository measures. The corpus size lives in the badges above, not in the picture: that number moves
-several times a day, and an image nobody re-records must not compete with one that regenerates itself.
+<sub>Recorded from one real call by `scripts/record_hero_snapshot.py` and verified in CI. Not a savings claim — nothing here measures what a session would have cost.</sub>
 
-Agent-native interfaces: [MCP server](https://misakanet.org/mcp) (8 tools), WebMCP, `llms.txt`,
-A2A discovery via `.well-known/agent-card.json`. The **local** stdio server (`pip install misakanet`)
-ships **11** — the hosted endpoint is a subset; [docs/mcp.md](docs/mcp.md) has both rows.
+[MCP server](https://misakanet.org/mcp) (8 tools) · WebMCP · `llms.txt`; the local stdio server ships 11 — [docs/mcp.md](docs/mcp.md) has both rows.
 
 <p align="center">
   <em>Core</em>

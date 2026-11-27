@@ -49,9 +49,18 @@ REPO = Path(__file__).resolve().parent.parent
 SNAPSHOT = REPO / "docs" / "assets" / "hero.json"
 LESSONS = REPO / "data" / "lessons.json"
 
-#: The query. One that a real caller would type, and one whose top hit is a strong evidence level —
-#: an example that returns E0 would be a fair record and a dishonest advertisement.
-DEFAULT_QUERY = "GitHub Actions script injection"
+#: The query, and it is the **same one the README's own first run sends**.
+#:
+#: Measured 2026-11-27: the first screen used to tell three unrelated stories — the hook said
+#: `database is locked`, the hero searched `GitHub Actions script injection`, and the curl snippet
+#: searched `database is locked` again. Three examples is three things to remember; one example,
+#: shown three times (the pain, the answer, the command you can paste), is a loop the reader closes.
+#:
+#: What this query returns today: top hit `两个独立进程并发写同一个-sqlite-数据库wal`, **E1**. An earlier default
+#: (`GitHub Actions script injection`) returned E3, which reads better — but a hero is a recording,
+#: and picking the query for its grade rather than for the story is the same defect as picking the
+#: measurement that flatters.
+DEFAULT_QUERY = "database is locked"
 
 ENDPOINT = "https://misakanet.org/mcp"
 
