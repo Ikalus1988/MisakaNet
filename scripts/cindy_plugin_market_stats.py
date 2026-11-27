@@ -65,19 +65,35 @@ def print_market() -> None:
         print("no market numbers recorded yet — add one to data/cindy-plugin-market-stats.json")
         return
     print("marketplace reach (observed on the client's 发布插件 page)")
-    print(f"{'date':<12}{'version':<10}{'downloads':>10}{'uses':>8}{'uses/download':>16}")
+    # `uses` is cumulative ("ever used") while `uses_7d` is a rolling window — the publish page has
+    # shown both at different times (2026-11-27: "1931 downloads / 60 uses in 7 days"). They must not
+    # be subtracted from each other, so each gets its own column and the delta only compares like
+    # with like.
+    print(f"{'date':<12}{'version':<10}{'downloads':>10}{'uses':>8}{'uses_7d':>9}{'uses/download':>16}")
     for row in history:
         downloads = int(row.get("downloads", 0))
-        uses = int(row.get("uses", 0))
-        ratio = f"{uses / downloads:.0%}" if downloads else "—"
-        print(f"{row.get('date',''):<12}{row.get('version',''):<10}{downloads:>10}{uses:>8}{ratio:>16}")
+        uses = row.get("uses")
+        uses_7d = row.get("uses_7d")
+        basis = uses if uses is not None else uses_7d
+        ratio = f"{int(basis) / downloads:.0%}" if downloads and basis is not None else "—"
+        print(
+            f"{row.get('date',''):<12}{row.get('version',''):<10}{downloads:>10}"
+            f"{'' if uses is None else int(uses):>8}{'' if uses_7d is None else int(uses_7d):>9}"
+            f"{ratio:>16}"
+        )
     if len(history) >= 2:
         last, prev = history[-1], history[-2]
         print(
             f"\nlatest change: {last.get('version')} vs {prev.get('version')}: "
-            f"downloads {int(last.get('downloads', 0)) - int(prev.get('downloads', 0)):+d}, "
-            f"uses {int(last.get('uses', 0)) - int(prev.get('uses', 0)):+d}"
+            f"downloads {int(last.get('downloads', 0)) - int(prev.get('downloads', 0)):+d}"
         )
+        if last.get("uses") is not None and prev.get("uses") is not None:
+            print(f"cumulative uses {int(last['uses']) - int(prev['uses']):+d}")
+        if last.get("uses_7d") is not None:
+            print(
+                f"uses in the last 7 days {int(last['uses_7d'])} "
+                "(a rolling window, not comparable to the cumulative column)"
+            )
 
 
 def wrangler_command() -> list[str] | None:
