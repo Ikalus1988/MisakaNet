@@ -96,3 +96,58 @@ def test_the_fallback_is_what_actually_gets_installed():
         "the filtered copy must be requirements.txt minus exactly the editable line, in order; "
         f"got {kept}"
     )
+
+
+def test_the_wheel_and_the_dev_install_need_the_same_dependencies():
+    """One dependency set, not two that drifted (#5863's review, measured 2026-11-27).
+
+    `requirements.txt` is what every workflow, `AGENTS.md`, `docs/agents/repo-operations.md` and the
+    install smoke test actually install. `pyproject.toml`'s `dependencies` is what `pip install
+    misakanet` and `uv sync` install. They are two spellings of one list, and nothing compared them.
+
+    What that cost, on 3.23.0: the wheel declared `misakanet-core` alone, so `pip install misakanet`
+    produced an environment without `jsonschema`, `mcp` or `pyyaml`. `python -m misakanet` reaches
+    none of them, so `pypi-wheel-smoke.yml` stayed green while five `scripts/` modules raised
+    `ModuleNotFoundError`. Worse, `uv sync` resolves from *this* list, so `uv.lock` had never
+    contained `jsonschema` or `mcp` at all — 110 locked packages, neither of them — and a
+    contributor following the "single source of truth" file got an environment that cannot run the
+    test suite's dependency-sensitive half.
+
+    This asserts set equality of the non-editable, non-extra requirements, so a package added to
+    either file alone is red until it reaches the other. It deliberately does **not** compare
+    versions: `requirements.txt` and the wheel may reasonably carry different floors for the same
+    name only if someone decides that on purpose, and a name-only comparison is the half that
+    silently broke.
+    """
+    import tomllib  # stdlib on the 3.11 floor
+
+    project = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+
+    def names(distributions) -> set[str]:
+        # A version specifier starts at the first character that cannot appear in a distribution
+        # name. `re.split` on a character class is the obvious way and the one that broke here:
+        # the class needs `[` and `(` escaped inside it, and those escapes do not survive a
+        # round-trip through some editors. This loop has no escapes to lose.
+        out: set[str] = set()
+        for spec in distributions:
+            text = str(spec).strip()
+            if not text:
+                continue
+            cut = len(text)
+            for index, char in enumerate(text):
+                if char in "<>=!~[(":
+                    cut = index
+                    break
+            out.add(text[:cut].strip().lower().replace("_", "-"))
+        return out
+
+    wheel = names(project.get("dependencies") or [])
+    dev = names(line for line in _pip_requirements() if line != EDITABLE)
+
+    assert wheel == dev, (
+        "pyproject.toml's `dependencies` and requirements.txt disagree — one of them installs "
+        "something the other does not, so `pip install misakanet` or `uv sync` produces an "
+        "environment the documented dev install would not, or the reverse.\n"
+        f"  only in pyproject.toml: {sorted(wheel - dev)}\n"
+        f"  only in requirements.txt: {sorted(dev - wheel)}"
+    )
