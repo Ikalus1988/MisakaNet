@@ -273,7 +273,12 @@ jobs:
 
 **This month's good first issue (Oct 26 – Nov 26):** [Bring one real failure](https://github.com/Ikalus1988/MisakaNet/issues/3901) — no code; the MCP intake needs no account; we help with the format.
 
-→ [CONTRIBUTING.md](CONTRIBUTING.md) · [good first issues](https://github.com/Ikalus1988/MisakaNet/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) · [code of conduct](CODE_OF_CONDUCT.md)
+→ [CONTRIBUTING.md](CONTRIBUTING.md) · [good first issues](https://github.com/Ikalus1988/MisakaNet/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) · [work on this repo](https://github.com/Ikalus1988/MisakaNet/issues?q=is%3Aissue+is%3Aopen+label%3A%22scope%3Arepo%22) · [code of conduct](CODE_OF_CONDUCT.md)
+
+> **Reading the issue list.** Most open issues are not to-do items: `intake` and `question` are
+> anonymously reported failures waiting to become lessons, and `bounty` is generated from them. The
+> ones that are work on this repository carry **`scope:repo`** — that filter is the complete list,
+> by contract (`docs/maintainer/intake-triage.md` §2).
 
 ## Security
 
