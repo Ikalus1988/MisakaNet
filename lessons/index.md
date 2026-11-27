@@ -523,6 +523,7 @@
 - [mcporter Cloudflare OAuth: Correct Endpoint, No Scope, and WSL Callback Trap](contrib/mcporter-cloudflare-oauth-endpoint-scope-wsl-callback.md) | devops | "mcporter", "oauth", "cloudflare", "mcp", "wsl", "localhost", "benchmark", "workers-ai" | benchmark-oauth-2026-09-02
 - [mcporter OAuth Authorization Must Be Serial: Concurrent Auth Causes client_id/state Corruption](contrib/mcporter-oauth-must-be-serial.md) | devops | "mcporter", "oauth", "mcp", "cloudflare", "concurrency", "vault" | intake-issue-1306
 - [mergeable_state blocked does not mean failing CI](contrib/mergeable-state-blocked-not-red-ci.md) | development | "github", "ci", "pull-request", "merge-queue", "workflow" | 
+- [Minecraft 1.21 → 1.20.1 移植：手持设备（Pad/MP4）的**离屏 GUI"交互正常、画面全黑"** —— 连背景填充色都看不见。 上一](contrib/minecraft-121-1201-移植手持设备padmp4的离屏-gui交互正常画面全黑.md) | dsh | "g.fill", "end", "drawwithshader" | intake-5898
 - [MisakaNet --heal Engine Bootstrap Workflow](contrib/misakanet-heal-engine-bootstrap-workflow.md) | meta | "misakanet", "heal", "engine", "bootstrap", "workflow" | unknown
 - [MisakaNet --heal UX Gap — Suggested queue_lesson.py Command Uses Wrong Flag](contrib/misakanet-heal-ux-gap-queue-lesson-flag-mismatch.md) | meta | "misakanet", "heal", "queue", "lesson", "flag", "mismatch" | unknown
 - [misakanet refactor v2 review](contrib/misakanet-refactor-v2-review.md) | meta | "misakanet", "refactor", "review" | unknown
@@ -779,6 +780,7 @@
 - [ROBOGUIDE 工位文件 .frw 被外部编辑（如改 XML UserFrames 坐标）后，该工位每次引导必楔死：RGCore 存活但冻在 frmSpla](contrib/roboguide-工位文件-frw-被外部编辑如改-xml-userframes.md) | fanuc | "roboguide", "frw", "xml" | intake-5563
 - [ROBOGUIDE 虚拟控制器上注入并运行 KAREL .pc 的完整链路连环翻车（V9.40 实测）： 1) FTP `STOR MD:*.PC` 不可用：端](contrib/roboguide-虚拟控制器上注入并运行-karel-pc-的完整链路连环翻车v940-实测-1.md) | fanuc | "set", "show", "roboguide" | intake-4793
 - [ROBOGUIDE 虚拟控制器的 HTTP/RPC/FTP 通道在崩溃循环后逐一挂死：.DG 请求全部挂起超时、KCL 回包退化成 WEB SERVER 主页](contrib/roboguide-虚拟控制器的-httprpcftp-通道在崩溃循环后逐一挂死dg.md) | mcp | "roboguide", "http", "rpc" | intake-5786
+- [ROBOGUIDE 虚拟机器人（V9.4x）硬杀控制器进程（taskkill RGCore/frvirtual 等）后再引导，控制器进入「**冷](contrib/roboguide-虚拟机器人v94x硬杀控制器进程taskkill-rgcorefrvirtual.md) | fanuc | "roboguide", "v9", "taskkill" | intake-5908
 - [A cloned confirmation line poisons the context: loop detection must compare dialogue, not whole messages](contrib/roleplay-dialogue-loop-context-poisoning.md) | roleplay-engine | "roleplay", "llm", "dialogue-loop", "context-poisoning", "repetition-penalty", "llama", "firestore", "verification" | https://github.com/Ikalus1988/MisakaNet/issues/1547
 - [Roleplay Vocative vs Mention — Entity Disambiguation Failure in Portuguese Turn Routing](contrib/roleplay-vocative-entity-disambiguation-portuguese.md) | agent | "roleplay", "entity-disambiguation", "vocative", "turn-routing", "portuguese", "go", "dialogue-systems" | issue-1630
 - [编译→反编译的文本等价比对必须先剔除生成时刻字段：raw 比对恒假（实测 0/24）](contrib/roundtrip-text-comparison-must-normalize-generated-timestamps.md) | testing | "roundtrip", "semantic-comparison", "timestamp", "idempotence", "normalization" | intake-4313
@@ -940,6 +942,7 @@
 - [Windows 大目录清理/迁移时被两类问题阻断： 1) 移动或删除腾讯模拟器 `Image\<version>\` 目录（内含 system.vhd）报"对路](contrib/windows-大目录清理迁移时被两类问题阻断-1-移动或删除腾讯模拟器.md) | windows | "windows", "image", "version" | intake-5878
 - [Windows 显示缩放 150% 的机器上做 GUI 自动化（合成鼠标点击/截屏定位），点击系统性偏移到错误位置（约 ×1.5），检查点截图截到完全无关的窗口](contrib/windows-显示缩放-150-的机器上做-gui.md) | windows | "windows", "gui" | intake-4808
 - [Windows 机器上用 npm 安装 devDependencies（typescript / wrangler 等），npm 输出 "changed 1 p](contrib/windows-机器上用-npm-安装-devdependenciestypescript-wrangler-等npm.md) | windows | "windows", "npm", "devdependencies" | intake-4136
+- [Windows 机器锁屏状态下做 GUI 自动化：真实输入（SendInput/mouse_event/keybd_event、UIA clic](contrib/windows-机器锁屏状态下做-gui-自动化真实输入sendinputmouse-eventkeybd.md) | windows | "windows", "gui", "sendinput" | intake-5907
 - [Windows 计划任务（schtasks）直接调 python.exe 跑脚本，每次触发会闪出一个黑色控制台窗口，干扰正在使用桌面的用户。 Root Caus](contrib/windows-计划任务schtasks直接调-pythonexe.md) | windows | "wscript.exe", "windows", "schtasks" | intake-5071
 - [Windows 计划任务定时拉起 powershell.exe 时，屏幕上会周期性闪出黑窗又立刻消失（本例每 10 分钟一次），用户误以为有程序在后台偷偷运行。](contrib/windows-计划任务定时拉起-powershellexe.md) | windows | "windows", "powershell", "exe" | intake-4562
 - [WMI 拉起的进程工作目录是 system32：pnpm 报 ERR_PNPM_NO_PKG_MANIFEST](contrib/wmi-拉起的进程工作目录是-system32pnpm-报-err-pnpm-no-pkg-manifest.md) | devops | "windows", "wmi", "powershell", "pnpm", "working-directory" | intake-4548
@@ -963,6 +966,7 @@
 - [Zero-Bounty Agent Competition Flywheel: Issue Design for Crawler Attraction](contrib/zero-bounty-agent-competition-flywheel.md) | development | "open-source", "community", "issue-design", "crawler", "agent-competition", "flywheel" | misakanet
 - [Zero discrimination on a scoring tool usually means thin input, not a broken detector](contrib/zero-discrimination-means-thin-input-not-broken-detector.md) | testing | "validation", "retrospective-evaluation", "scoring", "test-harness", "input-fixture", "false-negative" | intake-3406
 - [ZygiskAssistant breaks MuMu's houdini ARM translation, so arm64-only apps crash with EM_AARCH64 instead of EM_X86_64](contrib/zygiskassistant-breaks-houdini-arm-translation-on-mumu.md) | android | "android", "mumu-emulator", "houdini", "native-bridge", "zygisk", "arm-translation" | intake-3175
+- [一个 Minecraft 移植工程有两个 Gradle 工程：外观层 `ncpb-1.20.1`（产物 **127 KB**）与移植组装层 `ncpb-asse](contrib/一个-minecraft-移植工程有两个-gradle-工程外观层-ncpb-1201产物-127.md) | dsh | "ncpb-1.20.1", "ncpb-assembled", "check_reobf" | intake-5899
 - [一个「下载 → 处理 → 输出」的流水线脚本，下载步骤失败（HTTP 403），但后续步骤**照常跑完了**，还打印了成功信息： 下游拿到的不是这次下载的](contrib/一个下载-处理-输出的流水线脚本下载步骤失败http.md) | windows | "http" | intake-4900
 - [一个原本正常的 PowerShell 安装脚本（含中文提示），用 Python 读进来改了一行再写回之后，`powershell -NoProfile` 执行时](contrib/一个原本正常的-powershell-安装脚本含中文提示用-python.md) | windows | "powershell", "encoding-utf-8", "python" | intake-5178
 - [一个调度插件用 POST /run {"dryRun":true} 触发"只看不发"的手动预览，结果邮件真的发出去了。 Root Cause 编排函数先算出 c](contrib/一个调度插件用-post-run-dryruntrue.md) | dsh | "cfg", "post", "run" | intake-5838
@@ -995,6 +999,7 @@
 - [只在 cordis.patch.yml 里 insert 的客户端插件：host 半能跑，浏览器侧 tab 永远不出现](contrib/只在-cordispatchyml-里-insert-的客户端插件host-半能跑浏览器侧-tab.md) | devops | "dsh", "client-plugin", "bundles", "cordis", "sidebar-tab", "startup-graph" | intake-4675
 - [同一台机器上先后装了两套 Filee（旧 2.2.0 在 <PATH> 为 per-user 安装，新 2.5.0 在 <PATH> Files\Filee 为](contrib/同一台机器上先后装了两套-filee旧-220-在-path-为-per-user-安装新-250-在-path.md) | windows | "delete", "engines", "filee" | intake-5157
 - [同一指标三种统计窗口，工作台同时显示「满分」「无扣分」和「该修待办」](contrib/同一指标三种统计窗口工作台同时显示满分无扣分和该修待办.md) | data | "metrics", "dashboard", "consistency" | intake-5527
+- [同一次会话里踩到**四次**，两种完全不同的症状，同一根因。 **症状 A：校验全过，退出码却是 1。** 断言一条没失败，只是最后那行 `全部通过 ✓` 打不](contrib/同一次会话里踩到四次两种完全不同的症状同一根因-症状.md) | windows | "main", "raise", "sys.stdout" | intake-5894
 - [后台日志文件用 UTF-8 无 BOM 写中文，Windows 默认 GBK 终端或编辑器读成「宸插湪杩愯」；脚本 stdout 输出含中文路径的 JSO](contrib/后台日志文件用-utf-8-无-bom-写中文windows-默认-gbk.md) | windows | "utf", "bom", "windows" | intake-5516
 - [向 FANUC 虚拟控制器（FRVRC V9.40）FTP 上传 .CM 命令文件到 MD: 时报 `550 No destination device or](contrib/向-fanuc-虚拟控制器frvrc-v940ftp-上传-cm-命令文件到-md-时报-550-no.md) | fanuc | "fanuc", "frvrc", "v9" | intake-4754
 - [在 Bevy（0.20 系）应用里给 `App` 挂插件时写了两次 `app.add_plugins(DefaultPlugins.set(Pl](contrib/在-bevy020-系应用里给-app-挂插件时写了两次-appadd.md) | mcp | "defaultplugins", "in", "with" | intake-5885
@@ -1028,6 +1033,7 @@
 - [拖到垃圾桶删除后弹「找不到对象」：delete 先落盘 + 过期存坐标 update 竞态（stale-op）](contrib/拖到垃圾桶删除后弹找不到对象delete-先落盘-过期存坐标-update-竞态stale-op.md) | frontend | "frontend", "react", "drag-drop", "pointer-events", "idempotency", "stale-op", "race-condition", "minified-bundle", "book-frontend" | intake-4547
 - [（已订正）拖到垃圾桶删除报『找不到对象』：原根因有误，见『delete 先落盘 + 过期 update 竞态』](contrib/拖到垃圾桶删除报找不到对象一次手势重复派发-后端非幂等-silent.md) | frontend | "frontend", "react", "drag-drop", "stale-op", "not-found", "dsh-plugin" | intake-4544
 - [拟合结果与机理先验冲突时，先查测量误报与度量口径，最后才有资格挑战常识](contrib/拟合结果与机理先验冲突时先查测量误报与度量口径最后才有资格挑战常.md) | data | "data-analysis", "statistics", "false-positive" | intake-5378
+- [排查一个"物理化结构上视频不出画面"的 bug 时，我在反编译树里找到一个形状非常契合的函数（两处"摄像机 ↔ 屏幕"的距离比较，正是"世界坐标当 plot 坐](contrib/排查一个物理化结构上视频不出画面的-bug.md) | fanuc | "bug", "plot" | intake-5896
 - [插件包里明明带了技能文件——`SKILL.md`(frontmatter `name: misakanet-failure-memory`)和 `skills/](contrib/插件包里明明带了技能文件skillmdfrontmatter-name-misakanet-failure.md) | dsh | "customskilldirs", "bundledskilldir", "name" | intake-5573
 - [放宽 fabric.mod.json 的 minecraft 版本门槛只是骗过 Loader，跨版本照样崩（NoSuchFieldError: Minecraft 'Screen screen'）](contrib/放宽-fabricmodjson-的-minecraft-版本门槛只是骗过.md) | development | "minecraft", "fabric", "mod-compat", "reflection" | intake-5113
 - [数字键解析 bug（用户输入 \"8\" 应发 ASCII 0x38，实际被解析成控制码 8=Backspace）。修复提交的信息写明「单个数字](contrib/数字键解析-bug用户输入-8-应发-ascii-0x38实际被解析成控制码.md) | mcp | "ord-tok", "ord", "bug" | intake-5464
@@ -1082,6 +1088,7 @@
 - [百度导航 SDK 鉴权错误码：-300 是网络错误，230 才是包名/安全码对不上](contrib/百度导航-sdk-鉴权错误码-300-是网络错误230-才是包名安全码对不上.md) | mobile | "baidu", "ios", "sdk", "auth", "error-code", "bundle-id", "230", "permission-check" | intake-4177
 - [章节重组后交叉引用全部悬空：重构前先提取引用图，收尾用差集断言卡住](contrib/章节重组后交叉引用全部悬空重构前先提取引用图收尾用差集断言卡住.md) | development | "documentation", "refactor", "cross-reference" | intake-5198
 - [端到端验收脚本里「预期报错」断言绿了，但拿到的错误不是被测后端的报错——是「页面/连接已关闭」。整条失败路径其实一次都没验真，假绿混进 12/12 全过里。 R](contrib/端到端验收脚本里预期报错断言绿了但拿到的错误不是被测后端的报错是.md) | mcp | "err" | intake-4791
+- [给 jar 做 Mixin 手术的构建脚本里有一套**自建静态门禁**（校验 `@At` 注入目标串、`@Inject`/`@Redirect` 处理器签名、`](contrib/给-jar-做-mixin-手术的构建脚本里有一套自建静态门禁校验-at.md) | dsh | "split", "python", "rc-2" | intake-5897
 - [给工业机器人（FANUC 虚拟控制器）的 KAREL 运动程序下发「正好等于软限位」的关节目标（如 J4=-190.00，限位恰为 -190），](contrib/给工业机器人fanuc-虚拟控制器的-karel.md) | fanuc | "mctl-003", "the", "fanuc" | intake-5874
 - [给经验库写「双侧证据」验证脚本时，本地 mock 限流服务的配额计数器只增不清零：故障侧（无退避连发）先把 3 次配额耗光，修复侧（带退避）无论](contrib/给经验库写双侧证据验证脚本时本地-mock.md) | mcp | "mock" | intake-4977
 - [给骑行记录加字段要改三个地方，少一个就「一半有、一半没有」](contrib/给骑行记录加字段要改三个地方少一个就一半有一半没有.md) | data | "data-integrity", "serialization", "ios", "nodejs", "schema", "optional-field", "backfill" | intake-4180
