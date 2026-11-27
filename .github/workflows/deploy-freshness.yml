@@ -48,6 +48,9 @@ on:
 
 permissions:
   contents: read
+  # The verdict has to leave this run, and a red run is not a place anyone reads. See the
+  # reporting step at the bottom for the measurement that made this a permission.
+  issues: write
 
 concurrency:
   group: deploy-freshness
@@ -57,6 +60,12 @@ jobs:
   freshness:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      # `github.token`, not `SHELDON_PAT`. The PAT exists here for steps that must *trigger further
+      # workflow runs*, which commenting on an issue is not, and it has silently dropped issue
+      # writes twice (`update-lessons.yml`, 313 receipts over three green days, #1528; `d1-cost.yml`,
+      # two consecutive days of `addComment` denial, #5850). The job already grants `issues: write`.
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
         with:
@@ -108,6 +117,7 @@ jobs:
       # outcome that deploys *nothing* (cancelled, failed) still runs the probe, and those are the
       # ones #2779 is about.
       - name: Is production running main's commit?
+        id: freshness
         if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion != 'success'
         run: |
           set -euo pipefail
@@ -115,11 +125,64 @@ jobs:
           ATTEMPTS=3
           for attempt in $(seq 1 "$ATTEMPTS"); do
             if python3 scripts/doctor.py --deploy-freshness; then
+              echo "verdict=fresh" >> "$GITHUB_OUTPUT"
               exit 0
             fi
             echo "::warning::the freshness probe failed (attempt $attempt/$ATTEMPTS)"
             [ "$attempt" = "$ATTEMPTS" ] || sleep 10
           done
 
+          echo "verdict=stale" >> "$GITHUB_OUTPUT"
           echo "::error title=Production is stale::https://misakanet.org is not running main's commit. Every deploy-time check passed because they all run after a successful deploy — a deploy that never happens is invisible to all of them. Check deploy-worker.yml: the run is most likely sitting in the release environment awaiting approval, with earlier runs cancelled by concurrency.cancel-in-progress. See #2779."
           exit 1
+
+      # Why this step exists at all (#5627). The probe below was written in October and has been
+      # firing since: on 2026-11-25T09:22 it caught production 7 commits behind, minutes after the
+      # deploy that would have updated it was cancelled. On 2026-11-26T14:32 it caught the same
+      # drift again. **Both runs were red and both went unread** — a red scheduled run is exactly as
+      # quiet as a green one, because nobody opens the Actions tab to check whether something they
+      # have not been told about happened.
+      #
+      # So the verdict gets a reader: one issue, reopened while the condition holds and closed after,
+      # the same shape `d1-cost.yml` uses. The measurement is unchanged; only who hears about it is.
+      #
+      # It deliberately does **not** speak when the probe did not run. The `success` shortcut above
+      # is a skip, not a measurement, and closing an issue because nothing was measured is the exact
+      # defect `check_deploy_freshness` refuses to commit ("claiming to be fresh when nothing was
+      # measured").
+      - name: Say so where somebody is already looking
+        if: always() && (steps.freshness.outcome == 'success' || steps.freshness.outcome == 'failure')
+        env:
+          VERDICT: ${{ steps.freshness.outputs.verdict }}
+        run: |
+          set -euo pipefail
+          TITLE="[deploy-freshness] production is not running main's commit"
+          EXISTING=$(gh issue list --repo "$GITHUB_REPOSITORY" --state all --limit 50 \
+                     --search '"[deploy-freshness]" in:title' --json number,state \
+                     --jq '[.[] | select(.state == "OPEN")] | .[0].number // empty')
+
+          if [ "${VERDICT:-}" = "stale" ]; then
+            RUN_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            BODY=$(printf '%s\n' \
+              "Production is not running main's commit, and every gate is green for it." \
+              "" \
+              "Run: $RUN_URL" \
+              "" \
+              "The usual cause is a deploy that never happened: deploy-worker.yml waits on the" \
+              "release environment, and concurrency.cancel-in-progress cancels the waiting" \
+              "run whenever a newer push arrives. A red scheduled run and a green one are equally" \
+              "quiet, which is why this issue exists." \
+              "" \
+              "Check with scripts/doctor.py --deploy-freshness and approve the pending" \
+              "run if there is one. This issue closes itself on the next green probe.")
+            if [ -n "$EXISTING" ]; then
+              gh issue comment "$EXISTING" --repo "$GITHUB_REPOSITORY" --body "$BODY"
+              gh issue reopen "$EXISTING" --repo "$GITHUB_REPOSITORY" || true
+            else
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body "$BODY"
+            fi
+          elif [ "${VERDICT:-}" = "fresh" ] && [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --repo "$GITHUB_REPOSITORY" \
+              --body "Production is running main's commit again - closing."
+            gh issue close "$EXISTING" --repo "$GITHUB_REPOSITORY" --reason completed
+          fi

@@ -56,6 +56,32 @@ def test_the_gate_can_see_the_invocations_it_is_about():
     assert any("--kv-only" in cmd for _, _, cmd in invocations), invocations
 
 
+def test_every_extracted_invocation_is_a_parseable_command_line():
+    """`shlex.split` below can be pointed at a *sentence* by one stray quote (#5857).
+
+    `DOCTOR_RE` stops at `\\n`, `|`, `>`, `;`, `&` — so it reads a `run:` continuation as one
+    command, which is what makes `--remote-only` after a `\\` visible at all. The other side of that
+    trade is that prose containing the words `scripts/doctor.py` gets read as a command too, and a
+    single unbalanced quote there makes `shlex.split` raise `ValueError: No closing quotation` from a
+    line 60 lines away from the change that caused it — measured on #5857, where a workflow's issue
+    body escaped a backtick and took out all six matrix legs plus `audit` while `pytest` on the
+    author's own machine was green (the file differed between the two: Windows wrote CRLF).
+
+    Failing *here*, with the offending text quoted, is the difference between "your quoting broke the
+    parser" and a traceback inside `shlex.py`.
+    """
+    for name, line, cmd in _joined_runs():
+        try:
+            shlex.split(cmd)
+        except ValueError as exc:
+            raise AssertionError(
+                f"{name}:{line}: extracted as a command line but is not one ({exc}). The regex reads "
+                f"from `python3 scripts/doctor.py` to the end of the run block, so prose mentioning "
+                f"that path is parsed as an argument list — a stray quote or escaped backtick in it "
+                f"breaks this gate from far away. Text: {cmd!r}"
+            ) from exc
+
+
 def test_every_check_is_either_run_in_ci_or_declared_local_only():
     """Both halves are required: a check with no CI caller must be *declared* local-only, with a
     reason. The defect in #1822 was the silence — nothing distinguished "CI does not run this
