@@ -229,6 +229,70 @@ def test_the_freshness_job_names_the_branch_it_measures_against():
     )
 
 
+def _freshness_steps():
+    import yaml
+
+    text = (REPO / ".github" / "workflows" / "deploy-freshness.yml").read_text(encoding="utf-8")
+    return yaml.safe_load(text)
+
+
+def test_a_stale_probe_says_so_where_somebody_is_looking():
+    """A red scheduled run is as quiet as a green one (#5627).
+
+    The probe was never missing — it fired on 2026-11-25T09:22 with production 7 commits behind,
+    minutes after the deploy that would have updated it was cancelled, and again on
+    2026-11-26T14:32. Both runs were red; both went unread, because nobody opens the Actions tab to
+    look for something they were not told about. The signal existed and had no reader.
+
+    So the verdict has to reach a place a human already looks. This asserts the reader exists and,
+    more importantly, that it is wired to the probe's *outcome* rather than assumed: a step that
+    reports a verdict it did not measure is the same defect one layer up.
+    """
+    workflow = _freshness_steps()
+    assert workflow["permissions"].get("issues") == "write", (
+        "the reporting step cannot open or close an issue without `issues: write`"
+    )
+    steps = workflow["jobs"]["freshness"]["steps"]
+    probe = next((s for s in steps if s.get("id") == "freshness"), None)
+    assert probe is not None, "the probe needs an `id` so the reporting step can read its outcome"
+    report = next((s for s in steps if "issue" in (s.get("run") or "")), None)
+    assert report is not None, (
+        "nothing in this workflow opens an issue, so a stale production still only reddens a "
+        "scheduled run that nobody reads (#5627)"
+    )
+    assert "steps.freshness.outcome" in (report.get("if") or ""), (
+        "the report must be gated on the probe having actually run — closing an issue on a run that "
+        "measured nothing claims freshness nobody verified"
+    )
+    run = report["run"]
+    # `outcome == 'success'` on the probe *is* the fresh answer; `failure` is stale. Both speak.
+    assert "verdict" in (probe.get("run") or ""), (
+        "the probe must publish its verdict as an output, or the reporter has to guess it"
+    )
+    assert "gh issue create" in run and "gh issue close" in run, (
+        "the issue has to open on stale and close on fresh, or it becomes one more place to look"
+    )
+
+
+def test_the_freshness_report_uses_the_job_token_not_the_pat():
+    """The same PAT has silently dropped issue writes twice (#1528, #5850).
+
+    `SHELDON_PAT` exists in this repository for steps that must *trigger further workflow runs*.
+    Commenting on an issue is not that. Both times a workflow used it for an issue anyway, the write
+    failed while the measurement succeeded — so the watch measured a real problem and then could not
+    say a word about it. This asserts the third one does not repeat the shape.
+    """
+    workflow = _freshness_steps()
+    env = workflow["jobs"]["freshness"].get("env") or {}
+    assert env.get("GH_TOKEN") == "${{ github.token }}", (
+        "the issue write must use `github.token`; the PAT has no issue scope in practice"
+    )
+    for step in workflow["jobs"]["freshness"]["steps"]:
+        assert "SHELDON_PAT" not in (step.get("run") or ""), (
+            f"step {step.get('name')!r} reaches for SHELDON_PAT — see #1528 and #5850"
+        )
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):
