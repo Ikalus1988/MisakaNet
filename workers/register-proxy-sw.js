@@ -3313,7 +3313,7 @@ async function mayCreateTelemetryKey(env, dateKey) {
 //
 // The KV fallback keeps the *legacy key shapes*, so a deployment without the D1 binding —
 // or a rollback — sees the same counters it did before.
-const COUNTERS_BACKEND_STATS = { d1: 0, kv: 0, failures: 0, last_failure_at: "" };
+const COUNTERS_BACKEND_STATS = { d1: 0, kv: 0, memo: 0, failures: 0, last_failure_at: "" };
 
 function legacyCounterKey(scope, bucket, period) {
   if (scope === "rate_read") return `rate:read:${bucket}:${period}`;
@@ -3359,7 +3359,72 @@ function rateWindowTenMinutes(now = new Date()) {
 }
 
 /** Increment a counter and return its new value (D1 atomic upsert, else KV). */
+/**
+ * The last read-burst count this isolate took for one address, and why it matters.
+ *
+ * Measured 2026-11-27 from Analytics Engine: of 600 search calls in a day, the **304 warm ones still
+ * averaged 652 ms total** while their recorded phases (corpus load, index, scoring) summed to 13 ms.
+ * The unaccounted ~640 ms was the rate-limit increment — a D1 `INSERT … RETURNING` against the *ops*
+ * database, i.e. a cross-database write — paid on **every** search before any search work starts.
+ *
+ * The counter exists to stop one address hammering the index: `READ_BURST_LIMIT` per
+ * `READ_BURST_WINDOW_SECONDS`. That question does not need a fresh round trip per request within a
+ * window the isolate already knows the answer to; it needs the count to be *eventually* right at the
+ * window boundary, and the D1 row remains the authority across isolates. So this memo answers for the
+ * current window only, and anything it refuses to guess falls through to D1 unchanged.
+ *
+ * Deliberately *not* a cache of "allowed": it memoises the count, and the comparison still happens
+ * every call, so a burst that crosses the limit is refused on the same request it always was.
+ *
+ * Staleness direction: two isolates can each hold a slightly low count and both let traffic through,
+ * which is exactly what the pre-existing D1 path already allowed between its own read and write. The
+ * failure this introduces is "a little more traffic in one window", never "a legitimate reader
+ * blocked", and the rate limit is a speed limit — its own refusal text says so.
+ */
+const READ_BURST_MEMO_MAX = 64;
+let readBurstMemo = new Map(); // `${ip}:${period}` -> { count, at }
+
+function readBurstMemoMs() {
+  const raw = Number(globalThis.MISAKANET_READ_BURST_MEMO_MS);
+  return Number.isFinite(raw) && raw >= 0 ? raw : 5000;
+}
+
+function readBurstMemoGet(key) {
+  const hit = readBurstMemo.get(key);
+  if (!hit) return null;
+  if (Date.now() - hit.at > readBurstMemoMs()) {
+    readBurstMemo.delete(key);
+    return null;
+  }
+  return hit.count;
+}
+
+function readBurstMemoSet(key, count) {
+  if (readBurstMemoMs() === 0) return;
+  if (readBurstMemo.size >= READ_BURST_MEMO_MAX) {
+    // One eviction is enough: this map holds at most a handful of live addresses per isolate.
+    const oldest = readBurstMemo.keys().next().value;
+    if (oldest !== undefined) readBurstMemo.delete(oldest);
+  }
+  readBurstMemo.set(key, { count, at: Date.now() });
+}
+
+/** Test seam: module-scope state must not outlive a test. */
+const resetReadBurstMemo = () => { readBurstMemo = new Map(); };
+
 async function bumpCounter(env, scope, bucket, period, delta = 1) {
+  // The read burst is the one counter on a per-request hot path (see `readBurstMemoGet`); every
+  // other scope keeps its unconditional round trip.
+  const memoKey = scope === "rate_read" ? `${bucket}:${period}` : null;
+  if (memoKey) {
+    const known = readBurstMemoGet(memoKey);
+    if (known !== null) {
+      const next = known + delta;
+      readBurstMemoSet(memoKey, next);
+      COUNTERS_BACKEND_STATS.memo += 1;
+      return next;
+    }
+  }
   const d1 = opsD1(env);
   if (d1) {
     try {
@@ -3373,6 +3438,7 @@ async function bumpCounter(env, scope, bucket, period, delta = 1) {
       const row = results && results[0];
       if (row && Number.isFinite(Number(row.count))) {
         COUNTERS_BACKEND_STATS.d1 += 1;
+        if (memoKey) readBurstMemoSet(memoKey, Number(row.count));
         return Number(row.count);
       }
     } catch (error) {
@@ -11852,6 +11918,7 @@ export {
   searchDegraded,
   // Exported for workers/counters-read-cooldown.test.mjs.
   resetCountersReadState,
+  resetReadBurstMemo,
   countersReadable,
   MCP_TOOLS,
   // Exported for workers/search-signals.test.mjs: `Number(null)` is 0 and `Number.isFinite(0)` is
