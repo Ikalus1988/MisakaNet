@@ -10,6 +10,24 @@ on:
         required: false
         type: string
 
+# Superseded pushes used to queue a fresh `audit` each, and the older run kept holding runners to
+# the end — 21 minutes apiece, because this job runs the whole Python suite with coverage. Measured
+# 2026-11-27 over the last 100 runs: **18 were started and then superseded by a later run on the
+# same branch**, and the discarded part alone burned **1,749 runner-minutes (29 hours)**. One
+# force-push to `intake-batch/2026-11-25` accounted for 1,302 of those on its own.
+#
+# `ci-cross-platform.yml` has carried this guard since 2026-09-21 for exactly the same reason
+# ("Cancelling a superseded *pull-request* run is always right, since the newer head is the one
+# being judged"). This file is the heavy one and it never got it.
+#
+# The group is keyed on the **PR number**, not `head_ref`: a branch name is not unique across forks,
+# and two PRs from two forks can both be called `fix/typo`. `github.run_id` is the fallback so a
+# manual dispatch never joins another run's group — dispatch has no PR to be superseded by, and
+# `cancel-in-progress` is false for it.
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   audit:
     permissions:
