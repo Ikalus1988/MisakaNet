@@ -192,6 +192,45 @@ def test_the_hero_does_not_print_a_corpus_count():
             "the picture should name where the count lives, not restate it")
 
 
+def test_a_cjk_title_is_wrapped_by_width_not_by_character_count():
+    """Half-width counting let a Chinese title print 458 px wide inside a 352 px panel.
+
+    Every earlier hero used a Latin title, where 54 characters happens to fit at 12.5 px. The first
+    CJK title — the top hit for `database is locked` — went out the door 30% too wide, because a CJK
+    glyph is ~1.0 em and a Latin one ~0.60 em, and the wrapper counted characters. It also survived
+    the geometry test below, which measured only the panel it *thought* the text was in.
+
+    This pins the width model directly: the same number of characters in Chinese must be allowed
+    fewer characters per line than in English.
+    """
+    latin = "a" * 60
+    cjk = "数" * 60
+    latin_lines = hero._wrap_for_px(latin, 12.5, 352, 2)
+    cjk_lines = hero._wrap_for_px(cjk, 12.5, 352, 2)
+    assert hero._ems(cjk[0]) > hero._ems(latin[0]), (
+        "a CJK glyph must weigh more than a Latin one, or the width model is back to counting chars")
+    assert len("".join(cjk_lines)) < len("".join(latin_lines)), (
+        f"the CJK string wrapped {len(''.join(cjk_lines))} chars per {len(cjk_lines)} lines and the "
+        f"Latin one {len(''.join(latin_lines))} — CJK must fit fewer")
+    for line in cjk_lines + latin_lines:
+        assert hero._ems(line) * 12.5 <= 352, f"line still too wide: {line!r}"
+
+
+def test_the_real_snapshot_title_fits_the_panel():
+    """The recording's own title, measured in ems, not by eye and not by character count."""
+    data = snapshot()
+    svg = hero.render(data, "dark")
+    panel_inner = 388 - 36
+    for match in re.finditer(r'<text x="(\d+)" y="(\d+)"([^>]*)>([^<]*)</text>', svg):
+        x, y, attrs, body = int(match.group(1)), int(match.group(2)), match.group(3), match.group(4)
+        if x < 470 or y >= 250:
+            continue  # left panel and the footer strip have their own widths
+        size = float(re.search(r'font-size="([\d.]+)"', attrs).group(1))
+        assert hero._ems(body) * size <= panel_inner, (
+            f"a {size:g}px run is ~{hero._ems(body) * size:.0f}px wide but the panel is "
+            f"{panel_inner}px: {body[:60]!r}")
+
+
 def test_no_text_run_is_wide_enough_to_escape_its_panel():
     """Geometry, because a hex colour check cannot see an overlap.
 

@@ -16,17 +16,17 @@ mcp-name: io.github.Ikalus1988/misakanet
 > MisakaNet 就是那个地方：一个 git 托管的**失败记忆库**。每条 lesson 都是本仓库里的 Markdown 文件——
 > 按证据分级、像代码一样审阅、被 Agent 检索而不是被猜。**你失败一次，下一个 Agent 不再失败。**
 
-Agent 原生接口：[MCP 服务器](https://misakanet.org/mcp)（8 个工具）、WebMCP、`llms.txt`、
-A2A（`.well-known/agent-card.json`）。**本地** stdio server（`pip install misakanet`）是 **11** 个——
-托管端点是它的子集，两行都写在 [docs/mcp.md](docs/mcp.md)。
+[MCP 服务器](https://misakanet.org/mcp)（8 个工具）·WebMCP·`llms.txt`。本地 stdio 服务器提供 11 个——两边的对照见 [docs/mcp.md](docs/mcp.md)。
 
 <p align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/hero-light.svg">
-  <img src="docs/assets/hero-light.svg" width="100%" alt="一次真实记录：查询 'GitHub Actions script injection' 命中一条 E3（CI 验证）课程，七次调用中位 2,444 ms。语料条数在图中与上方徽章里。">
+  <img src="docs/assets/hero-light.svg" width="100%" alt="一次真实记录：查询 'database is locked' 命中一条 E1（已复核）课程，七次调用中位 3.3 秒。">
 </picture>
 </p>
+
+<sub>由 `scripts/record_hero_snapshot.py` 从一次真实调用录制，CI 校验一致性。不是省时声明——本仓不测量「本来要花多少」。</sub>
 
 <p align="center">
   <em>Core</em>

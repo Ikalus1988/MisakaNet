@@ -78,24 +78,79 @@ def _truncate(text: object, limit: int) -> str:
     return value if len(value) <= limit else value[: limit - 1].rstrip() + "…"
 
 
-def _wrap(text: object, width: int, max_lines: int) -> list[str]:
-    words = " ".join(str(text or "").split()).split()
+#: How wide one character is, in multiples of the font size, for the two scripts this corpus writes in.
+#: Latin in a monospace stack is ~0.60em; a CJK glyph is ~1.00em (full-width by definition). Counting
+#: characters instead of ems is what let a Chinese lesson title print 458px wide inside a 352px panel
+#: — measured 2026-11-27 on the first hero that used a CJK title, where every earlier title had been
+#: Latin and 54 characters happened to fit.
+_LATIN_EM = 0.60
+_CJK_EM = 1.0
+
+
+def _ems(text: str) -> float:
+    return sum(_CJK_EM if ord(ch) > 0x2E80 else _LATIN_EM for ch in text)
+
+
+def _fits(text: str, size: float, inner_px: float) -> bool:
+    return _ems(text) * size <= inner_px
+
+
+def _wrap_for_px(text: object, size: float, inner_px: float, max_lines: int) -> list[str]:
+    """Break a title into at most `max_lines` lines that each fit `inner_px` at `size` px.
+
+    Breaks Latin on spaces and CJK anywhere (it has no spaces to break on). The last line is
+    ellipsised rather than allowed to overflow, because an <svg> has no overflow handling that keeps
+    the text readable.
+    """
+    value = " ".join(str(text or "").split())
+    if not value:
+        return []
+
+    def pieces(word: str) -> list[str]:
+        # Split a Latin word that is itself too wide; keep CJK runs intact as long as they fit.
+        out, buffer = [], ""
+        for ch in word:
+            candidate = buffer + ch
+            if _fits(candidate, size, inner_px) or not buffer:
+                buffer = candidate
+            else:
+                out.append(buffer)
+                buffer = ch
+        if buffer:
+            out.append(buffer)
+        return out
+
+    tokens: list[str] = []
+    for word in value.split(" "):
+        if _fits(word, size, inner_px):
+            tokens.append(word)
+        else:
+            tokens.extend(pieces(word))
+
     lines: list[str] = []
     current = ""
-    for word in words:
-        candidate = f"{current} {word}".strip()
-        if len(candidate) <= width:
+    for token in tokens:
+        separator = " " if current and not (ord(current[-1]) > 0x2E80 or ord(token[0]) > 0x2E80) else ""
+        candidate = f"{current}{separator}{token}".strip()
+        if _fits(candidate, size, inner_px):
             current = candidate
             continue
         if current:
             lines.append(current)
-        current = word
+        current = token
         if len(lines) == max_lines:
             break
+
     if current and len(lines) < max_lines:
         lines.append(current)
-    if len(lines) == max_lines and (len(" ".join(lines)) < len(" ".join(words))):
-        lines[-1] = _truncate(lines[-1] + " " + " ".join(words[len(" ".join(lines).split()):]), width)
+
+    if len(lines) == max_lines:
+        consumed = " ".join(lines)
+        if len(consumed) < len(value):
+            tail = lines[-1]
+            while tail and not _fits(tail + "…", size, inner_px):
+                tail = tail[:-1]
+            lines[-1] = tail.rstrip() + "…"
     return lines
 
 
@@ -103,7 +158,9 @@ def render(snapshot: dict, theme: str) -> str:
     p = PALETTES[theme]
     query = _esc(snapshot["query"])
     hit = snapshot["top_hit"]
-    hit_title_lines = _wrap(hit.get("title"), 45, 2)
+    # The two panel columns must be known before anything is wrapped against their width.
+    left_x, right_x, col_w = PAD, 470, 388
+    hit_title_lines = _wrap_for_px(hit.get("title"), 12.5, col_w - 36, 2)
     level = str(hit.get("evidence_level") or "?")
     note = EVIDENCE_NOTE.get(level, "")
     p50 = snapshot.get("latency_ms_p50")
@@ -113,21 +170,22 @@ def render(snapshot: dict, theme: str) -> str:
 
     # ── vertical rhythm ────────────────────────────────────────────────────────────────────────
     y = PAD
-    left_x, right_x = PAD, 470
-    col_w = 388
 
     L: list[str] = []
     add = L.append
 
     # Left panel: the failure, as it arrives.
-    lh = 96 + 20 * max(1, len(_wrap(query, 40, 3)))
+    query_lines = _wrap_for_px(snapshot["query"], 13, col_w - 36, 3)
+    # `label + code + N lines + footnote` with real padding, not a constant. A flat `96 + 20*N` was
+    # 18 px too short for a one-line query: the footnote baseline landed on the last code line.
+    lh = 82 + 20 * max(1, len(query_lines)) + 26
     add(f'<rect x="{left_x}" y="{y}" width="{col_w}" height="{lh}" rx="10" '
         f'fill="{p["panel"]}" stroke="{p["border"]}"/>')
     add(f'<text x="{left_x + 18}" y="{y + 28}" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" '
         f'font-size="12" fill="{p["muted"]}">the failure</text>')
     add(f'<text x="{left_x + 18}" y="{y + 56}" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" '
         f'font-size="14" fill="{p["warn"]}">$ error</text>')
-    for index, line in enumerate(_wrap(query, 40, 3)):
+    for index, line in enumerate(query_lines):
         add(f'<text x="{left_x + 18}" y="{y + 82 + index * 20}" '
             f'font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13" '
             f'fill="{p["fg"]}">{_esc(line)}</text>')

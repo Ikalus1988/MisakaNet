@@ -18,18 +18,17 @@ mcp-name: io.github.Ikalus1988/misakanet
 > Markdown en este repositorio — clasificada por evidencia, revisada como código, recuperada por un
 > agente en lugar de adivinada. Tú fallas una vez; el siguiente agente no.
 
-Interfaces nativas para agentes: [servidor MCP](https://misakanet.org/mcp) (8 herramientas), WebMCP,
-`llms.txt`, descubrimiento A2A mediante `.well-known/agent-card.json`. El servidor stdio **local**
-(`pip install misakanet`) incluye **11** — el endpoint alojado es un subconjunto;
-[docs/mcp.md](docs/mcp.md) tiene ambas filas.
+Endpoint MCP alojado: **8 herramientas** en `https://misakanet.org/mcp`. El servidor stdio local incluye 11; la tabla de ambos está en [docs/mcp.md](docs/mcp.md).
 
 <p align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/hero-light.svg">
-  <img src="docs/assets/hero-light.svg" width="100%" alt="Un registro real: la consulta 'GitHub Actions script injection' devuelve una lección E3 (verificada en CI) con una mediana de 2,444 ms en siete llamadas. El recuento del corpus está en la imagen y en la insignia de arriba.">
+  <img src="docs/assets/hero-light.svg" width="100%" alt="Un registro real: la consulta 'database is locked' devuelve una lección E1 (revisada) con una mediana de 3,3 s en siete llamadas.">
 </picture>
 </p>
+
+<sub>Grabado a partir de una llamada real por `scripts/record_hero_snapshot.py` y verificado en CI. No es una afirmación de ahorro: aquí no se mide lo que habría costado sin consultarlo.</sub>
 
 <p align="center">
   <em>Núcleo</em>
