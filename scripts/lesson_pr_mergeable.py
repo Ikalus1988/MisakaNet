@@ -160,11 +160,19 @@ def _required_check_names(checks: Mapping[str, Any]) -> list[str]:
     return fixed + matrix
 
 
-def _evaluate_checks(checks: Mapping[str, Any]) -> tuple[str, str]:
+def _evaluate_checks(
+    checks: Mapping[str, Any], held_runs: Sequence[Mapping[str, Any]] = ()
+) -> tuple[str, str]:
     """Every required check green? Returns (merge, "") when yes, else (verdict, reason).
 
     A conclusion that is not `success` refuses; a required check that is missing or still
     running only waits, because the workflow is re-triggered when it finishes.
+
+    `held_runs` is the difference between *absent* and *held* (#5618). A run created on a
+    `action_required` head has not run yet, so it publishes no check-run at all — and "gate (absent)"
+    sends a reader looking for a failing check that does not exist, when the remedy is to approve
+    the run. Naming that state is the whole fix; the verdict stays `wait`, because a held run is
+    still work that has not happened.
     """
     not_successful: list[str] = []
     unfinished: list[str] = []
@@ -181,7 +189,22 @@ def _evaluate_checks(checks: Mapping[str, Any]) -> tuple[str, str]:
     if not_successful:
         return REFUSE, "required check(s) not successful: " + ", ".join(not_successful)
     if unfinished:
-        return WAIT, "required check(s) not green yet: " + ", ".join(unfinished)
+        reason = "required check(s) not green yet: " + ", ".join(unfinished)
+        if held_runs:
+            # Deliberately not mapped onto individual check names: a workflow run's `name` is the
+            # workflow, not the job, so claiming "this held run is the `gate` check" would be a guess.
+            # What is measured — N runs on this head are waiting for approval — is the actionable part.
+            where = ", ".join(
+                f"{run.get('name') or 'a workflow'} ({run.get('html_url') or 'no url'})"
+                for run in list(held_runs)[:5]
+            )
+            more = "" if len(held_runs) <= 5 else f", +{len(held_runs) - 5} more"
+            reason += (
+                " — but this head has "
+                f"{len(held_runs)} run(s) held awaiting approval (`action_required`), so they are "
+                f"held rather than missing: {where}{more}. Approve them and this decides again."
+            )
+        return WAIT, reason
     return MERGE, ""
 
 
@@ -261,6 +284,7 @@ def decide(
     review_state: str,
     body: str = "",
     file_stats: Mapping[str, Any] | None = None,
+    held_runs: Sequence[Mapping[str, Any]] = (),
 ) -> tuple[str, str]:
     """Return ``(verdict, reason)`` for one pull request. Pure: no IO, no network.
 
@@ -293,7 +317,7 @@ def decide(
     if verdict != MERGE:
         return verdict, reason
 
-    verdict, reason = _evaluate_checks(check_map)
+    verdict, reason = _evaluate_checks(check_map, held_runs)
     if verdict != MERGE:
         return verdict, reason
 
@@ -342,6 +366,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         review_state=payload.get("review_state") or "",
         body=payload.get("body") or "",
         file_stats=payload.get("file_stats") or {},
+        held_runs=payload.get("held_runs") or [],
     )
     print(f"{verdict}: {reason}")
     return EXIT_CODES[verdict]
