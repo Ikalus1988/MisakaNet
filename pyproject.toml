@@ -9,8 +9,24 @@ description = "AI Agent 分布式经验知识共享系统 — 踩坑一次，全
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.11"
+# The wheel's own install requirements. Until 2026-11-27 this list held `misakanet-core` alone, while
+# `requirements.txt` — the file every workflow, the docs and AGENTS.md actually install — also pulled
+# `jsonschema>=4.26.0`, `mcp>=2.3.0` and `pyyaml>=6.0`. Two consequences, both measured on 3.23.0:
+#
+#   * `pip install misakanet` produced an environment without those three. `python -m misakanet` was
+#     fine (it reaches none of them), so the pypi-wheel-smoke job stayed green — but anything that
+#     validates a lesson, speaks MCP or reads frontmatter raised ModuleNotFoundError.
+#   * `uv sync` resolved from *this* list, so `uv.lock` had never contained `jsonschema` or `mcp` at
+#     all: 110 locked packages and neither of them. A contributor following the "single source of
+#     truth" file got an environment in which five `scripts/` modules cannot import.
+#
+# Same floor as `requirements.txt`, deliberately not stricter: the two files describe one dependency
+# set, and a floor that differed between them would recreate this defect from the other side.
 dependencies = [
     "misakanet-core>=2.7.0",
+    "jsonschema>=4.26.0",
+    "mcp>=2.3.0",
+    "pyyaml>=6.0",
 ]
 keywords = ["ai-agent", "knowledge-base", "bm25", "rag", "distributed"]
 classifiers = [
