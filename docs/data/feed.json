@@ -1,60 +1,74 @@
 {
-  "generated_at": "2026-11-27T01:48:07.155463+00:00",
+  "generated_at": "2026-11-27T12:46:54.889459+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "fix(ci): D1 cost watch 用 github.token 发 issue —— PAT 发不了，连续红了两天",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5850",
-      "timestamp": "2026-11-27T01:43:42Z",
+      "title": "feat(lessons): intake batch 2026-11-27",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5875",
+      "timestamp": "2026-11-27T11:33:30Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(site): 1,164 个 lesson 页补 JSON-LD（TechArticle + 面包屑），#5799 拆出来的那部分",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5846",
-      "timestamp": "2026-11-26T14:56:56Z",
+      "title": "fix(gates): wire the hero check to CI, stop gating on a count that moves hourly, drop the fake 'no lockfile' claim",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5873",
+      "timestamp": "2026-11-27T11:12:47Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "feat(lessons): intake batch 2026-11-27",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5870",
+      "timestamp": "2026-11-27T09:29:09Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "fix(deps): the wheel and uv.lock were both missing jsonschema and mcp",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5864",
+      "timestamp": "2026-11-27T05:49:46Z",
       "source": "github"
     },
     {
       "type": "lesson",
-      "title": "Batch pose-sampling against a FANUC ROBOGUIDE virtual controller (VRC) v",
-      "url": "lessons/contrib/batch-pose-sampling-against-a-fanuc-roboguide-virtual.md",
-      "timestamp": "2026-11-26",
-      "domain": "fanuc",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "`git push` 报 `remote: Invalid username or token. Password authentication is not",
-      "url": "lessons/contrib/git-push-报-remote-invalid-username-or-token-password.md",
-      "timestamp": "2026-11-26",
-      "domain": "mcp",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "一个调度插件用 POST /run {\"dryRun\":true} 触发\"只看不发\"的手动预览，结果邮件真的发出去了。 Root Cause 编排函数先算出 c",
-      "url": "lessons/contrib/一个调度插件用-post-run-dryruntrue.md",
-      "timestamp": "2026-11-26",
-      "domain": "dsh",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "症状：一个 Windows 原生 GUI 自动化工具仓库的 CI 门（GitHub Actions）在 ubuntu-latest 上全红，而同样的命令在开发机",
-      "url": "lessons/contrib/症状一个-windows-原生-gui-自动化工具仓库的-ci-门github-actions在-ubuntu.md",
-      "timestamp": "2026-11-26",
+      "title": "pythonw.exe + scheduled task: unguarded sys.stdout reconfigure at module top lev",
+      "url": "lessons/contrib/pythonwexe-scheduled-task-unguarded-sysstdout-reconfigure.md",
+      "timestamp": "2026-11-27",
       "domain": "windows",
       "source": "lessons"
     },
     {
       "type": "lesson",
-      "title": "A cold-boot witness timed out even though its stored samples proved the guest wa",
-      "url": "lessons/contrib/a-cold-boot-witness-timed-out-even-though-its-stored.md",
-      "timestamp": "2026-11-25",
+      "title": "rustup toolchain install repeatedly fails on Windows 11 with `component download",
+      "url": "lessons/contrib/rustup-toolchain-install-repeatedly-fails-on-windows-11.md",
+      "timestamp": "2026-11-27",
+      "domain": "windows",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "仓库 .gitignore 为「厂商数据不入库」政策加了全局 glob（如 `*-3d.def`）后，tests/fixtures/ 下的**合",
+      "url": "lessons/contrib/仓库-gitignore-为厂商数据不入库政策加了全局-glob如-3ddef后testsfixtures.md",
+      "timestamp": "2026-11-27",
+      "domain": "mcp",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "在 Bevy（0.20）里给渲染子应用加测量/调试系统，参数写 `Res<T>`，运行即 panic：`Parameter Res<T> fai",
+      "url": "lessons/contrib/在-bevy020里给渲染子应用加测量调试系统参数写-rest运行即-panicparameter.md",
+      "timestamp": "2026-11-27",
+      "domain": "mcp",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "用 grep/regex 在大文本（如百万行导出/转储文件）里搜复合后缀的标识符（如 `$UPPERLIMS`、`$LOWERLIMS`）没搜到",
+      "url": "lessons/contrib/用-grepregex-在大文本如百万行导出转储文件里搜复合后缀的标识符如.md",
+      "timestamp": "2026-11-27",
       "domain": "mcp",
       "source": "lessons"
     },
@@ -113,23 +127,9 @@
     },
     {
       "type": "merged_pr",
-      "title": "chore(main): release 3.23.0",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5781",
-      "timestamp": "2026-11-27T01:41:49Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5848",
-      "timestamp": "2026-11-26T17:23:08Z",
-      "source": "github"
-    },
-    {
-      "type": "merged_pr",
-      "title": "docs(maintainer): §9 的删除清单少了一条读取者（设计收敛门禁），补 §9.5",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5847",
-      "timestamp": "2026-11-26T16:25:40Z",
+      "title": "docs(readme): one story on the first screen, and the CJK title fits its panel",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5876",
+      "timestamp": "2026-11-27T12:32:07Z",
       "source": "github"
     }
   ]
