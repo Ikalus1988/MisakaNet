@@ -260,6 +260,66 @@ def test_a_required_check_that_never_reported_waits():
     assert "audit-shape" in reason
 
 
+def test_a_held_run_is_reported_as_held_not_absent():
+    """#5618: an `action_required` head publishes no check-run, so `absent` is what the decider saw.
+
+    A maintainer reading "required check(s) not green yet: gate (absent)" goes looking for a
+    failing check that does not exist. The real state is that the runs are waiting for approval
+    and nothing has been measured. Naming it is the fix; the verdict stays `wait`, because a held
+    run is still work that has not happened.
+    """
+    checks = dict(GREEN_CHECKS)
+    for name in ("gate", "provenance", "dco", "audit-shape"):
+        del checks[name]
+    held = [
+        {"name": "Lesson Quality Gate", "html_url": "https://github.com/o/r/actions/runs/1"},
+        {"name": "Provenance Gate", "html_url": "https://github.com/o/r/actions/runs/2"},
+    ]
+    still_absent = verdict_of(payload(checks=checks))
+    with_held = verdict_of(payload(checks=checks, held_runs=held))
+
+    assert still_absent[0] == lpm.WAIT and with_held[0] == lpm.WAIT, (
+        "a held run is not evidence of success — the verdict must not move")
+    assert "absent" in still_absent[1]
+    assert "absent" in with_held[1], (
+        "the per-check facts stay: those checks still did not report")
+    assert "held awaiting approval" in with_held[1], (
+        "the message must name the real state instead of leaving the reader to find it")
+    assert "action_required" in with_held[1]
+    assert "actions/runs/1" in with_held[1], "the message has to say where to approve"
+
+
+def test_a_held_run_is_not_mentioned_when_every_check_is_green():
+    """The extra sentence is for a wait only: a merge reason that mentions held runs is noise."""
+    verdict, reason = verdict_of(payload(held_runs=[
+        {"name": "Some Other Workflow", "html_url": "https://github.com/o/r/actions/runs/9"},
+    ]))
+    assert verdict == lpm.MERGE, reason
+    assert "held" not in reason
+
+
+def test_held_runs_cannot_invent_a_failure():
+    """A held run must never turn a green check red or a red one green."""
+    verdict, reason = verdict_of(payload(
+        checks=dict(GREEN_CHECKS, gate="failure"),
+        held_runs=[{"name": "X", "html_url": "https://example.invalid/1"}],
+    ))
+    assert verdict == lpm.REFUSE
+    assert "gate (failure)" in reason
+    assert "held awaiting approval" not in reason, (
+        "a refusal names the failing check; offering an approval link there would be a wrong remedy")
+
+
+def test_the_held_run_list_is_bounded_in_the_comment():
+    """One line, not a dump: this text lands in a public PR comment."""
+    checks = dict(GREEN_CHECKS)
+    del checks["gate"]
+    held = [{"name": f"wf{i}", "html_url": f"https://github.com/o/r/actions/runs/{i}"} for i in range(9)]
+    _, reason = verdict_of(payload(checks=checks, held_runs=held))
+    assert "+4 more" in reason, reason
+    assert reason.count("actions/runs/") == 5, reason
+
+
 def test_a_required_check_that_is_absent_waits_but_not_a_matrix_leg_that_never_ran():
     """The four fixed names must *exist* to merge; the `test (...)` legs cannot.
 

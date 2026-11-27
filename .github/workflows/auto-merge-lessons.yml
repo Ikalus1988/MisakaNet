@@ -165,6 +165,12 @@ jobs:
           gh_read "$TMP/files.ndjson"   --paginate "repos/$REPO/pulls/$PR/files?per_page=100" --jq '.[]' || exit 0
           gh_read "$TMP/checks.ndjson"  --paginate "repos/$REPO/commits/$SHA/check-runs?per_page=100" --jq '.check_runs[]' || exit 0
           gh_read "$TMP/reviews.ndjson" --paginate "repos/$REPO/pulls/$PR/reviews?per_page=100" --jq '.[]' || exit 0
+          # #5618: a run held in `action_required` publishes **no check-run at all**, so the decider
+          # sees a required check as "absent" and says so — sending a reader to look for a failing
+          # check that does not exist, when the remedy is to approve the run. This reads the held
+          # runs so the message can name the real state. Filtered by `head_sha` because a held run
+          # only matters if it is for the commit being judged.
+          gh_read "$TMP/held.ndjson" --paginate "repos/$REPO/actions/runs?head_sha=$SHA&status=action_required&per_page=100" --jq '.workflow_runs[]' || exit 0
 
           python3 - "$TMP" <<'PY'
           import json, pathlib, sys
@@ -183,6 +189,7 @@ jobs:
           files = ndjson("files.ndjson")
           check_runs = ndjson("checks.ndjson")
           reviews = ndjson("reviews.ndjson")
+          held_runs = ndjson("held.ndjson")
 
           # Latest conclusion per check name: a re-run adds a second run under the same name,
           # and an older failed run must not outvote the newer one.
@@ -213,6 +220,13 @@ jobs:
               "draft": bool(pr.get("draft")),
               "review_state": review_state,
               "body": pr.get("body") or "",
+              # Only the two fields the decider may quote back, so a public comment cannot
+              # republish the workflow payload.
+              "held_runs": [
+                  {"name": r.get("name"), "html_url": r.get("html_url")}
+                  for r in held_runs
+                  if r.get("head_sha") == SHA
+              ],
           }
           (tmp / "payload.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
           print("payload: " + json.dumps(payload, sort_keys=True))
