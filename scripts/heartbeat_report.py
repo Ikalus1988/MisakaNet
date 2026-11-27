@@ -167,16 +167,22 @@ E4_MIN_DISTINCT_CLIENTS = 2
 #: `client_hint` is written only for a caller that sends a `client_id` / `X-MisakaNet-Client`, so the
 #: fourth number under-counts by construction — a property, not a defect, and the panel says so.
 E4_SQL = """SELECT
-  (SELECT COUNT(*) FROM search_signals) AS rows_total,
-  (SELECT COUNT(*) FROM search_signals WHERE solved = 1) AS rows_solved,
-  (SELECT COUNT(DISTINCT top_id) FROM search_signals) AS lessons_seen,
-  (SELECT COUNT(*) FROM (
-     SELECT top_id FROM search_signals
-      WHERE client_hint IS NOT NULL AND client_hint <> ''
-      GROUP BY top_id
-     HAVING COUNT(DISTINCT client_hint) >= {threshold}
-   )) AS e4_lessons,
-  (SELECT MAX(created_at) FROM search_signals) AS newest;""".replace("{threshold}", str(E4_MIN_DISTINCT_CLIENTS))
+  COALESCE(SUM(n), 0)        AS rows_total,
+  COALESCE(SUM(solved_n), 0) AS rows_solved,
+  COUNT(top_id)              AS lessons_seen,
+  COALESCE(SUM(CASE WHEN clients >= {threshold} THEN 1 ELSE 0 END), 0) AS e4_lessons,
+  MAX(newest)                AS newest
+FROM (
+  SELECT top_id,
+         COUNT(*)  AS n,
+         SUM(CASE WHEN solved = 1 THEN 1 ELSE 0 END) AS solved_n,
+         COUNT(DISTINCT CASE
+                 WHEN client_hint IS NOT NULL AND client_hint <> '' THEN client_hint
+               END)   AS clients,
+         MAX(created_at) AS newest
+    FROM search_signals
+   GROUP BY top_id
+)""".replace("{threshold}", str(E4_MIN_DISTINCT_CLIENTS))
 
 #: Substrings that make a failed query look like a prompt rather than a query. Together with the
 #: length bound and a newline check this is what keeps a public comment from republishing the
