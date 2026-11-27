@@ -104,14 +104,30 @@ def test_the_top_hit_names_a_level_the_corpus_actually_uses():
         f"levels present: {sorted(data['corpus']['evidence'])}")
 
 
-def test_the_corpus_counts_match_data_lessons_json():
-    """The number in the picture is the number in the corpus, or the picture is stale."""
+def test_the_snapshot_is_not_gated_on_the_corpus_count():
+    """The corpus grows several times a day, so gating on its size is gating on the clock.
+
+    This test replaces one that asserted `snapshot()["corpus"] == recorder.corpus_facts()`. That
+    assertion was red within minutes of the PR merging — the intake batch converted a lesson — and it
+    would have been red nearly always, for a number the picture had already stopped printing. A gate
+    that can only be satisfied for an hour is a gate people learn to re-run until it passes.
+
+    What replaced it: the recording is still dated and still names its instrument (asserted above),
+    its grade is still real, and `--check` now compares structure rather than counts.
+    """
     sys.path.insert(0, str(REPO / "scripts"))
     import record_hero_snapshot as recorder
 
-    assert snapshot()["corpus"] == recorder.corpus_facts(), (
-        "docs/assets/hero.json's corpus half no longer matches data/lessons.json — "
-        "re-record with `python3 scripts/record_hero_snapshot.py`")
+    # The snapshot keeps a corpus block for the reader — "how big was it when this was measured".
+    assert "corpus" in snapshot(), (
+        "the recording should still say how big the corpus was, even though nothing gates on it")
+    assert hasattr(recorder, "corpus_facts"), (
+        "the recorder still needs to write the corpus block")
+
+    # And the structure check must pass right now, whatever the corpus has grown to.
+    assert recorder.check() == 0, (
+        "--check must be green on a clean checkout regardless of the lesson count; it compares "
+        "structure, not size")
 
 
 # ── the two renders ───────────────────────────────────────────────────────────────────────────────
@@ -152,8 +168,28 @@ def test_the_hero_shows_the_call_the_grade_and_the_measured_latency():
     data = snapshot()
     svg = hero.render(data, "dark")
     for required in (data["query"], data["top_hit"]["evidence_level"],
-                     str(data["latency_ms_p50"]), f"{data['corpus']['lessons']:,}"):
+                     str(data["latency_ms_p50"])):
         assert required in svg, f"the hero does not show {required!r}"
+    assert data["recorded_at"][:10] in svg, (
+        "the latency is a measurement of one day, so the picture must date it")
+
+
+def test_the_hero_does_not_print_a_corpus_count():
+    """A count in a picture is wrong within hours, so the picture points at the badge instead.
+
+    The corpus grows whenever the intake batch converts anything — several times a day. The first
+    version of this hero printed "1,169 lessons · 347 at E0 · …" and was stale before the PR merged.
+    The count already has a home that regenerates itself (`data/badges/lessons.json`, refreshed by
+    `update-badges.yml`), and an asset nobody re-records must not compete with it.
+    """
+    data = snapshot()
+    for theme in ("dark", "light"):
+        svg = hero.render(data, theme)
+        for count in (f"{data['corpus']['lessons']:,}", str(data["corpus"]["lessons"])):
+            assert count not in svg, (
+                f"the {theme} render prints the corpus size ({count}); it belongs in the badge")
+        assert "Lessons badge" in svg, (
+            "the picture should name where the count lives, not restate it")
 
 
 def test_no_text_run_is_wide_enough_to_escape_its_panel():

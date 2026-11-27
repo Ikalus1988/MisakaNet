@@ -13,14 +13,24 @@ This script is the second half: it runs unconditionally, and reports a digest. I
 audits behave identically from the workflow's point of view.
 
 **What is actually being audited, stated honestly.** `requirements.txt` uses lower bounds
-(`mcp>=2.2.0`, `jsonschema>=4.26.0`, `pyyaml>=6.0`, `misakanet-core>=2.7.0`) and the repository has
-no Python lockfile. So `pip-audit --requirement requirements.txt` resolves the constraint to the
-newest version PyPI currently offers and audits **that**, not the version any particular CI run
-happened to install. Two consequences worth knowing before trusting a clean report:
+(`mcp>=2.3.0`, `jsonschema>=4.26.0`, `pyyaml>=6.0`, `misakanet-core>=2.7.0`), and `pip-audit
+--requirement` resolves each constraint to the newest version PyPI currently offers and audits
+**that**, not the version any particular CI run happened to install.
 
-* This is not a scan of a pinned set, and cannot be while there is no lockfile. A green digest
-  means "nothing in the currently resolvable set is known-vulnerable", not "the exact artifacts we
-  deployed are known-clean".
+This paragraph used to say "the repository has no Python lockfile". That was false when it was
+written and is false now: `uv.lock` exists, is 197 KB, and is verified by
+`tests/test_uv_lock_is_current.py` (a version-neutralised `uv lock --check`). It was worse than a
+stale sentence — it told a reader that a pinned set could not be audited here, which is the reason
+nobody audited the pinned set.
+
+What is still true, and is the honest half: **this audit does not read `uv.lock`.** It runs against
+`requirements.txt`, so it measures the floating set, not the locked one. Consequence worth knowing
+before trusting a clean report:
+
+* A green digest means "nothing in the currently resolvable set is known-vulnerable", not "the exact
+  artifacts we deployed are known-clean". Auditing the lock would be a different — and better —
+  instrument; it needs `pip-audit` to read `uv.lock` (it cannot) or a `uv export` step that no
+  workflow runs yet. Until then this stays a tripwire for newly-published advisories.
 * Because resolution always picks the newest satisfying version, a repository constrained with `>=`
   cannot *choose* to stay on a vulnerable release. That is a genuine strength of the current
   constraints and it is why this audit is a tripwire for newly-published advisories rather than a
@@ -238,9 +248,10 @@ def render_digest(results: list[AuditResult]) -> str:
         "",
         "Advisory only. This audit does not edit a manifest and does not open a pull request.",
         "",
-        "`requirements.txt` uses lower bounds and this repository has no Python lockfile, so "
-        "`pip-audit` audits the version the constraint resolves to *now*, not a pinned set. "
-        "`package-lock.json` does pin the JavaScript side. See the script's docstring.",
+        "`requirements.txt` uses lower bounds and this audit reads that file, so `pip-audit` "
+        "audits the version each constraint resolves to *now*, not the locked set. "
+        "`uv.lock` exists but is not what this reads; `package-lock.json` does pin the JavaScript "
+        "side. See the script's docstring.",
     ]
     return "\n".join(lines)
 

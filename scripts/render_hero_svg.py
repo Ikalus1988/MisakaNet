@@ -106,9 +106,6 @@ def render(snapshot: dict, theme: str) -> str:
     hit_title_lines = _wrap(hit.get("title"), 45, 2)
     level = str(hit.get("evidence_level") or "?")
     note = EVIDENCE_NOTE.get(level, "")
-    corpus = snapshot.get("corpus", {})
-    lessons = corpus.get("lessons")
-    evidence = corpus.get("evidence") or {}
     p50 = snapshot.get("latency_ms_p50")
     samples = snapshot.get("latency_ms_samples") or []
     spread = f"{min(samples)}–{max(samples)} ms over {len(samples)} calls" if samples else ""
@@ -168,20 +165,28 @@ def render(snapshot: dict, theme: str) -> str:
     # overlapped it by 34 px — visible at once in the render, invisible in the source.
     y += max(lh, rh) + 26
 
-    # ── the corpus strip: counts, not adjectives ───────────────────────────────────────────────
+    # ── the footer strip: what is stable, and when this was measured ───────────────────────────
+    #
+    # **No corpus counts here.** A first version printed "1,169 lessons · 347 at E0 · …", and that
+    # number moves every time the intake batch converts anything — several times a day. A picture
+    # that is wrong within hours teaches readers to distrust the picture, and the count already
+    # lives in a badge that regenerates itself (`data/badges/lessons.json`, `update-badges.yml`).
+    # The rule this strip now follows: print what a recording can still be true about.
+    #
+    # So: the grade ladder the picture is *about* (a fixed vocabulary, not a count), and the date
+    # the latency was measured. The ladder is described, not counted.
     strip_h = 74
     add(f'<rect x="{left_x}" y="{y}" width="{W - 2 * PAD}" height="{strip_h}" rx="10" '
         f'fill="{p["panel"]}" stroke="{p["border"]}"/>')
     add(f'<text x="{left_x + 18}" y="{y + 26}" font-size="12" fill="{p["muted"]}">'
-        f'the corpus behind that call</text>')
-    bits = [f'<tspan fill="{p["fg"]}" font-weight="600">{lessons:,}</tspan> lessons'] if lessons else []
-    for lvl in ("E0", "E1", "E2", "E3"):
-        if lvl in evidence:
-            bits.append(f'<tspan fill="{p["fg"]}" font-weight="600">{evidence[lvl]:,}</tspan> at {lvl}')
-    add(f'<text x="{left_x + 18}" y="{y + 52}" font-size="13" fill="{p["muted"]}">'
-        f'{" · ".join(bits)}</text>')
+        f'what the grade means</text>')
+    ladder = (f'<tspan fill="{p["fg"]}" font-weight="600">{_esc(level)}</tspan>'
+              f' = {_esc(note)} · E0 intake → E1 reviewed → E2 reproduced → E3 CI-verified')
+    add(f'<text x="{left_x + 18}" y="{y + 52}" font-size="13" fill="{p["muted"]}">{ladder}</text>')
     add(f'<text x="{W - PAD - 18}" y="{y + 26}" font-size="11" fill="{p["dim"]}" text-anchor="end">'
-        f'recorded {_esc(recorded)}</text>')
+        f'latency measured {_esc(recorded)}</text>')
+    add(f'<text x="{W - PAD - 18}" y="{y + 52}" font-size="11" fill="{p["dim"]}" text-anchor="end">'
+        f'corpus size: see the Lessons badge</text>')
 
     y += strip_h + PAD
     height = y
@@ -202,8 +207,8 @@ def aria_label(snapshot: dict) -> str:
     hit = snapshot["top_hit"]
     return (f"One recorded misakanet_search for {snapshot['query']!r} returned an "
             f"{hit.get('evidence_level')} lesson ({hit.get('id')}) in a median of "
-            f"{snapshot.get('latency_ms_p50')} ms, from a corpus of "
-            f"{(snapshot.get('corpus') or {}).get('lessons')} lessons.")
+            f"{snapshot.get('latency_ms_p50')} ms, measured {snapshot.get('recorded_at')}. "
+            f"The corpus size is in the Lessons badge, not here.")
 
 
 def main(argv: list[str] | None = None) -> int:

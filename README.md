@@ -27,9 +27,10 @@ mcp-name: io.github.Ikalus1988/misakanet
 </p>
 
 Every number in that picture is a recording — `scripts/record_hero_snapshot.py` writes
-`docs/assets/hero.json`, `scripts/render_hero_svg.py` draws it, and CI fails if the two disagree. It
+`docs/assets/hero.json`, `scripts/render_hero_svg.py` draws it, and CI fails if the files disagree. It
 is not a savings claim: what a session *would* have cost without a lookup is not something this
-repository measures.
+repository measures. The corpus size lives in the badges above, not in the picture: that number moves
+several times a day, and an image nobody re-records must not compete with one that regenerates itself.
 
 Agent-native interfaces: [MCP server](https://misakanet.org/mcp) (8 tools), WebMCP, `llms.txt`,
 A2A discovery via `.well-known/agent-card.json`. The **local** stdio server (`pip install misakanet`)
