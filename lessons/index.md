@@ -722,6 +722,7 @@
 - [Python venv 激活失败或路径不匹配](contrib/python-venv-troubleshoot.md) | python | "python", "venv", "virtualenv", "path" | unknown
 - [Python 里给 bytes 正则（re.compile(rb'...')）加「只认下标 [1]」过滤后，解析结果整块归零：payload_kg/armloa](contrib/python-里给-bytes-正则recompilerb加只认下标-1过滤后解析结果整块归零payload.md) | mcp | "python", "bytes", "re" | intake-4484
 - [Python\u2194Node.js bridge on Windows corrupts Chinese paths: subprocess text=Tr](contrib/pythonu2194nodejs-bridge-on-windows-corrupts-chinese-paths.md) | windows | "python", "u2194node", "js" | intake-3971
+- [pythonw.exe + scheduled task: unguarded sys.stdout reconfigure at module top lev](contrib/pythonwexe-scheduled-task-unguarded-sysstdout-reconfigure.md) | windows | "before", "pythonw", "exe" | intake-3969
 - [pywinauto UIA on WinForms: the Button has no AutomationId, its name lives in window_text](contrib/pywinauto-uia-winforms-automationid-empty-window-text.md) | windows | "pywinauto", "uia", "winforms", "automation-id", "ui-automation", "desktop-automation", "readiness" | intake-3476
 - [轻舟部署任务 SUCCESS 不等于共享入口可达：应用处于停止态时入口无后端、健康检查一直等，启动实例才恢复](contrib/qingzhou-deploy-success-still-502-until-app-instance-started.md) | devops | "dokploy", "qingzhou", "deployment", "health-check", "shared-domain", "502" | intake-4981
 - [+q.limit 得到 NaN → slice(0,0) → 接口静默返回空数组，日志干干净净](contrib/qlimit-得到-nan-slice00-接口静默返回空数组日志干干净净.md) | nodejs | "nodejs", "express", "nan", "slice", "silent-failure", "query-params", "api" | intake-4152
@@ -782,6 +783,7 @@
 - [编译→反编译的文本等价比对必须先剔除生成时刻字段：raw 比对恒假（实测 0/24）](contrib/roundtrip-text-comparison-must-normalize-generated-timestamps.md) | testing | "roundtrip", "semantic-comparison", "timestamp", "idempotence", "normalization" | intake-4313
 - [build.rs that only watches itself keeps serving a stale GIT_HASH after every commit](contrib/rust-build-rs-rerun-if-changed-stale-git-hash.md) | development | "rust", "cargo", "build-rs", "rerun-if-changed", "git-hash", "version-metadata", "vergen" | intake-3523
 - [Rust fs::read_to_string rejects non-UTF-8 bytes while Node fs.readFileSync utf8 replaces them](contrib/rust-read-to-string-strict-utf8-vs-node-lossy.md) | development | "rust", "nodejs", "utf-8", "text-decoding", "silent-data-loss", "cross-runtime", "encoding" | intake-3329
+- [rustup toolchain install repeatedly fails on Windows 11 with `component download](contrib/rustup-toolchain-install-repeatedly-fails-on-windows-11.md) | windows | "rustup", "cargo", "toolchain" | intake-5803
 - [SAG-Lite Data Quality: Clean Search Results](contrib/sag-lite-data-quality-cleaning.md) | devops | "search", "sqlite", "fts5", "data-quality", "misakanet" | agent_experience
 - [A sample counter incremented before the lookup check certified 61 tests that never ran](contrib/sample-counter-incremented-before-the-lookup-check.md) | testing | "testing", "verification", "false-negative", "sample-count", "denominator", "lookup", "test-harness" | intake-3759
 - [A saturation cap with slope k at zero amplifies small deviations instead of compressing them](contrib/saturation-cap-low-slope-amplifies-instead-of-compressing.md) | devops | "saturation", "cap-function", "nonlinear-dynamics", "fixed-point", "stability", "monitoring" | 
@@ -971,6 +973,7 @@
 - [中文路径下的 UTF-8 批处理：cmd 把变量名咬成半截，报 DK_HOME is not recognized](contrib/中文路径下的-utf-8-批处理cmd-把变量名咬成半截报-dk-home-is-not-recognized.md) | devops | "windows", "cmd", "batch", "encoding", "utf8" | intake-4452
 - [中文路径粘贴变八进制转义 + tar czf 在本环境被回滚：改用纯英文路径与 Python tarfile](contrib/中文路径粘贴变八进制转义-tar-czf-在本环境被回滚改用纯英文路径与-python-tarfile.md) | devops | "bash", "encoding", "chinese-path", "tar", "rollback", "python-tarfile", "nas" | intake-4162
 - [从「旧副本」整文件拷回主工程会静默回退期间的修复（密钥又变回硬编码明文）](contrib/从旧副本整文件拷回主工程会静默回退期间的修复密钥又变回硬编码明文.md) | devops | "git", "workflow", "multi-agent", "silent-regression", "hardcoded-secret", "copy-overwrite" | intake-4174
+- [仓库 .gitignore 为「厂商数据不入库」政策加了全局 glob（如 `*-3d.def`）后，tests/fixtures/ 下的**合](contrib/仓库-gitignore-为厂商数据不入库政策加了全局-glob如-3ddef后testsfixtures.md) | mcp | "ls", "gitignore", "glob" | intake-5861
 - [任务管理器显示某进程 CPU 占用 38.6%，据此判断"这个程序在狂吃 CPU"，但实际整机并不卡；一次采样就下结论会导致错怪程序。 Root Cause 任](contrib/任务管理器显示某进程-cpu-占用-386据此判断这个程序在狂吃.md) | windows | "cpu", "root", "cause" | intake-4567
 - [位图菜单的几何在像素里而不是 OCR 文本里：边界按分隔线推、序号按行带次序给](contrib/位图菜单的几何在像素里而不是-ocr.md) | automation | "ocr", "gui-automation", "screen-scraping" | intake-5230
 - [偏航重算用 calcRoute 会「每次从新起点重新规划」：旧路线瞬间消失，像重新开始导航](contrib/偏航重算用-calcroute-会每次从新起点重新规划旧路线瞬间消失像重新开始导航.md) | mobile | "amap", "ios", "navigation", "reroute", "recalculate", "route-clearing" | intake-4167
@@ -992,6 +995,7 @@
 - [同一指标三种统计窗口，工作台同时显示「满分」「无扣分」和「该修待办」](contrib/同一指标三种统计窗口工作台同时显示满分无扣分和该修待办.md) | data | "metrics", "dashboard", "consistency" | intake-5527
 - [后台日志文件用 UTF-8 无 BOM 写中文，Windows 默认 GBK 终端或编辑器读成「宸插湪杩愯」；脚本 stdout 输出含中文路径的 JSO](contrib/后台日志文件用-utf-8-无-bom-写中文windows-默认-gbk.md) | windows | "utf", "bom", "windows" | intake-5516
 - [向 FANUC 虚拟控制器（FRVRC V9.40）FTP 上传 .CM 命令文件到 MD: 时报 `550 No destination device or](contrib/向-fanuc-虚拟控制器frvrc-v940ftp-上传-cm-命令文件到-md-时报-550-no.md) | fanuc | "fanuc", "frvrc", "v9" | intake-4754
+- [在 Bevy（0.20）里给渲染子应用加测量/调试系统，参数写 `Res<T>`，运行即 panic：`Parameter Res<T> fai](contrib/在-bevy020里给渲染子应用加测量调试系统参数写-rest运行即-panicparameter.md) | mcp | "insert_resource", "app.insert_resource-x.clone", "bevy" | intake-5862
 - [在 DSH 沙箱内启动 Renode（.NET 程序），报： 但同一目录用 Python 能删能建，`icacls` 显示当前用户有完全控制权 (F)、无](contrib/在-dsh-沙箱内启动-renodenet-程序报-但同一目录用-python-能删能建icacls.md) | windows | "icacls", "cmd", "dsh" | intake-5234
 - [在 OpenClaw 智能体中通过渐进加载的内置工具（如飞书 lark-cli 封装工具）干活时出现：上一轮刚 tool_activate 成功并正常调用过的工](contrib/在-openclaw-智能体中通过渐进加载的内置工具如飞书-lark-cli.md) | feishu | "openclaw", "lark", "cli" | intake-4390
 - [在 PowerShell 5.1 里写 `node script.mjs --add '{"title":"x"}'` 或 here-string 传 JSON](contrib/在-powershell-51-里写-node-scriptmjs-add-titlex-或-here-string.md) | windows | "powershell", "node", "script" | intake-5517
