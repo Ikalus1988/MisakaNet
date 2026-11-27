@@ -40,7 +40,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      GH_TOKEN: ${{ secrets.SHELDON_PAT || github.token }}
+      # `github.token`, not `SHELDON_PAT` (2026-11-26). The PAT exists in this repository for steps
+      # that must *trigger further workflow runs* — commenting on an issue is not that, and this job
+      # already grants `issues: write` above. It was the PAT until today, and the report failed on
+      # **two consecutive days** (`2026-11-25`, `2026-11-26`) with:
+      #
+      #     GraphQL: Resource not accessible by personal access token (addComment)
+      #
+      # The read step succeeded both times — `wrote d1-cost.md`, then the threshold warning — so the
+      # watch *measured* a problem and then could not say a word about it. Exactly the failure mode
+      # this file's header warns about ("a watch that goes quiet is indistinguishable from a quiet
+      # month"), arriving through the token rather than the query.
+      #
+      # This is the second time this same PAT has silently dropped issue writes: `update-lessons.yml`
+      # lost 313 receipts over three green days on it (#1528) and was fixed the same way. The pattern
+      # is worth naming: **the PAT is not the "safer" token here — it is the one with fewer scopes.**
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
 
