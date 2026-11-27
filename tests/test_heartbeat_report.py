@@ -508,6 +508,45 @@ def test_the_e4_query_selects_exactly_what_the_predicate_claims():
         "on it (#4640)")
 
 
+def test_the_e4_query_reads_search_signals_once_per_run():
+    """One pass, not five: the panel's numbers must not cost five full-table reads.
+
+    The five numbers are independent aggregates, so the obvious shape is five correlated
+    subqueries — each one a separate scan. Measured against production D1 that shape read
+    130,225 rows/call, over the 100,000 `scripts/d1_cost_report.py` threshold, and it held
+    #5689 open on its own. Grouping by `top_id` once and aggregating the groups reads 26,045
+    (5.0x fewer) and returns the same five values.
+
+    `search_signals` must therefore appear exactly once in the SQL text: a second occurrence
+    is a second scan, and this test exists so that a later edit cannot quietly reintroduce it.
+    """
+    assert hr.E4_SQL.count("search_signals") == 1, (
+        "E4_SQL names search_signals more than once — that is more than one full scan")
+    assert hr.E4_SQL.upper().count("FROM SEARCH_SIGNALS") == 1
+
+
+def test_the_e4_query_returns_zeroes_on_an_empty_table_not_nulls():
+    """An empty table is `0`, never `None` — the panel formats these numbers, it does not guard.
+
+    `SUM()` over zero rows is `NULL`, and the previous shape's `COUNT(*)` subqueries returned `0`,
+    so a rewrite that drops the `COALESCE` would change an empty table from "0 rows" into a
+    formatter crash — the exact day the panel is most likely to be read.
+    """
+    import re as _re
+    import sqlite3 as _sqlite3
+
+    worker = (REPO / "workers" / "register-proxy-sw.js").read_text(encoding="utf-8")
+    create = _re.search(r"CREATE TABLE IF NOT EXISTS search_signals \(([\s\S]*?)\)`", worker)
+    alter = _re.search(r'ALTER TABLE search_signals ADD COLUMN (client_hint [A-Z]+)', worker)
+    assert create and alter
+    db = _sqlite3.connect(":memory:")
+    db.execute(f"CREATE TABLE search_signals ({create.group(1)})")
+    db.execute(f"ALTER TABLE search_signals ADD COLUMN {alter.group(1)}")
+    row = db.execute(hr.E4_SQL).fetchone()
+    assert row[:4] == (0, 0, 0, 0), f"empty table must read as zeroes, got {row[:4]}"
+    assert row[4] is None, "an empty table has no newest created_at — that one stays NULL"
+
+
 # ── the raw rows: parsing, scoping, and the redaction that a public comment needs ───────────
 
 def test_wrangler_json_envelopes_and_bare_row_arrays_both_parse():
