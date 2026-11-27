@@ -776,6 +776,7 @@
   <url><loc>https://misakanet.org/lessons/python-venv-troubleshoot/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/python-里给-bytes-正则recompilerb加只认下标-1过滤后解析结果整块归零payload-kgarmloa/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pythonu2194nodejs-bridge-on-windows-corrupts-chinese-paths-subprocess-texttr/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/pythonwexe-scheduled-task-unguarded-sysstdout-reconfigure-at-module-top-lev/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/pywinauto-uia-on-winforms-the-button-has-no-automationid-its-name-lives-in-windo/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/轻舟部署任务-success-不等于共享入口可达应用处于停止态时入口无后端健康检查一直等启动实例才恢复/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/qlimit-得到-nan-slice00-接口静默返回空数组日志干干净净/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -834,6 +835,7 @@
   <url><loc>https://misakanet.org/lessons/编译反编译的文本等价比对必须先剔除生成时刻字段raw-比对恒假实测-024/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/buildrs-that-only-watches-itself-keeps-serving-a-stale-git-hash-after-every-comm/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/rust-fsread-to-string-rejects-non-utf-8-bytes-while-node-fsreadfilesync-utf8-rep/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/rustup-toolchain-install-repeatedly-fails-on-windows-11-with-component-download/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/sag-lite-data-quality-cleaning/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-sample-counter-incremented-before-the-lookup-check-certified-61-tests-that-nev/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-saturation-cap-with-slope-k-at-zero-amplifies-small-deviations-instead-of-comp/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1017,6 +1019,7 @@
   <url><loc>https://misakanet.org/lessons/中文路径下的-utf-8-批处理cmd-把变量名咬成半截报-dk-home-is-not-recognized/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/中文路径粘贴变八进制转义-tar-czf-在本环境被回滚改用纯英文路径与-python-tarfile/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/从旧副本整文件拷回主工程会静默回退期间的修复密钥又变回硬编码明文/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/仓库-gitignore-为厂商数据不入库政策加了全局-glob如-3ddef后testsfixtures-下的合/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/任务管理器显示某进程-cpu-占用-386据此判断这个程序在狂吃-cpu但实际整机并不卡一次采样就下结论会导致错怪程序-root-cause-任/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/位图菜单的几何在像素里而不是-ocr-文本里边界按分隔线推序号按行带次序给/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/偏航重算用-calcroute-会每次从新起点重新规划旧路线瞬间消失像重新开始导航/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1038,6 +1041,7 @@
   <url><loc>https://misakanet.org/lessons/同一指标三种统计窗口工作台同时显示满分无扣分和该修待办/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/后台日志文件用-utf-8-无-bom-写中文windows-默认-gbk-终端或编辑器读成宸插湪杩愯脚本-stdout-输出含中文路径的-jso/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/向-fanuc-虚拟控制器frvrc-v940ftp-上传-cm-命令文件到-md-时报-550-no-destination-device-or/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/在-bevy020里给渲染子应用加测量调试系统参数写-rest运行即-panicparameter-rest-fai/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/在-dsh-沙箱内启动-renodenet-程序报-但同一目录用-python-能删能建icacls-显示当前用户有完全控制权-f无/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/在-openclaw-智能体中通过渐进加载的内置工具如飞书-lark-cli-封装工具干活时出现上一轮刚-tool-activate-成功并正常调用过的工/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/在-powershell-51-里写-node-scriptmjs-add-titlex-或-here-string-传-json/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
