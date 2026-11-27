@@ -7,6 +7,29 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.23.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.22.0...v3.23.0) (2026-11-26)
+
+
+### Features
+
+* **cindy-plugin:** 1.5.20 —— 上报确认改成「一键点卡」：点击 → 一次性票据 → 一轮 agent ([#5782](https://github.com/Ikalus1988/MisakaNet/issues/5782)) ([39c441e](https://github.com/Ikalus1988/MisakaNet/commit/39c441ec901ca0f126a0134103f6b2eed5efdef5))
+* **lessons:** intake batch 2026-11-25 ([#5772](https://github.com/Ikalus1988/MisakaNet/issues/5772)) ([5877f97](https://github.com/Ikalus1988/MisakaNet/commit/5877f97a9d99966128c247e46ec8d8fe9a26ee18))
+* **lessons:** intake batch 2026-11-26 ([#5824](https://github.com/Ikalus1988/MisakaNet/issues/5824)) ([11bb2fe](https://github.com/Ikalus1988/MisakaNet/commit/11bb2fe874ec2731d9ab3fa08462d1e716b0b039))
+* **site:** 1,164 个 lesson 页补 JSON-LD（TechArticle + 面包屑），[#5799](https://github.com/Ikalus1988/MisakaNet/issues/5799) 拆出来的那部分 ([#5846](https://github.com/Ikalus1988/MisakaNet/issues/5846)) ([11bb215](https://github.com/Ikalus1988/MisakaNet/commit/11bb215595a36b261c919c50aee015ed4afbda03))
+* **site:** 首页「最近合并」→「最近排雷案例」；feed 着陆顺序先给人类条目 ([#5834](https://github.com/Ikalus1988/MisakaNet/issues/5834)) ([5c4bf5a](https://github.com/Ikalus1988/MisakaNet/commit/5c4bf5aff0102ab5e74e4d63d9ade5ea0f53513b))
+
+
+### Bug Fixes
+
+* **cindy-plugin:** 1.5.21 —— 轮末不再假装替 agent 查语料 ([#5792](https://github.com/Ikalus1988/MisakaNet/issues/5792)) ([7372ca0](https://github.com/Ikalus1988/MisakaNet/commit/7372ca0a8d553de344abe5d052f26ebcf02e5d27))
+
+
+### Documentation
+
+* **cindy-plugin:** 1.5.22 —— 随包手册改回与代码一致（旧闸门的残留） ([#5801](https://github.com/Ikalus1988/MisakaNet/issues/5801)) ([1ebda9d](https://github.com/Ikalus1988/MisakaNet/commit/1ebda9d28ea62c32c79bbb69fe92cf97774e8b5e))
+* **handoff:** vol 48 —— 确认闸门的最终形状（一键点卡），与三次「假工作」的清算 ([#5823](https://github.com/Ikalus1988/MisakaNet/issues/5823)) ([212467e](https://github.com/Ikalus1988/MisakaNet/commit/212467ec346d6811604b5b430139b642cfc7960a))
+* **readme:** 首页瘦身 —— Recitation 下沉、Opire 归位、双包折叠、徽章去重 ([#5840](https://github.com/Ikalus1988/MisakaNet/issues/5840)) ([0f997a1](https://github.com/Ikalus1988/MisakaNet/commit/0f997a177432463fdcdd07f505fdad8ef3904d76))
+
 ## [3.22.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.21.0...v3.22.0) (2026-11-25)
 
 
