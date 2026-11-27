@@ -18,6 +18,18 @@ Usage
     python scripts/cindy_plugin_market_stats.py                 # market history + telemetry
     python scripts/cindy_plugin_market_stats.py --market-only   # no Cloudflare access needed
     python scripts/cindy_plugin_market_stats.py --days 14
+
+Cloudflare access: the telemetry query goes through `wrangler d1 execute` on `misakanet-ops`.
+On a machine with **no wrangler login** the query fails and the script only says
+"telemetry query failed" — which reads like "no data" but is authentication (2026-11-27: `wrangler
+whoami` said `You are not authenticated`, while the account and the repository's own API token were
+fine). Export the token instead of logging in, and run it in WSL (the checkout's `node_modules`
+holds a POSIX-built wrangler):
+
+    export CLOUDFLARE_API_TOKEN="$(cat .cache/cf_api_token)" CLOUDFLARE_ACCOUNT_ID=<account id>
+    python3 scripts/cindy_plugin_market_stats.py --days 7
+
+The account id is the one the ops D1 lives in (same value `scripts/ae_query.py` expects).
 """
 from __future__ import annotations
 
