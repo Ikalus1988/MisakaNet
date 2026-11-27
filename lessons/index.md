@@ -1034,6 +1034,7 @@
 - [（已订正）拖到垃圾桶删除报『找不到对象』：原根因有误，见『delete 先落盘 + 过期 update 竞态』](contrib/拖到垃圾桶删除报找不到对象一次手势重复派发-后端非幂等-silent.md) | frontend | "frontend", "react", "drag-drop", "stale-op", "not-found", "dsh-plugin" | intake-4544
 - [拟合结果与机理先验冲突时，先查测量误报与度量口径，最后才有资格挑战常识](contrib/拟合结果与机理先验冲突时先查测量误报与度量口径最后才有资格挑战常.md) | data | "data-analysis", "statistics", "false-positive" | intake-5378
 - [排查一个"物理化结构上视频不出画面"的 bug 时，我在反编译树里找到一个形状非常契合的函数（两处"摄像机 ↔ 屏幕"的距离比较，正是"世界坐标当 plot 坐](contrib/排查一个物理化结构上视频不出画面的-bug.md) | fanuc | "bug", "plot" | intake-5896
+- [接前一条「硬杀→冷启动恢复集耗尽」经验（同场景续篇）：按其修法把恢复集目录改名挂起后，虚拟机器人仿真器确实进入启动流程，但**始终不就绪**；且](contrib/接前一条硬杀冷启动恢复集耗尽经验同场景续篇按其修法把恢复集目录改.md) | mcp | "ntpal.c", "the" | intake-5910
 - [插件包里明明带了技能文件——`SKILL.md`(frontmatter `name: misakanet-failure-memory`)和 `skills/](contrib/插件包里明明带了技能文件skillmdfrontmatter-name-misakanet-failure.md) | dsh | "customskilldirs", "bundledskilldir", "name" | intake-5573
 - [放宽 fabric.mod.json 的 minecraft 版本门槛只是骗过 Loader，跨版本照样崩（NoSuchFieldError: Minecraft 'Screen screen'）](contrib/放宽-fabricmodjson-的-minecraft-版本门槛只是骗过.md) | development | "minecraft", "fabric", "mod-compat", "reflection" | intake-5113
 - [数字键解析 bug（用户输入 \"8\" 应发 ASCII 0x38，实际被解析成控制码 8=Backspace）。修复提交的信息写明「单个数字](contrib/数字键解析-bug用户输入-8-应发-ascii-0x38实际被解析成控制码.md) | mcp | "ord-tok", "ord", "bug" | intake-5464
