@@ -21,7 +21,11 @@ A2A（`.well-known/agent-card.json`）。**本地** stdio server（`pip install 
 托管端点是它的子集，两行都写在 [docs/mcp.md](docs/mcp.md)。
 
 <p align="center">
-  <img src="promotional/misaka-compare.jpg" width="720" alt="MisakaNet — Before: 30+ min manual debugging vs After: 0.02s with MCP"/>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/assets/hero-light.svg">
+  <img src="docs/assets/hero-light.svg" width="100%" alt="一次真实记录：查询 'GitHub Actions script injection' 命中一条 E3（CI 验证）课程，七次调用中位 2,444 ms。语料条数在图中与上方徽章里。">
+</picture>
 </p>
 
 <p align="center">

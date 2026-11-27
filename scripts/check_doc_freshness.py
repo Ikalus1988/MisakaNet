@@ -53,14 +53,18 @@ _HISTORICAL_SECTION_MARKERS = [
     "## Contribution focus",
 ]
 
+#: A thousands separator is part of the number, not the end of it. Without the grouped alternative
+#: the pattern read "1,169 lessons" as **169** — the comma stopped `\d{2,5}` and `169` matched on its
+#: own — so a document that wrote the count the way prose normally does was reported as contradicting
+#: the SSOT while being exactly right. Measured 2026-11-27 in `README.md`'s hero alt text.
 _COUNT_PATTERN = re.compile(
-    r"(?<![\w%])(\d{2,5})\+?\s*(?:indexed\s+|verified\s+|managed\s+)?"
+    r"(?<![\w%])(\d{1,3}(?:,\d{3})+|\d{2,5})\+?\s*(?:indexed\s+|verified\s+|managed\s+)?"
     r"(?:failure[-\s]?recovery\s+|failure\s+|debugging\s+)?"
     r"lessons?\b",
     re.IGNORECASE,
 )
 _DOMAIN_PATTERN = re.compile(
-    r"(\d{2,3})\+?\s*(?:domains?|领域|ドメイン)\b",
+    r"(\d{1,3}(?:,\d{3})+|\d{2,3})\+?\s*(?:domains?|领域|ドメイン)\b",
     re.IGNORECASE,
 )
 
@@ -127,7 +131,7 @@ def scan_file(path: Path, managed_lessons: int, managed_domains: int) -> list[di
         line_text = lines[line_no - 1] if line_no <= len(lines) else ""
         if should_skip_line(line_text):
             continue
-        claimed = int(m.group(1))
+        claimed = int(m.group(1).replace(",", ""))
         historical = is_in_historical_section(line_no, boundaries)
         if abs(claimed - managed_lessons) > max(5, managed_lessons * 0.05):
             severity = "warn" if historical else "error"
@@ -143,7 +147,7 @@ def scan_file(path: Path, managed_lessons: int, managed_domains: int) -> list[di
         line_text = lines[line_no - 1] if line_no <= len(lines) else ""
         if should_skip_line(line_text):
             continue
-        claimed = int(m.group(1))
+        claimed = int(m.group(1).replace(",", ""))
         historical = is_in_historical_section(line_no, boundaries)
         if claimed != managed_domains:
             severity = "warn" if historical else "error"

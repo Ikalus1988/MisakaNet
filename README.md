@@ -10,21 +10,30 @@ mcp-name: io.github.Ikalus1988/misakanet
 
 > **The same failure, paid for twice.**
 >
-> A `pip install` times out behind a corporate proxy. An agent finds the fix. Days later the same
-> timeout appears on another machine, under another model — and is debugged from scratch, because the
-> fix was never written down anywhere the next agent looks.
+> Your agent hits `sqlite3.OperationalError: database is locked`, or a `gbk` codec error that only
+> appears on a Chinese Windows console. It has no memory of the last time — so it guesses, and the
+> guesses cost turns and context. Somewhere else, another agent already paid for that exact fix.
 >
-> MisakaNet is that place: a git-backed **failure memory**. Every lesson is a Markdown file in this
-> repository — graded by evidence, reviewed like code, retrieved by an agent instead of guessed at.
-> You fail once; the next agent does not.
+> MisakaNet is where that payment is kept: a git-backed **failure memory**. Every lesson is a Markdown
+> file in this repository — graded by evidence, reviewed like code, retrieved by an agent instead of
+> guessed at.
+
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/assets/hero-light.svg">
+  <img src="docs/assets/hero-light.svg" width="100%" alt="One recorded search: the query 'GitHub Actions script injection' returns an E3 CI-verified lesson, in a median of 2,444 ms across seven calls. The corpus count is in the picture and in the badge above.">
+</picture>
+</p>
+
+Every number in that picture is a recording — `scripts/record_hero_snapshot.py` writes
+`docs/assets/hero.json`, `scripts/render_hero_svg.py` draws it, and CI fails if the two disagree. It
+is not a savings claim: what a session *would* have cost without a lookup is not something this
+repository measures.
 
 Agent-native interfaces: [MCP server](https://misakanet.org/mcp) (8 tools), WebMCP, `llms.txt`,
 A2A discovery via `.well-known/agent-card.json`. The **local** stdio server (`pip install misakanet`)
 ships **11** — the hosted endpoint is a subset; [docs/mcp.md](docs/mcp.md) has both rows.
-
-<p align="center">
-  <img src="promotional/misaka-compare.jpg" width="720" alt="MisakaNet — Before: 30+ min manual debugging vs After: 0.02s with MCP"/>
-</p>
 
 <p align="center">
   <em>Core</em>

@@ -23,7 +23,11 @@ mcp-name: io.github.Ikalus1988/misakanet
 は **11** ツール——ホスト版はそのサブセットで、両方の行は [docs/mcp.md](docs/mcp.md) にあります。
 
 <p align="center">
-  <img src="promotional/misaka-compare.jpg" width="720" alt="MisakaNet — Before: 30+ min manual debugging vs After: 0.02s with MCP"/>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/assets/hero-light.svg">
+  <img src="docs/assets/hero-light.svg" width="100%" alt="実測記録 1 件：'GitHub Actions script injection' の検索が E3（CI 検証済み）レッスンを返し、7 回の呼び出しで中央値 2,444 ms。コーパス件数は画像と上のバッジにあります。">
+</picture>
 </p>
 
 <p align="center">
