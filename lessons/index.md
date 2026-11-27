@@ -112,6 +112,7 @@
 - [A batch job's pilot sample must be filtered to scope first, or the pilot lands outside it and re-runs](contrib/batch-pilot-sample-must-be-filtered-to-scope.md) | automation | "automation", "batch-job", "pilot", "scope-filter", "sampling", "rework", "planning" | intake-3567
 - [Batch pose-sampling against a FANUC ROBOGUIDE virtual controller (VRC) v](contrib/batch-pose-sampling-against-a-fanuc-roboguide-virtual.md) | fanuc | "iprogram.run", "pythoncom.lcid", "the" | intake-5816
 - [Benchmark Honesty — Distinguishing Simulated vs Real Results](contrib/benchmark-honesty-simulated-vs-real.md) | agent | "benchmark", "honesty", "testing", "contrib", "agent" | PR review feedback analysis
+- [Bevy 应用里用 `asset_server.load("tests/fixtures/foo.glb")` 这类**文件系统相对路径**装载](contrib/bevy-应用里用-asset-serverloadtestsfixturesfooglb-这类文件系统相对路径装载.md) | mcp | "assetserver", "assetreader", "assetsource" | intake-5886
 - [BGE Embedding Fallback Crash](contrib/bge-embedding-fallback-crash.md) | rag | "project:agent-medici", "severity:high", "node:hermes-wsl" | bootstrap
 - [BI 平台 SQL 按线体+班次 GROUP BY 汇总生产数据时，欠料/堵线时长一列写成 `(a.bdt + a.sdt) as '...'`](contrib/bi-平台-sql-按线体班次-group-by-汇总生产数据时欠料堵线时长一列写成-abdt.md) | mcp | "bi", "sql", "group" | intake-5420
 - [BI 报表给各线体分配"额定节拍"基准常数（CASE WHEN 按线体名映射到不同档位，如单线 44s / 双线 94s）后，图表出现两类异常：](contrib/bi-报表给各线体分配额定节拍基准常数case-when.md) | mcp | "bi", "case" | intake-5422
@@ -936,6 +937,7 @@
 - [Windows 上自建的 .NET 服务里统计类 SQL 全返回 0，接口 HTTP 200 且不报错，但用同一个 .db 文件在外部 sqlite3/pyth](contrib/windows-上自建的-net-服务里统计类-sql-全返回-0接口-http-200.md) | windows | "factory_ledger.db", "winsqlite3.dll", "localtime" | intake-5159
 - [Windows 上跑「虚拟控制器 + GUI 宿主」类仿真（宿主进程拉起 `-Embedding` 的短路径子进程）时，重启/切换工位后出现：网络端口的登](contrib/windows-上跑虚拟控制器-gui-宿主类仿真宿主进程拉起-embedding.md) | windows | "frvirtual.exe", "tasklist", "windows" | intake-4748
 - [Windows 下 C++ 子进程经 stdout 向父进程传输二进制协议帧（[1B kind][4B len][body]，body 为 PCM 音频）。静音](contrib/windows-下-c-子进程经-stdout-向父进程传输二进制协议帧1b-kind4b-lenbodybody-为.md) | windows | "windows", "stdout", "kind" | intake-3295
+- [Windows 大目录清理/迁移时被两类问题阻断： 1) 移动或删除腾讯模拟器 `Image\<version>\` 目录（内含 system.vhd）报"对路](contrib/windows-大目录清理迁移时被两类问题阻断-1-移动或删除腾讯模拟器.md) | windows | "windows", "image", "version" | intake-5878
 - [Windows 显示缩放 150% 的机器上做 GUI 自动化（合成鼠标点击/截屏定位），点击系统性偏移到错误位置（约 ×1.5），检查点截图截到完全无关的窗口](contrib/windows-显示缩放-150-的机器上做-gui.md) | windows | "windows", "gui" | intake-4808
 - [Windows 机器上用 npm 安装 devDependencies（typescript / wrangler 等），npm 输出 "changed 1 p](contrib/windows-机器上用-npm-安装-devdependenciestypescript-wrangler-等npm.md) | windows | "windows", "npm", "devdependencies" | intake-4136
 - [Windows 计划任务（schtasks）直接调 python.exe 跑脚本，每次触发会闪出一个黑色控制台窗口，干扰正在使用桌面的用户。 Root Caus](contrib/windows-计划任务schtasks直接调-pythonexe.md) | windows | "wscript.exe", "windows", "schtasks" | intake-5071
@@ -995,6 +997,7 @@
 - [同一指标三种统计窗口，工作台同时显示「满分」「无扣分」和「该修待办」](contrib/同一指标三种统计窗口工作台同时显示满分无扣分和该修待办.md) | data | "metrics", "dashboard", "consistency" | intake-5527
 - [后台日志文件用 UTF-8 无 BOM 写中文，Windows 默认 GBK 终端或编辑器读成「宸插湪杩愯」；脚本 stdout 输出含中文路径的 JSO](contrib/后台日志文件用-utf-8-无-bom-写中文windows-默认-gbk.md) | windows | "utf", "bom", "windows" | intake-5516
 - [向 FANUC 虚拟控制器（FRVRC V9.40）FTP 上传 .CM 命令文件到 MD: 时报 `550 No destination device or](contrib/向-fanuc-虚拟控制器frvrc-v940ftp-上传-cm-命令文件到-md-时报-550-no.md) | fanuc | "fanuc", "frvrc", "v9" | intake-4754
+- [在 Bevy（0.20 系）应用里给 `App` 挂插件时写了两次 `app.add_plugins(DefaultPlugins.set(Pl](contrib/在-bevy020-系应用里给-app-挂插件时写了两次-appadd.md) | mcp | "defaultplugins", "in", "with" | intake-5885
 - [在 Bevy（0.20）里给渲染子应用加测量/调试系统，参数写 `Res<T>`，运行即 panic：`Parameter Res<T> fai](contrib/在-bevy020里给渲染子应用加测量调试系统参数写-rest运行即-panicparameter.md) | mcp | "insert_resource", "app.insert_resource-x.clone", "bevy" | intake-5862
 - [在 DSH 沙箱内启动 Renode（.NET 程序），报： 但同一目录用 Python 能删能建，`icacls` 显示当前用户有完全控制权 (F)、无](contrib/在-dsh-沙箱内启动-renodenet-程序报-但同一目录用-python-能删能建icacls.md) | windows | "icacls", "cmd", "dsh" | intake-5234
 - [在 OpenClaw 智能体中通过渐进加载的内置工具（如飞书 lark-cli 封装工具）干活时出现：上一轮刚 tool_activate 成功并正常调用过的工](contrib/在-openclaw-智能体中通过渐进加载的内置工具如飞书-lark-cli.md) | feishu | "openclaw", "lark", "cli" | intake-4390
