@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-27T12:46:54.889459+00:00",
+  "generated_at": "2026-11-27T23:34:01.686046+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
@@ -7,30 +7,39 @@
     {
       "type": "merged_pr",
       "title": "feat(lessons): intake batch 2026-11-27",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5875",
-      "timestamp": "2026-11-27T11:33:30Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5909",
+      "timestamp": "2026-11-27T19:59:05Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "fix(gates): wire the hero check to CI, stop gating on a count that moves hourly, drop the fake 'no lockfile' claim",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5873",
-      "timestamp": "2026-11-27T11:12:47Z",
+      "title": "perf(worker): stop paying a cross-database D1 write on every search (~640 ms of each warm request)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5890",
+      "timestamp": "2026-11-27T15:28:47Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
       "title": "feat(lessons): intake batch 2026-11-27",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5870",
-      "timestamp": "2026-11-27T09:29:09Z",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5889",
+      "timestamp": "2026-11-27T14:37:59Z",
       "source": "github"
     },
     {
-      "type": "merged_pr",
-      "title": "fix(deps): the wheel and uv.lock were both missing jsonschema and mcp",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5864",
-      "timestamp": "2026-11-27T05:49:46Z",
-      "source": "github"
+      "type": "lesson",
+      "title": "Bevy 应用里用 `asset_server.load(\"tests/fixtures/foo.glb\")` 这类**文件系统相对路径**装载",
+      "url": "lessons/contrib/bevy-应用里用-asset-serverloadtestsfixturesfooglb-这类文件系统相对路径装载.md",
+      "timestamp": "2026-11-27",
+      "domain": "mcp",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
+      "title": "Minecraft 1.21 → 1.20.1 移植：手持设备（Pad/MP4）的**离屏 GUI\"交互正常、画面全黑\"** —— 连背景填充色都看不见。 上一",
+      "url": "lessons/contrib/minecraft-121-1201-移植手持设备padmp4的离屏-gui交互正常画面全黑.md",
+      "timestamp": "2026-11-27",
+      "domain": "dsh",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -42,34 +51,18 @@
     },
     {
       "type": "lesson",
+      "title": "ROBOGUIDE 虚拟机器人（V9.4x）硬杀控制器进程（taskkill RGCore/frvirtual 等）后再引导，控制器进入「**冷",
+      "url": "lessons/contrib/roboguide-虚拟机器人v94x硬杀控制器进程taskkill-rgcorefrvirtual.md",
+      "timestamp": "2026-11-27",
+      "domain": "fanuc",
+      "source": "lessons"
+    },
+    {
+      "type": "lesson",
       "title": "rustup toolchain install repeatedly fails on Windows 11 with `component download",
       "url": "lessons/contrib/rustup-toolchain-install-repeatedly-fails-on-windows-11.md",
       "timestamp": "2026-11-27",
       "domain": "windows",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "仓库 .gitignore 为「厂商数据不入库」政策加了全局 glob（如 `*-3d.def`）后，tests/fixtures/ 下的**合",
-      "url": "lessons/contrib/仓库-gitignore-为厂商数据不入库政策加了全局-glob如-3ddef后testsfixtures.md",
-      "timestamp": "2026-11-27",
-      "domain": "mcp",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "在 Bevy（0.20）里给渲染子应用加测量/调试系统，参数写 `Res<T>`，运行即 panic：`Parameter Res<T> fai",
-      "url": "lessons/contrib/在-bevy020里给渲染子应用加测量调试系统参数写-rest运行即-panicparameter.md",
-      "timestamp": "2026-11-27",
-      "domain": "mcp",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "用 grep/regex 在大文本（如百万行导出/转储文件）里搜复合后缀的标识符（如 `$UPPERLIMS`、`$LOWERLIMS`）没搜到",
-      "url": "lessons/contrib/用-grepregex-在大文本如百万行导出转储文件里搜复合后缀的标识符如.md",
-      "timestamp": "2026-11-27",
-      "domain": "mcp",
       "source": "lessons"
     },
     {
@@ -127,9 +120,16 @@
     },
     {
       "type": "merged_pr",
-      "title": "docs(readme): one story on the first screen, and the CJK title fits its panel",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5876",
-      "timestamp": "2026-11-27T12:32:07Z",
+      "title": "chore(data): 记 2026-11-27 的市场触达（1931 下载 / 近 7 天 60 使用）",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5888",
+      "timestamp": "2026-11-27T14:34:34Z",
+      "source": "github"
+    },
+    {
+      "type": "merged_pr",
+      "title": "chore(data): sync lessons.json + refresh feed",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5880",
+      "timestamp": "2026-11-27T13:02:28Z",
       "source": "github"
     }
   ]
