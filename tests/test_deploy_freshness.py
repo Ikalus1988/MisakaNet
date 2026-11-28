@@ -260,9 +260,13 @@ def test_a_stale_probe_says_so_where_somebody_is_looking():
         "nothing in this workflow opens an issue, so a stale production still only reddens a "
         "scheduled run that nobody reads (#5627)"
     )
-    assert "steps.freshness.outcome" in (report.get("if") or ""), (
-        "the report must be gated on the probe having actually run — closing an issue on a run that "
-        "measured nothing claims freshness nobody verified"
+    # Was "must be gated on the probe having actually run". That gate was wrong in the direction it
+    # mattered: a *skipped* probe (the normal case on workflow_run) publishes no verdict, so gating on
+    # the outcome meant an open issue could only be closed by a separate cron. The correct rule is the
+    # one below — run always, and measure when there is no verdict — which
+    # `test_the_report_step_runs_when_the_probe_was_skipped` pins in full.
+    assert "always()" in (report.get("if") or ""), (
+        "the report must run on every non-cancelled outcome"
     )
     run = report["run"]
     # `outcome == 'success'` on the probe *is* the fresh answer; `failure` is stale. Both speak.
@@ -272,6 +276,41 @@ def test_a_stale_probe_says_so_where_somebody_is_looking():
     assert "gh issue create" in run and "gh issue close" in run, (
         "the issue has to open on stale and close on fresh, or it becomes one more place to look"
     )
+
+
+def test_the_report_step_runs_when_the_probe_was_skipped():
+    """A skipped probe is the common case on `workflow_run`, and it was the one that leaked.
+
+    Measured 2026-11-28: #5917 was opened at 02:03 by a stale probe; the runs at 02:23 and 03:16 then
+    reported **success by skipping** (a successful deploy verifies its own SHA, so re-measuring is
+    deliberately pointless), `steps.freshness.outcome` was `skipped`, and the report step's original
+    `success || failure` condition excluded precisely that. The issue stayed open until a cron
+    happened to probe for real.
+
+    So two things have to hold, and they are asserted together because either alone is useless:
+    the step must run on a skip, and it must *measure* when it has no verdict to act on.
+    """
+    workflow = _freshness_steps()
+    steps = workflow["jobs"]["freshness"]["steps"]
+    report = next((s for s in steps if "issue create" in (s.get("run") or "")), None)
+    assert report is not None, "the reporting step disappeared"
+
+    condition = report.get("if") or ""
+    assert "always()" in condition, condition
+    assert "!cancelled()" in condition, (
+        "the report must run on every non-cancelled outcome, including `skipped`: "
+        f"got {condition!r}")
+    assert "steps.freshness.outcome ==" not in condition, (
+        "gating on a specific outcome is what made a skipped probe invisible; a skipped probe is "
+        "the normal case on workflow_run")
+
+    run = report["run"]
+    assert "scripts/doctor.py --deploy-freshness" in run, (
+        "with no verdict, the step must measure rather than close nothing — otherwise an issue can "
+        "only be closed by a separate probe")
+    # and the measurement must be what turns the issue off, not an assumption
+    assert "VERDICT=fresh" in run, (
+        "the follow-up measurement must set VERDICT, which is what the close branch reads")
 
 
 def test_the_freshness_report_uses_the_job_token_not_the_pat():
