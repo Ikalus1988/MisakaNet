@@ -150,8 +150,20 @@ jobs:
       # is a skip, not a measurement, and closing an issue because nothing was measured is the exact
       # defect `check_deploy_freshness` refuses to commit ("claiming to be fresh when nothing was
       # measured").
+      # Runs on every outcome **including `skipped`**, which is the case that broke it.
+      #
+      # When `workflow_run` fires after a *successful* deploy, the probe above is deliberately skipped
+      # (the deploy verified its own SHA). `steps.freshness.outcome` is then `skipped`, and the first
+      # version of this condition — `success || failure` — excluded exactly that. The consequence was
+      # measured 2026-11-28: #5917 was opened at 02:03 by a stale probe, two later runs at 02:23 and
+      # 03:16 both reported `success` **by skipping**, and the issue stayed open. An issue that only
+      # closes when a *separate* probe happens to run is an issue that hangs on until the next cron.
+      #
+      # The verdict is empty on a skip, and the `elif` below only closes an issue when the answer is
+      # positively `fresh` — so a skipped run still closes nothing on its own. That is why the step
+      # must also *measure* when it has no verdict: see the guard after the `elif`.
       - name: Say so where somebody is already looking
-        if: always() && (steps.freshness.outcome == 'success' || steps.freshness.outcome == 'failure')
+        if: always() && !cancelled()
         env:
           VERDICT: ${{ steps.freshness.outputs.verdict }}
         run: |
@@ -181,7 +193,23 @@ jobs:
             else
               gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" --body "$BODY"
             fi
-          elif [ "${VERDICT:-}" = "fresh" ] && [ -n "$EXISTING" ]; then
+          elif [ -z "${VERDICT:-}" ] && [ -n "$EXISTING" ]; then
+            # No verdict means the probe was skipped (a successful deploy verified its own SHA), and
+            # there is an open issue to settle. Measure here rather than leaving it to the next cron:
+            # an issue that hangs until a separate probe happens to run is the same "nobody is told"
+            # failure this workflow exists to remove, one layer down.
+            #
+            # One attempt, not three: this follows work that already succeeded, and the probe's own
+            # retry budget exists to tell weather from an outage. A dropped handshake here leaves the
+            # issue open for the next run, which is the safe side.
+            if python3 scripts/doctor.py --deploy-freshness; then
+              VERDICT=fresh
+            else
+              echo "the skipped probe left production unverified; leaving any open issue as it is."
+            fi
+          fi
+
+          if [ "${VERDICT:-}" = "fresh" ] && [ -n "$EXISTING" ]; then
             gh issue comment "$EXISTING" --repo "$GITHUB_REPOSITORY" \
               --body "Production is running main's commit again - closing."
             gh issue close "$EXISTING" --repo "$GITHUB_REPOSITORY" --reason completed
