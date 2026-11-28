@@ -484,8 +484,19 @@ def convert(issue: dict, canonical: set[str],
     # `现象` (symptom) is the heading four submissions used where the form's own `## Problem` was left
     # empty — measured 2026-11-22 on #5513–#5516, all four complete down to `## Verification`. `症状`
     # and `Symptom` were already here; `现象` was the one missing word.
+    #
+    # `背景` / `问题描述` / `问题`: what an **agent** writes when the client's empty `## Problem`
+    # heading is left in place and the actual text goes under the next heading it types itself.
+    # Measured 2026-11-28 over the 180 open `[Intake]` issues: **27** had an empty `## Problem` for
+    # exactly this reason, 19 of them `## Problem` immediately followed by `## 背景` — and 24 of the
+    # 27 came from `remote-agent`, i.e. the shape is specific to how agents submit, not to Chinese.
+    # Including `背景` alone moves **1** of those 27 to convertible (#5852), so this is not a
+    # conversion lever; it is a *message* lever. Without it the skip histogram says "missing
+    # Problem/Root Cause/Fix" and the reader concludes the submitter wrote nothing, when the real
+    # answer for most of them is "missing Root Cause" — a different backlog with a different fix.
     problem = (section(body, "Problem") or section(body, "现象") or section(body, "症状")
-               or section(body, "Symptom"))
+               or section(body, "Symptom") or section(body, "背景")
+               or section(body, "问题描述") or section(body, "问题"))
     cause = section(body, "Root Cause")
     if not cause:
         # Two heading shapes the reader refused, both measured on 2026-11-22: the same section under
@@ -527,7 +538,19 @@ def convert(issue: dict, canonical: set[str],
            or (split[2] if split else ""))
     verify = section(body, "Verification") or section(body, "Verify") or section(body, "验证")
     if not (problem and cause and fix):
-        return None, ["missing Problem/Root Cause/Fix"]
+        # Two different backlogs, named separately. Before 2026-11-28 this was one string, and it read
+        # as "the submitter wrote nothing" when measured over the open queue: 180 intakes, 146 hits —
+        # but **143 of the 180 had no cause at all** (90 of them from the September/October form,
+        # which had no Root Cause field), while `## Problem` itself was present in 156 and empty in
+        # only 27. One label for both sent every reader after the wrong half.
+        missing = []
+        if not problem:
+            missing.append("Problem")
+        if not cause:
+            missing.append("Root Cause")
+        if not fix:
+            missing.append("Fix")
+        return None, [f"missing {'/'.join(missing)}"]
     if not verify:
         notes.append("no Verification section")
 
