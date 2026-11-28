@@ -7529,14 +7529,52 @@ function conversionReceiptFields(issueNumber, hits) {
 }
 
 // All answered questions (FAQ corpus for search merge). Best-effort.
+/**
+ * The answered-question rows the FAQ half of search matches against, memoised per isolate.
+ *
+ * Measured 2026-11-27 (after the read-burst memo landed, so this is what was *left*): a warm search
+ * still prepared three D1 statements, and one of them was this unconditional full read of every
+ * answered question — 117 rows, ~240 KB of answer text — on **every search**, including the ones that
+ * then match nothing. The search phases do not cover it (`phaseMs` brackets the corpus, the index and
+ * the scorer), which is why it showed up only as "unaccounted".
+ *
+ * The freshness this gives up is bounded and already true elsewhere: an answered question becomes
+ * matchable up to `MISAKANET_FAQ_MEMO_MS` later (default 60 s, `0` disables), inside one isolate. The
+ * corpus memo takes the same trade for the same reason, and a wrong-or-missing FAQ row costs a search
+ * a *possible extra* hit — it never blocks a lesson or returns a wrong answer.
+ *
+ * `null` means "not read in this isolate yet"; `[]` means "read, and there were none", which must not
+ * re-trigger the read on every call.
+ */
+const FAQ_MEMO_MAX_ROWS = 2000;
+let faqMemo = null; // { at: number, rows: Array|null }
+
+function faqMemoMs() {
+  const raw = Number(globalThis.MISAKANET_FAQ_MEMO_MS);
+  return Number.isFinite(raw) && raw >= 0 ? raw : 60_000;
+}
+
+/** Test seam: module-scope state must not outlive a test. */
+const resetFaqMemo = () => { faqMemo = null; };
+
 async function fetchAnsweredQuestions(env) {
   const d1 = d1Binding(env);
   if (!d1) return [];
+  const window = faqMemoMs();
+  if (window > 0 && faqMemo && Date.now() - faqMemo.at < window) {
+    return faqMemo.rows || [];
+  }
   try {
     const res = await d1.prepare(
       "SELECT issue_number, dedup_hash, problem, answer, issue_url, answered_at FROM questions WHERE status = 'answered'"
     ).all();
-    return (res && res.results) || [];
+    const rows = (res && res.results) || [];
+    // A corpus larger than the cap stops being memoised rather than growing an isolate's memory
+    // without a ceiling.
+    if (window > 0) {
+      faqMemo = rows.length <= FAQ_MEMO_MAX_ROWS ? { at: Date.now(), rows } : null;
+    }
+    return rows;
   } catch (e) {
     debugLog(env, 1, "fetchAnsweredQuestions failed", String(e && e.message || e));
     return [];
@@ -11925,6 +11963,7 @@ export {
   // Exported for workers/counters-read-cooldown.test.mjs.
   resetCountersReadState,
   resetReadBurstMemo,
+  resetFaqMemo,
   countersReadable,
   MCP_TOOLS,
   // Exported for workers/search-signals.test.mjs: `Number(null)` is 0 and `Number.isFinite(0)` is
