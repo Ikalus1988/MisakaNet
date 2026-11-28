@@ -6,7 +6,7 @@
 "exists to prevent — write the lesson generically instead."
 ],
 "generated_from": "data/lessons.json + lessons/**/*.md",
-"corpus_rows": 1182,
+"corpus_rows": 1183,
 "corpus": [
 "a+b+c",
 "a-",
@@ -10837,6 +10837,7 @@
 "git-",
 "git-auth",
 "git-bash",
+"git-bash-",
 "git-channel",
 "git-checkout-discards-uncommitted-work",
 "git-checkout-discards-uncommitted-work.m",
@@ -13595,6 +13596,7 @@
 "intake-5907",
 "intake-5908",
 "intake-5910",
+"intake-5918",
 "intake-issue-1196",
 "intake-issue-1298",
 "intake-issue-1305",
@@ -31424,6 +31426,7 @@
 "xxx.bak-",
 "xxx.bat",
 "xxx.ini",
+"xxx.json",
 "xxx.ls",
 "xxx.md",
 "xxx.mp4",
