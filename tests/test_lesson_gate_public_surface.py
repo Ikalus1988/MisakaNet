@@ -137,6 +137,36 @@ def test_the_derived_fields_are_not_repetition():
     assert body.count("checked-in") == 1
 
 
+def test_a_units_row_is_not_a_command_named_after_its_first_unit():
+    """`Tm [Nm],Nm [rpm],T0 [Nm]` is a table, not an invocation of `tm` (intake #5844).
+
+    A FANUC report pastes a torque/life table into a code span. It has spaces, so `_is_command_span`
+    read it as a command with arguments and the gate demanded `tm` be a public tool.
+    """
+    span = "Tm [Nm],Nm [rpm],T0 [Nm],L10 [h],L10 [year]"
+    assert lesson_gate._is_command_span(span) is False
+    assert lesson_gate.unknown_surface_names(span, VOCAB) == []
+
+
+def test_a_sql_null_predicate_is_not_a_command_named_after_its_column():
+    """`ship_weight IS NOT NULL AND ship_time IS NULL` is a predicate, not the command `ship_weight`."""
+    span = "ship_weight IS NOT NULL AND ship_time IS NULL"
+    assert lesson_gate._is_command_span(span) is False
+    assert lesson_gate.unknown_surface_names(span, VOCAB) == []
+
+
+def test_narrowing_for_those_two_shapes_did_not_stop_checking_real_names():
+    """The trade this rule must not make: unblocking two intakes by widening the gate.
+
+    A first attempt rejected any span containing `=`, `<`, `>`, `≈` or a bracketed run. Measured on
+    the corpus, that changed what **70 of 1,207** lessons were checked for and stopped checking **87**
+    names, most of them real private identifiers (`apisessionagenterror`, `authorizenaviappkey`).
+    These four shapes carry genuine evidence and must keep it.
+    """
+    for span in ('curl -H "a=b"', "python - <<'EOF'", "UPDATE logs SET col = ?", "RUN <prog>"):
+        assert lesson_gate._is_command_span(span) is True, span
+
+
 def test_real_repetition_in_the_prose_still_counts():
     """The other direction: the rule this replaced was not decoration.
 
