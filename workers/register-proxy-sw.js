@@ -7148,7 +7148,7 @@ function filterSnapshot(lessons, filters) {
 // Off by default: a cache in module scope outlives a test and hides a corpus change from the next
 // caller in the same process, so tests must opt in explicitly (they never set this). Production sets
 // it in `wrangler.toml` `[vars]`, next to COMMIT_SHA.
-let lessonsMemo = null; // { at: number, rows: Array }
+let lessonsMemo = null; // { at: number, rows: Array, window?: number }
 
 /** The configured memo window in ms; 0 disables the memo entirely. */
 function lessonsMemoTtlMs(env) {
@@ -7156,10 +7156,23 @@ function lessonsMemoTtlMs(env) {
   return Number.isFinite(raw) && raw > 0 ? raw : 0;
 }
 
-/** Remember the rows this isolate just read, and hand the same array back to the caller. */
-function rememberLessons(rows, env) {
-  if (lessonsMemoTtlMs(env) > 0 && Array.isArray(rows) && rows.length > 0) {
-    lessonsMemo = { at: Date.now(), rows };
+/**
+ * Remember the rows this isolate just read, and hand the same array back to the caller.
+ *
+ * `healthy` is false for the degraded sources — the data-branch snapshot, and a D1 read that failed or
+ * came back empty. Those are served under a memo window that is now **5 minutes** (raised from 30 s on
+ * 2026-11-28; see `wrangler.toml`), and caching a degraded answer for five minutes is the opposite of
+ * what a degradation path is for: it would keep serving the snapshot long after D1 recovered.
+ *
+ * So a degraded read is still remembered, but only for `DEGRADED_MEMO_MS`. The point of remembering it
+ * at all is the row budget (#2117): without a memo, every request in an outage re-reads 1,170 rows.
+ */
+const DEGRADED_MEMO_MS = 30_000;
+
+function rememberLessons(rows, env, healthy = true) {
+  const window = healthy ? lessonsMemoTtlMs(env) : Math.min(lessonsMemoTtlMs(env), DEGRADED_MEMO_MS);
+  if (window > 0 && Array.isArray(rows) && rows.length > 0) {
+    lessonsMemo = { at: Date.now(), rows, window };
   }
   return rows;
 }
@@ -7286,7 +7299,8 @@ async function loadLessons(env, filters = {}) {
   // cache is a D1 read, so a hit still costs rows, and the row budget is what this path spent 2026-10-19.
   const memoWindow = lessonsMemoTtlMs(env);
   const memo = memoWindow > 0 ? lessonsMemo : null;
-  if (memo && Date.now() - memo.at < memoWindow) {
+  // The entry carries its own window: a degraded row is remembered for less (see `rememberLessons`).
+  if (memo && Date.now() - memo.at < (memo.window || memoWindow)) {
     recordLessonsRead({ ok: true, source: "memo" });
     return memo.rows;
   }
@@ -7299,7 +7313,7 @@ async function loadLessons(env, filters = {}) {
   if (d1Binding(env)) {
     if (Date.now() < d1ReadCooldownUntil) {
       recordLessonsRead({ ok: false, source: "snapshot-cooldown" });
-      return rememberLessons(await snapshotLessons(env), env);
+      return rememberLessons(await snapshotLessons(env), env, false);
     }
     try {
       // The durable cache still carries the corpus here (2026-11-25): it is a D1→D1 copy, so it is
@@ -7318,11 +7332,11 @@ async function loadLessons(env, filters = {}) {
       d1ReadCooldownUntil = Date.now() + D1_READ_COOLDOWN_MS;
       logInternal("D1 lesson read failed; serving the data-branch snapshot", error);
       recordLessonsRead({ ok: false, source: "snapshot", error_kind: d1ErrorKind(error) });
-      return rememberLessons(await snapshotLessons(env), env);
+      return rememberLessons(await snapshotLessons(env), env, false);
     }
     // D1 answered but empty — fall back to the GitHub snapshot.
     recordLessonsRead({ ok: true, source: "d1-empty" });
-    return rememberLessons(await snapshotLessons(env), env);
+    return rememberLessons(await snapshotLessons(env), env, false);
   }
   const fromD1 = await fetchLessonsFromD1(env, { limit: INTERNAL_LESSON_LIMIT, rich: true });
   if (fromD1 && fromD1.length > 0) return rememberLessons(fromD1, env);
