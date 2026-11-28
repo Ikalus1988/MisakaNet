@@ -182,3 +182,52 @@ def test_a_short_page_is_filtered_to_the_convertible_shape(monkeypatch):
          "labels": [{"name": "decision"}]},
     ])
     assert [row["number"] for row in batch.open_intakes(limit=1000)] == [1]
+
+
+# ── the histogram must not merge two different backlogs (2026-11-28) ──────────────────────────
+
+def test_the_missing_section_reason_names_which_section():
+    """`missing Problem/Root Cause/Fix` sent every reader after the wrong half of the queue.
+
+    Measured over the 180 open `[Intake]` issues: **143 had no cause at all** (90 of them from the
+    September/October form, which had no Root Cause field), while `## Problem` was present in 156 and
+    empty in 27. One string for both read as "the submitter wrote nothing", and the work that would
+    follow from that reading is different from the work the numbers actually ask for.
+    """
+    import intake_lesson_to_file as conv  # noqa: PLC0415
+
+    canonical = {"devops"}
+    no_cause = {"title": "[Intake] a build fails", "body":
+                "## Problem\n\nThe build fails on a clean checkout.\n\n"
+                "## Fix (if known)\n\nPoint the registry at the public one.\n"}
+    record, notes = conv.convert(no_cause, canonical, {"domain": "devops"})
+    assert record is None
+    assert notes == ["missing Root Cause"], notes
+
+    no_problem = {"title": "[Intake] a build fails", "body":
+                  "## Root Cause\n\nthe registry is unreachable\n\n"
+                  "## Fix (if known)\n\nPoint the registry at the public one.\n"}
+    record, notes = conv.convert(no_problem, canonical, {"domain": "devops"})
+    assert record is None
+    assert notes == ["missing Problem"], notes
+
+
+def test_an_agent_written_background_section_is_the_problem_section():
+    """27 open intakes had an empty `## Problem` only because the text was under `## 背景`.
+
+    The client leaves an empty `## Problem` heading and an agent then types its own heading under it,
+    so the text is in the document but not in that section. 24 of the 27 came from `remote-agent`;
+    19 were literally `## Problem` followed by `## 背景`. `section()` concatenates same-named
+    headings, which cannot help here — the text is under a different name.
+    """
+    import intake_lesson_to_file as conv  # noqa: PLC0415
+
+    body = ("## Problem\n\n## 背景\n\nA wiki page renders with a stray `{{` at the top.\n\n"
+            "## Root Cause\n\nThe macro was cut mid-body by the character cap.\n\n"
+            "## Fix (if known)\n\nCap at a fence boundary, not a byte count.\n\n"
+            "## Verification\n\nRe-render the page: no stray braces.\n")
+    record, _notes = conv.convert({"number": 1, "title": "[Intake] a wiki page renders with {{",
+                                  "body": body},
+                                  {"devops"}, {"domain": "devops"})
+    assert record is not None, "the `## 背景` text must be read as the Problem section"
+    assert "stray `{{`" in record["content"] or "stray" in record["content"]
