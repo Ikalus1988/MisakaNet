@@ -43,7 +43,7 @@
 | `reconcile-dco.yml` | Reconcile DCO status | 定时, 手动 | `17,47 * * * *` —— 对「head 提交上完全没有 DCO 状态」的开放 PR 补发 `dco-check.yml`（平台 startup failure 的兜底）；已有状态（含失败）的 PR 不动 |
 | `shadow-branch.yml` | Shadow Branch - External Agent Isolation | PR |  |
 
-## 数据/索引（26）
+## 数据/索引（27）
 
 | workflow | 用途 | 触发 | 定时 |
 |---|---|---|---|
@@ -57,6 +57,7 @@
 | `intake-auto-review.yml` | Intake Auto Review | issues, 手动 |  |
 | `intake-batch-convert.yml` | Intake Batch Convert（把 open `mcp-intake` 队列里**形状可转换**的报告批量转成课程，重新生成派生文件，开一个 PR；转不了的把 skip 直方图写进 job summary）| 定时, 手动 | `40 6 * * 1` |
 | `intake-kind-audit.yml` | Intake Kind Audit | 定时, 手动 | `30 6 * * 1` |
+| `intake-review-band.yml` | Intake Review Band（`docs/maintainer/intake-triage.md` §2 的 review band **要么跑完、要么变红**：统计「贴了 `needs-info` 但从未收到模板回信」的旧表单 intake 条数，非零即 exit 1。起因：2026-11-28 实测 90 条旧表单里 **90 条都贴了标签、只有 78 条真的被问过** —— 一半完成和全部完成长得一模一样，没有任何面会说话。只报告不评论：给匿名报料人发信是判断，不是批处理）| 定时, 手动 | `43 7 * * *` |
 | `intake-pipeline-test.yml` | Intake Pipeline Test (PRD ③) | 手动 |  |
 | `decision-queue-digest.yml` | Decision Queue Digest（每週把「`decision`/`product-design` 标签 + 最近 14 天无人类回复 + ≥14 天」的 issue 列成一条跟踪 issue；bot 的分诊评论不算回复，久远的回复也不会永久掩盖未决 issue；**空清单不发言**，只报告、不关单、不自动决策）| 定时, 手动 | `23 9 * * 1` |
 | `intake-salvage-digest.yml` | Intake Salvage Digest（另跑 `scripts/done_but_open.py`：工作已在 `main`、issue 还开着的 intake，非空才写进 digest 议题；**只报告，不关单**）| 定时, 手动 | `0 8 * * *` |

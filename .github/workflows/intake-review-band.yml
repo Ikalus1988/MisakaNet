@@ -1,0 +1,90 @@
+name: Intake Review Band
+
+# The review band either finishes or says so (#5935).
+#
+# `docs/maintainer/intake-triage.md` §2 defines one structural class of intake that can never become
+# a lesson: the September/October form had **no `## Root Cause` field**. The prescribed handling is a
+# single template comment carrying `<!-- needs-root-cause -->` and three exits.
+#
+# Measured 2026-11-28, over the 90 open old-form intakes: **all 90 carried `needs-info`** — the label
+# half had run at some point — and **12 had never received the comment**, i.e. the only half that asks
+# the reporter, the only half that can ever move the issue. Nothing was broken; a label applied looks
+# identical to a label applied along with a question, so the missing half had no surface at all.
+#
+# Deliberately **no digest issue**. `intake-kind-audit.yml` posts one because its finding needs a
+# history; this one's finding is "these N issues still need the template", which the workflow summary
+# states better than an issue would — and a second open digest issue on an Issues list that #5866 is
+# about making readable is the wrong direction.
+#
+# This job posts nothing to GitHub. The reply is a maintainer/agent action (it goes to anonymous
+# reporters and is a judgement call), so the run's job is to make the leftover visible and red.
+on:
+  schedule:
+    - cron: '43 7 * * *'  # Daily 07:43 UTC — the band moves when someone replies, not on a clock
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  band:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Setup Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7
+        with:
+          python-version: "3.11"
+
+      # Report first, decide second — the same split `intake-kind-audit.yml` uses, so a failing run
+      # still carries its evidence (here: the list of issue numbers).
+      - name: Count old-form intakes that were never asked for a cause
+        id: band
+        run: |
+          status=0
+          python3 scripts/audit_review_band.py --json > band.json 2> band.err || status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          cat band.err >&2 || true
+          cat band.json || true
+
+      - name: Fail when the band stopped in the middle
+        env:
+          BAND_STATUS: ${{ steps.band.outputs.status }}
+        run: |
+          BAND_STATUS="${BAND_STATUS:-1}"
+          {
+            echo "## Intake review band"
+            echo ""
+            python3 scripts/audit_review_band.py --summary band.json || echo "(no payload — the script did not get far enough)"
+            echo ""
+            echo 'Template: `docs/maintainer/intake-triage.md` §2 (carries `<!-- needs-root-cause -->`).'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          case "$BAND_STATUS" in
+            0)
+              # A run that printed no payload is not a pass either: 0/0 and "0 unasked" read the same
+              # way in the summary and are different facts.
+              if [ ! -s band.json ]; then
+                echo "::error title=Intake Review Band::exited 0 but wrote no payload — nothing was vouched for"
+                exit 1
+              fi
+              echo "Every old-form intake has been asked for a cause."
+              ;;
+            1)
+              echo "::error title=Intake Review Band::at least one old-form intake carries needs-info but was never asked for a cause — the band stopped in the middle"
+              exit 1
+              ;;
+            2)
+              echo "::error title=Intake Review Band::read zero open intakes — a broken query is not a clean queue"
+              exit 1
+              ;;
+            *)
+              echo "::error title=Intake Review Band::the audit could not run (exit $BAND_STATUS); this is not a clean result"
+              exit 1
+              ;;
+          esac
