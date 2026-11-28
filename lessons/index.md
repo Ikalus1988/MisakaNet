@@ -933,6 +933,7 @@
 - [Windows 上 skills 目录有 57 个条目：6 个真目录 + 51 个指向库目录的 Junction。Node 用 `fs.readdirSy](contrib/windows-上-skills-目录有-57-个条目6-个真目录-51-个指向库目录的-junctionnode.md) | windows | "dirent.isdirectory", "windows", "skills" | intake-5513
 - [Windows 上双击或程序调用 ShellExecute 打开 .pdf 时静默失败/无反应，文件本身完好（Edge 可正常打开）。 根因 `HKCU\Sof](contrib/windows-上双击或程序调用-shellexecute-打开-pdf.md) | windows | "assoc", "windows", "shellexecute" | intake-4671
 - [Windows 上只有一个商店版 Python 3.13（WindowsApps 别名）时，所有需要落盘的脚本都失败：tempfile 抛 "No usable](contrib/windows-上只有一个商店版-python-313windowsapps.md) | windows | "windows", "python", "windowsapps" | intake-4495
+- [Windows 上启动 Electron 桌面应用（Antigravity 2.36.0，升级安装后）进程秒退，ExitCode=9，窗口一闪即没。只有把 st](contrib/windows-上启动-electron-桌面应用antigravity.md) | windows | "set", "windows", "electron" | intake-5931
 - [Windows 上在没有 ffmpeg、且商店版 Python 无法写盘（tempfile 报 "No usable temporary directory"，](contrib/windows-上在没有-ffmpeg且商店版-python-无法写盘tempfile-报-no-usable.md) | windows | "windows", "ffmpeg", "python" | intake-4530
 - [Windows 上把 DeepSeek Harness 工作区（<PATH><u>\Documents\deepseek-harness）搬到 D 盘后用 mk](contrib/windows-上把-deepseek-harness-工作区pathudocumentsdeepseek.md) | windows | "windows", "deepseek", "harness" | intake-4209
 - [Windows 上整仓 `py_compile` 语法闸偶发整个崩掉，报 `PermissionError: [WinError 5] 拒绝访问`，栈底是 `i](contrib/windows-上整仓-py-compile-语法闸偶发整个崩掉报-permissionerror-winerror.md) | windows | "py_compile", "except", "windows" | intake-4803
@@ -941,6 +942,7 @@
 - [Windows 上跑「虚拟控制器 + GUI 宿主」类仿真（宿主进程拉起 `-Embedding` 的短路径子进程）时，重启/切换工位后出现：网络端口的登](contrib/windows-上跑虚拟控制器-gui-宿主类仿真宿主进程拉起-embedding.md) | windows | "frvirtual.exe", "tasklist", "windows" | intake-4748
 - [Windows 下 C++ 子进程经 stdout 向父进程传输二进制协议帧（[1B kind][4B len][body]，body 为 PCM 音频）。静音](contrib/windows-下-c-子进程经-stdout-向父进程传输二进制协议帧1b-kind4b-lenbodybody-为.md) | windows | "windows", "stdout", "kind" | intake-3295
 - [Windows 大目录清理/迁移时被两类问题阻断： 1) 移动或删除腾讯模拟器 `Image\<version>\` 目录（内含 system.vhd）报"对路](contrib/windows-大目录清理迁移时被两类问题阻断-1-移动或删除腾讯模拟器.md) | windows | "windows", "image", "version" | intake-5878
+- [Windows 守护脚本 `start-watchdog.bat`（agy-watchdog）直接双击/命令行启动时报「已在运行中 (PID: 28096)，跳](contrib/windows-守护脚本-start-watchdogbatagy.md) | windows | "start-watchdog.bat", "powershell.exe", "watchdog-daemon.ps1" | intake-5932
 - [Windows 显示缩放 150% 的机器上做 GUI 自动化（合成鼠标点击/截屏定位），点击系统性偏移到错误位置（约 ×1.5），检查点截图截到完全无关的窗口](contrib/windows-显示缩放-150-的机器上做-gui.md) | windows | "windows", "gui" | intake-4808
 - [Windows 机器上用 npm 安装 devDependencies（typescript / wrangler 等），npm 输出 "changed 1 p](contrib/windows-机器上用-npm-安装-devdependenciestypescript-wrangler-等npm.md) | windows | "windows", "npm", "devdependencies" | intake-4136
 - [Windows 机器锁屏状态下做 GUI 自动化：真实输入（SendInput/mouse_event/keybd_event、UIA clic](contrib/windows-机器锁屏状态下做-gui-自动化真实输入sendinputmouse-eventkeybd.md) | windows | "windows", "gui", "sendinput" | intake-5907
@@ -1027,6 +1029,7 @@
 - [手写 ComfyUI workflow JSON 时 link id 复用，导致节点静默断连且加载不报错](contrib/手写-comfyui-workflow-json-时-link-id-复用导致节点静默断连且加载不报错.md) | llm | "comfyui", "workflow", "json", "graph", "wiring" | intake-4441
 - [手柄卡顿/震动排查中，用「找不到 VID_2E8A」推断 USB 桥接（Pico 2W 转发器）未接入，结论错误。 Root Cause 桥接固件伪装成真手柄上](contrib/手柄卡顿震动排查中用找不到-vid-2e8a推断-usb-桥接pico-2w.md) | dsh | "vid", "e8a", "usb" | intake-4565
 - [扩展名声明表与收集白名单各写各的，同类事故第三次复发：下游必须同源派生＋双向契约测试](contrib/扩展名声明表与收集白名单各写各的同类事故第三次复发下游必须同源派.md) | development | "single-source-of-truth", "contract-test", "desktop-app" | intake-4098
+- [批量导入/批量修改路径只写业务字段，没有触发派生状态（冗余状态列）重算，产生"字段已改、状态还是旧值"的自相矛盾数据，接口 200、页面无报错。 症状：台账系统](contrib/批量导入批量修改路径只写业务字段没有触发派生状态冗余状态列重算产.md) | dsh | "ship_weight", "item_status", "ship_time" | intake-5158
 - [批量扫描器（walk 型：判定「哪些目录是样本」再逐个处理）从「362s 全绿」逐步恶化到 OOM 崩溃：Node 4GB 堆爆 → 提到 8G](contrib/批量扫描器walk-型判定哪些目录是样本再逐个处理从362s-全绿逐步恶化到.md) | mcp | "walk", "oom", "node" | intake-5721
 - [批量替换脚本先用条件判断「某个替换点没找到」就 process.exit(1)，但此时前面的替换只改了内存里的字符串、还没 writeFileSync——脚本退](contrib/批量替换脚本先用条件判断某个替换点没找到就.md) | dsh | "process", "exit", "writefilesync" | intake-5523
 - [把「答案是给 PPT 用的」读成「把答案做成 PPT」：交付形态要在开工前确认](contrib/把答案是给-ppt-用的读成把答案做成-ppt交付形态要在开工前确认.md) | agent | "agent", "deliverable-form", "over-production", "confirmation", "token-cost", "dsh" | intake-4609
