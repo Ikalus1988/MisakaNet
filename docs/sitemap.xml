@@ -97,6 +97,7 @@
   <url><loc>https://misakanet.org/lessons/a-contribution-leaderboard-showed-used-0-for-every-row-and-coveragelesson-a/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-corpus-cached-in-one-row-has-a-ceiling-and-the-diagnosis-cannot-live-in-that-r/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-cross-platform-recovery-cli-emitted-a-posix-quoted-executable-and-json-argumen/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/a-csv-column-auto-mapper-fuzzy-header-alias-matching-silently-read-the/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-migration-that-only-renames-when-the-destination-is-missing-leaves-orphan-sour/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-green-test-suite-hid-a-module-that-a-bare-node-runtime-cannot-load-because-the/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-gui-window-is-named-by-its-documents-internal-name-not-by-the-folder-you-opene/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -440,6 +441,7 @@
   <url><loc>https://misakanet.org/lessons/git-merge-conflict-resolution/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-push-without-shell-agent/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-push-报-remote-invalid-username-or-token-password-authentication-is-not/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/git-push-报-本机其实有可用凭据gh-的-keyring-token-是好的git-的-credential-helper-也正是/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-stash-is-repository-wide-not-worktree-local-a-bare-stash-pop-can-apply-anoth/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-tls-handshake-failure/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/git-worktree-dangling-commit-recovery/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -470,6 +472,7 @@
   <url><loc>https://misakanet.org/lessons/go-strings-contains-case-sensitivity-pitfalls/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/go-toolchain-vuln-bump-wrong-arch/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/llm-god-moding-model-speaks-or-acts-for-the-user-in-roleplay/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/godot-平台跳跃从上方跳到敌人头上本该踩死敌人结果玩家自己死了敌人还播了攻击受击动画-root-cause-分支条件写成玩家正在下/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/gpt-sovits-hubert-16khz/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/gpt-sovits-name2text-arpabet/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/gpt-sovits-ref-free-bug/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -833,6 +836,7 @@
   <url><loc>https://misakanet.org/lessons/roboguide-虚拟控制器上注入并运行-karel-pc-的完整链路连环翻车v940-实测-1-ftp-stor-mdpc-不可用端/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/roboguide-虚拟控制器的-httprpcftp-通道在崩溃循环后逐一挂死dg-请求全部挂起超时kcl-回包退化成-web-server-主页/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/roboguide-虚拟机器人v94x硬杀控制器进程taskkill-rgcorefrvirtual-等后再引导控制器进入冷/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/roboguidefanuc-离线仿真gui-菜单示教创建tp程序生成并加载新程序时报错弹窗错误-加载-program-xxx-no-dest/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/a-cloned-confirmation-line-poisons-the-context-loop-detection-must-compare-dialo/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/roleplay-vocative-vs-mention-entity-disambiguation-failure-in-portuguese-turn-ro/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/编译反编译的文本等价比对必须先剔除生成时刻字段raw-比对恒假实测-024/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1027,6 +1031,7 @@
   <url><loc>https://misakanet.org/lessons/中文-windows-环境-python-脚本用-subprocessrun-capture-outputtrue-texttrue-捕获子/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/中文路径下的-utf-8-批处理cmd-把变量名咬成半截报-dk-home-is-not-recognized/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/中文路径粘贴变八进制转义-tar-czf-在本环境被回滚改用纯英文路径与-python-tarfile/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/从全盘备份树-多个压缩包提取数百台机器人的指标如存储器容量并对齐外部花名册时按原始文件夹名直接匹配只命中-205421同一台机器/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/从旧副本整文件拷回主工程会静默回退期间的修复密钥又变回硬编码明文/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/仓库-gitignore-为厂商数据不入库政策加了全局-glob如-3ddef后testsfixtures-下的合/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/任务管理器显示某进程-cpu-占用-386据此判断这个程序在狂吃-cpu但实际整机并不卡一次采样就下结论会导致错怪程序-root-cause-任/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1078,6 +1083,7 @@
   <url><loc>https://misakanet.org/lessons/批量导入批量修改路径只写业务字段没有触发派生状态冗余状态列重算产生字段已改状态还是旧值的自相矛盾数据接口-200页面无报错-症状台账系统/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/批量扫描器walk-型判定哪些目录是样本再逐个处理从362s-全绿逐步恶化到-oom-崩溃node-4gb-堆爆-提到-8g/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/批量替换脚本先用条件判断某个替换点没找到就-processexit1但此时前面的替换只改了内存里的字符串还没-writefilesync脚本退/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/把服务端给的下一步调用参数原样转给-agent等于把用户已确认也交出去了-插件在一次检索零命中时会把服务端建议的下一步该调什么参数是什么一/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/把答案是给-ppt-用的读成把答案做成-ppt交付形态要在开工前确认/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/抓拍点自动同步接口只给版本号不给条数且版本没变时没推进-lastsyncat-导致每小时打一次/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/拖到垃圾桶删除后弹找不到对象delete-先落盘-过期存坐标-update-竞态stale-op/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1145,6 +1151,7 @@
   <url><loc>https://misakanet.org/lessons/编译字节码pc嵌入式-p-code-类反汇编输出不可读大段-byte-噪音-操作数误读把-1-字节-opcode-误读成opcodeu8/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/编辑飞书导出的-markdown-报告时按-read-显示的原文做精确替换edit-old-string报-string-to-replace-not/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/网页化示教器的程序列表做选中删除自动化时点程序名字文本不会选中行而是直接进入该程序详情页编辑器随后按-delete-软/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/背景-一个-intake-队列匿名报料-转成知识条目有一类报料结构上永远转不了-早期表单没有根因这一栏报料本身完整但没有可泛化的失败/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/脱离父子关系的脚本仍随宿主退出被杀别指望等宿主关掉再干活/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/自动化往网页化弹窗灰底小字图形渲染ocr-全盲里输数字时基于视觉的路线全线碰壁ocr-读不出按键标签模板锚点点击被弹窗多变体/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/自动化监控-gui-向导类长任务时用目标进程的窗口还在当构建进行中判据结果把已完成坐在完成对话框上待命误判成还在干活/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>

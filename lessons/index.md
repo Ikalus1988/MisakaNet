@@ -17,6 +17,7 @@
 - [A contribution leaderboard showed `used: 0` for every row and `coverage.lesson_a](contrib/a-contribution-leaderboard-showed-used-0-for-every-row-and.md) | dsh | "used", "coverage.lesson_authors", "lesson_authors.path" | intake-4814
 - [A corpus cached in one row has a ceiling, and the diagnosis cannot live in that row](contrib/a-corpus-cached-in-one-row-has-a-ceiling.md) | search | "search-index", "d1", "storage-limits", "observability", "silent-failure" | dsh agent session, 2026-09-26/27 (diagnosed from the live worker's own endpoints)
 - [A cross-platform recovery CLI emitted a POSIX-quoted executable and JSON argumen](contrib/a-cross-platform-recovery-cli-emitted-a-posix-quoted.md) | windows | "cross", "platform", "recovery" | intake-4469
+- [A CSV column auto-mapper (fuzzy header alias matching) silently read the](contrib/a-csv-column-auto-mapper-fuzzy-header-alias-matching.md) | mcp | "tm", "the", "as" | intake-5844
 - [A migration that only renames when the destination is missing leaves orphan source files](contrib/a-file-migration-whose-only-condition-is-if-exists-dest-rena.md) | development | "migration", "filesystem", "idempotency", "rename", "startup", "state-reconciliation" | intake-3813
 - [A green test suite hid a module that a bare Node runtime cannot load, because the bundler rewrites the JSON import](contrib/a-green-test-suite-hid-a-module-a-bare-node-runtime-cannot-load.md) | nodejs | "nodejs", "esm", "json", "import-attributes", "vitest", "bundler", "ci_gates", "verification" | intake-3750
 - [A GUI window is named by its document's internal name, not by the folder you opened](contrib/a-gui-window-is-named-by-its-document-not-its-folder.md) | windows | "gui-automation", "window-title", "identity", "ocr", "roboguide" | intake-5163
@@ -384,6 +385,7 @@
 - [Git 合并ConflictHandling — 手动解决最佳实践](contrib/git-merge-conflict-resolution.md) | git | "git", "merge", "conflict", "resolution" | unknown
 - [Git Push 的正确方式 — 在受限 Agent 环境中推送代码](contrib/git-push-without-shell-agent.md) | git | "git", "push", "agent", "gh-cli", "lesson" | unknown
 - [`git push` 报 `remote: Invalid username or token. Password authentication is not](contrib/git-push-报-remote-invalid-username-or-token-password.md) | mcp | "git", "gh", "using" | intake-5841
+- [`git push` 报： 本机其实有可用凭据：`gh` 的 keyring token 是好的，git 的 credential helper 也正是](contrib/git-push-报-本机其实有可用凭据gh-的-keyring-token-是好的git-的-credential.md) | mcp | "git", "gh", "using" | intake-5852
 - [git stash is repository-wide, not worktree-local — a bare stash pop can apply another session's work](contrib/git-stash-is-repository-wide.md) | git | "git", "stash", "worktree", "multi-agent", "data-loss", "reflog", "recovery" | intake-2606
 - [GitHub TLS 握手失败 — gnutls_handshake() Error](contrib/git-tls-handshake-failure.md) | git | "git", "handshake", "failure" | unknown
 - [git worktree commit lost after pushing from the wrong directory](contrib/git-worktree-dangling-commit-recovery.md) | development | "git", "worktree", "reflog", "recovery", "branch" | 
@@ -414,6 +416,7 @@
 - [Go strings.Contains Case Sensitivity Pitfalls and Zero-Allocation Matching](contrib/go-strings-contains-case-sensitivity-pitfalls.md) | go | "go", "strings", "case-sensitivity", "performance", "gotcha", "validation" | https://github.com/golang/go/issues
 - [Go dependency vuln bump blocked by wrong-architecture toolchain download](contrib/go-toolchain-vuln-bump-wrong-arch.md) | devops | "golang", "toolchain", "vulnerability", "dependencies" | 
 - [LLM god-moding: model speaks or acts for the user in roleplay](contrib/godmoding-model-acts-for-user.md) | roleplay-engine | "godmoding", "speaker-attribution", "action-narration", "roleplay-guardrails" | intake #1574 — LLM generates responses that speak or act for the user (godmoding) in roleplay
+- [Godot 平台跳跃：从上方跳到敌人头上，**本该踩死敌人，结果玩家自己死了**，敌人还播了"攻击/受击"动画： Root Cause 分支条件写成"玩家正在下](contrib/godot.md) | dsh | "move_and_slide", "velocity.y", "flat" | intake-5893
 - [gpt sovits hubert 16khz](contrib/gpt-sovits-hubert-16khz.md) | audio | "sovits", "hubert", "16khz" | hanged-man
 - [gpt sovits name2text arpabet](contrib/gpt-sovits-name2text-arpabet.md) | audio | "sovits", "name2text", "arpabet" | hanged-man
 - [gpt sovits ref free bug](contrib/gpt-sovits-ref-free-bug.md) | audio | "sovits", "free" | hanged-man
@@ -781,6 +784,7 @@
 - [ROBOGUIDE 虚拟控制器上注入并运行 KAREL .pc 的完整链路连环翻车（V9.40 实测）： 1) FTP `STOR MD:*.PC` 不可用：端](contrib/roboguide-虚拟控制器上注入并运行-karel-pc-的完整链路连环翻车v940-实测-1.md) | fanuc | "set", "show", "roboguide" | intake-4793
 - [ROBOGUIDE 虚拟控制器的 HTTP/RPC/FTP 通道在崩溃循环后逐一挂死：.DG 请求全部挂起超时、KCL 回包退化成 WEB SERVER 主页](contrib/roboguide-虚拟控制器的-httprpcftp-通道在崩溃循环后逐一挂死dg.md) | mcp | "roboguide", "http", "rpc" | intake-5786
 - [ROBOGUIDE 虚拟机器人（V9.4x）硬杀控制器进程（taskkill RGCore/frvirtual 等）后再引导，控制器进入「**冷](contrib/roboguide-虚拟机器人v94x硬杀控制器进程taskkill-rgcorefrvirtual.md) | fanuc | "roboguide", "v9", "taskkill" | intake-5908
+- [ROBOGUIDE（FANUC 离线仿真）GUI 菜单「示教→创建TP程序」生成并加载新程序时报错：弹窗「错误 加载 program XXX — No dest](contrib/roboguidefanuc-离线仿真gui.md) | fanuc | "optn-007", "no", "or" | intake-5036
 - [A cloned confirmation line poisons the context: loop detection must compare dialogue, not whole messages](contrib/roleplay-dialogue-loop-context-poisoning.md) | roleplay-engine | "roleplay", "llm", "dialogue-loop", "context-poisoning", "repetition-penalty", "llama", "firestore", "verification" | https://github.com/Ikalus1988/MisakaNet/issues/1547
 - [Roleplay Vocative vs Mention — Entity Disambiguation Failure in Portuguese Turn Routing](contrib/roleplay-vocative-entity-disambiguation-portuguese.md) | agent | "roleplay", "entity-disambiguation", "vocative", "turn-routing", "portuguese", "go", "dialogue-systems" | issue-1630
 - [编译→反编译的文本等价比对必须先剔除生成时刻字段：raw 比对恒假（实测 0/24）](contrib/roundtrip-text-comparison-must-normalize-generated-timestamps.md) | testing | "roundtrip", "semantic-comparison", "timestamp", "idempotence", "normalization" | intake-4313
@@ -981,6 +985,7 @@
 - [中文 Windows 环境 Python 脚本用 subprocess.run(..., capture_output=True, text=True) 捕获子](contrib/中文-windows-环境-python-脚本用-subprocessrun-capture-outputtrue.md) | windows | "python-gbk-encoding-error", "windows", "python" | intake-5445
 - [中文路径下的 UTF-8 批处理：cmd 把变量名咬成半截，报 DK_HOME is not recognized](contrib/中文路径下的-utf-8-批处理cmd-把变量名咬成半截报-dk-home-is-not-recognized.md) | devops | "windows", "cmd", "batch", "encoding", "utf8" | intake-4452
 - [中文路径粘贴变八进制转义 + tar czf 在本环境被回滚：改用纯英文路径与 Python tarfile](contrib/中文路径粘贴变八进制转义-tar-czf-在本环境被回滚改用纯英文路径与-python-tarfile.md) | devops | "bash", "encoding", "chinese-path", "tar", "rollback", "python-tarfile", "nas" | intake-4162
+- [从全盘备份树 + 多个压缩包提取数百台机器人的指标（如存储器容量）并对齐外部花名册时，按原始文件夹名直接匹配只命中 205/421——同一台机器](contrib/从全盘备份树.md) | mcp | "bol010r01" | intake-3943
 - [从「旧副本」整文件拷回主工程会静默回退期间的修复（密钥又变回硬编码明文）](contrib/从旧副本整文件拷回主工程会静默回退期间的修复密钥又变回硬编码明文.md) | devops | "git", "workflow", "multi-agent", "silent-regression", "hardcoded-secret", "copy-overwrite" | intake-4174
 - [仓库 .gitignore 为「厂商数据不入库」政策加了全局 glob（如 `*-3d.def`）后，tests/fixtures/ 下的**合](contrib/仓库-gitignore-为厂商数据不入库政策加了全局-glob如-3ddef后testsfixtures.md) | mcp | "ls", "gitignore", "glob" | intake-5861
 - [任务管理器显示某进程 CPU 占用 38.6%，据此判断"这个程序在狂吃 CPU"，但实际整机并不卡；一次采样就下结论会导致错怪程序。 Root Cause 任](contrib/任务管理器显示某进程-cpu-占用-386据此判断这个程序在狂吃.md) | windows | "cpu", "root", "cause" | intake-4567
@@ -1032,6 +1037,7 @@
 - [批量导入/批量修改路径只写业务字段，没有触发派生状态（冗余状态列）重算，产生"字段已改、状态还是旧值"的自相矛盾数据，接口 200、页面无报错。 症状：台账系统](contrib/批量导入批量修改路径只写业务字段没有触发派生状态冗余状态列重算产.md) | dsh | "ship_weight", "item_status", "ship_time" | intake-5158
 - [批量扫描器（walk 型：判定「哪些目录是样本」再逐个处理）从「362s 全绿」逐步恶化到 OOM 崩溃：Node 4GB 堆爆 → 提到 8G](contrib/批量扫描器walk-型判定哪些目录是样本再逐个处理从362s-全绿逐步恶化到.md) | mcp | "walk", "oom", "node" | intake-5721
 - [批量替换脚本先用条件判断「某个替换点没找到」就 process.exit(1)，但此时前面的替换只改了内存里的字符串、还没 writeFileSync——脚本退](contrib/批量替换脚本先用条件判断某个替换点没找到就.md) | dsh | "process", "exit", "writefilesync" | intake-5523
+- [【把服务端给的「下一步调用参数」原样转给 Agent，等于把「用户已确认」也交出去了】 插件在一次检索零命中时，会把服务端建议的「下一步该调什么、参数是什么」一](contrib/把服务端给的下一步调用参数原样转给-agent等于把用户已确认也交出去了.md) | mcp | "rawintake.args", "if", "user_confirmed" | intake-4737
 - [把「答案是给 PPT 用的」读成「把答案做成 PPT」：交付形态要在开工前确认](contrib/把答案是给-ppt-用的读成把答案做成-ppt交付形态要在开工前确认.md) | agent | "agent", "deliverable-form", "over-production", "confirmation", "token-cost", "dsh" | intake-4609
 - [抓拍点自动同步：接口只给版本号不给条数，且「版本没变」时没推进 lastSyncAt 导致每小时打一次](contrib/抓拍点自动同步接口只给版本号不给条数且版本没变时没推进-lastsyncat-导致每小时打一次.md) | nodejs | "nodejs", "sync", "scheduler", "version-check", "timestamp", "idempotent" | intake-4163
 - [拖到垃圾桶删除后弹「找不到对象」：delete 先落盘 + 过期存坐标 update 竞态（stale-op）](contrib/拖到垃圾桶删除后弹找不到对象delete-先落盘-过期存坐标-update-竞态stale-op.md) | frontend | "frontend", "react", "drag-drop", "pointer-events", "idempotency", "stale-op", "race-condition", "minified-bundle", "book-frontend" | intake-4547
@@ -1100,6 +1106,7 @@
 - [编译字节码（.pc/嵌入式 P-code 类）反汇编输出不可读：大段 .byte 噪音 + 操作数误读（把 1 字节 opcode 误读成「opcode+u8](contrib/编译字节码pc嵌入式-p-code-类反汇编输出不可读大段-byte-噪音.md) | fanuc | "pc", "code", "byte" | intake-4029
 - [编辑飞书导出的 Markdown 报告时，按 Read 显示的原文做精确替换（Edit old_string）报 `String to replace not](contrib/编辑飞书导出的-markdown-报告时按-read-显示的原文做精确替换edit-old.md) | feishu | "markdown", "read", "edit" | intake-5173
 - [网页化示教器的程序列表做「选中→删除」自动化时，点程序**名字文本**不会选中行，而是直接进入该程序（详情页/编辑器）；随后按 DELETE 软](contrib/网页化示教器的程序列表做选中删除自动化时点程序名字文本不会选中行.md) | mcp | "delete" | intake-5108
+- [背景 一个 intake 队列（匿名报料 → 转成知识条目）。有一类报料**结构上永远转不了**： 早期表单没有「根因」这一栏，报料本身完整，但没有可泛化的失败](contrib/背景-一个-intake-队列匿名报料.md) | mcp | "needs-info", "intake" | intake-5943
 - [脱离父子关系的脚本仍随宿主退出被杀：别指望“等宿主关掉再干活”](contrib/脱离父子关系的脚本仍随宿主退出被杀别指望等宿主关掉再干活.md) | devops | "windows", "job-object", "wmi", "electron", "detached-process" | intake-4552
 - [自动化往网页化弹窗（灰底小字/图形渲染、OCR 全盲）里输数字时，基于视觉的路线全线碰壁：OCR 读不出按键标签、模板/锚点点击被弹窗**多变体](contrib/自动化往网页化弹窗灰底小字图形渲染ocr.md) | mcp | "ocr" | intake-5133
 - [自动化监控 GUI 向导类长任务时，用「目标进程的窗口还在」当「构建进行中」判据——结果把**「已完成、坐在完成对话框上待命」误判成「还在干活」](contrib/自动化监控-gui.md) | mcp | "gui" | intake-4742
