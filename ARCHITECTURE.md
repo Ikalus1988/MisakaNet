@@ -49,7 +49,7 @@ lessons/                  # Shared knowledge (indexed failure lessons)  — size
 
 ## CI Pipeline Architecture
 
-MisakaNet uses a multi-layered CI architecture powered by GitHub Actions with **92 workflow files** under `.github/workflows/` (`ls .github/workflows/*.yml | wc -l`, 2026-11-15 — this number moves with every gate added; `tests/test_workflow_inventory.py` owns the list in `docs/CI.md`, not this sentence). Each workflow is a self-contained quality gate or automation task. Full inventory (names, triggers, failure paths): see `docs/CI.md`.
+MisakaNet uses a multi-layered CI architecture powered by GitHub Actions with **93 workflow files** under `.github/workflows/` (`ls .github/workflows/*.yml | wc -l`, 2026-11-15 — this number moves with every gate added; `tests/test_workflow_inventory.py` owns the list in `docs/CI.md`, not this sentence). Each workflow is a self-contained quality gate or automation task. Full inventory (names, triggers, failure paths): see `docs/CI.md`.
 
 ### CI Layer Model
 
@@ -145,7 +145,7 @@ flowchart LR
     end
 
     Crawler["🤖 Remote Agent / Crawler<br/>(anonymous)"]
-    CI["⚙️ GitHub CI<br/>(92 workflows)"]
+    CI["⚙️ GitHub CI<br/>(93 workflows)"]
 
     Crawler -- "POST /mcp" --> Worker
     Worker -- "lessons" --> D1
@@ -164,6 +164,6 @@ flowchart LR
     Lessons -. "deploy Worker on release" .-> Worker
 ```
 
-> **Three paths:** ① **Remote HTTP MCP** — anonymous agent → `misakanet.org/mcp` → Worker → D1 (lessons + redaction) + KV (per-address burst window only — reads have been unlimited since 2026-09-18; it is a speed limit, not a quota) + intake → GitHub issue. ② **Local stdio MCP** — `scripts/mcp_server.py` → BM25 engine over `lessons/` (unlimited). ③ **Contribution** — PRs pass 92 workflows; intake issues become lessons after maintainer review.
+> **Three paths:** ① **Remote HTTP MCP** — anonymous agent → `misakanet.org/mcp` → Worker → D1 (lessons + redaction) + KV (per-address burst window only — reads have been unlimited since 2026-09-18; it is a speed limit, not a quota) + intake → GitHub issue. ② **Local stdio MCP** — `scripts/mcp_server.py` → BM25 engine over `lessons/` (unlimited). ③ **Contribution** — PRs pass 93 workflows; intake issues become lessons after maintainer review.
 
 _Lifted from the README (2026-09-20): the README keeps the one-paragraph version and points here._

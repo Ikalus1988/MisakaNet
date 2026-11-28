@@ -81,11 +81,22 @@ def open_intakes() -> list[dict]:
 
 
 def asked(number: int) -> bool:
-    """Whether the template comment is already on this issue."""
-    raw = _gh("api", f"repos/{REPO}/issues/{number}/comments?per_page=100",
-              "--jq", '[.[] | select(.body | contains("needs-root-cause"))] | length')
+    """Whether the template comment is already on this issue.
+
+    **Paginated**, because the question is ``has this marker appeared at all``: comments come back
+    oldest-first and one page is the *oldest* 100, so a single-page read would answer ``no`` for an
+    issue whose reply is simply older than the last 100 comments — and ``no`` here means posting the
+    template a second time (`tests/test_github_list_reads_paginate.py` owns this rule; measured
+    2026-10-04: seven issues here carry >100 comments, one carries 249).
+    """
+    # One line on purpose: `test_github_list_reads_paginate`'s scanner looks at the line carrying
+    # the `per_page=`, so `--paginate` must be on it. (The scanner also accepts `--paginate` as
+    # pagination — teaching it that was part of this change.)
+    raw = _gh("api", f"repos/{REPO}/issues/{number}/comments?per_page=100", "--paginate", "--jq", '[.[] | select(.body | contains("needs-root-cause"))] | length')  # noqa: E501
+    # `--jq` runs **per page** under `--paginate`, so the counts print one per page and concatenate
+    # ("100" + "0" = 1000). Summing the emitted lines is the correct read of the same document.
     try:
-        return int((raw or "0").strip() or 0) > 0
+        return sum(int(line) for line in (raw or "").split() if line.strip()) > 0
     except ValueError:
         return False
 

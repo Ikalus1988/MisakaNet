@@ -109,8 +109,17 @@ def _prose_lines(source: str) -> set[int]:
     return marked
 
 
+#: `gh api --paginate` is pagination done by the CLI: it follows `Link` headers and emits every
+#: page, so the caller *does* see the whole collection. Recognised because the alternative reading —
+#: "not a `page=` variable, therefore one page" — reported a correct call as a defect and the fix it
+#: suggested (hand-rolling a loop) would add a second, worse implementation of the same thing.
+GH_PAGINATE = re.compile(r"--paginate")
+
+
 def _reads_paginate(line: str, window: list[str]) -> bool:
-    """True when this call is one page of a paging loop, or carries its own `page=`."""
+    """True when this call is one page of a paging loop, paginates through `gh`, or carries `page=`."""
+    if GH_PAGINATE.search(line):
+        return True
     if PAGE_PARAM.search(PER_PAGE.sub("", line)):
         return True
     # `for page in range(...)` / `while page <=` within a few lines above means the caller paginates.
