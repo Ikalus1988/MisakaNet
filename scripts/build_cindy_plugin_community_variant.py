@@ -46,11 +46,11 @@ TARGET = REPO / ".cindy-plugin-community"
 #: The community channel's version line. Deliberately offset from the official one (1.6.x) so the
 #: two channels never take the same version slot on the same plugin id. Bump it when the community
 #: package is published; keep it below the official line.
-COMMUNITY_VERSION = "1.5.22"  # 1.5.15 被审核退回（版本号已烧掉）→ 这一版走 1.5.16
+COMMUNITY_VERSION = "1.5.23"  # 1.5.15 被审核退回（版本号已烧掉）→ 这一版走 1.5.16
 
 #: The community channel's own release story. The official package carries the official one.
 COMMUNITY_RELEASE_NOTES = (
-    '这一版只改文档：随包手册补回与代码一致（相对上一上架的 1.5.21）。手册 §5.6.1 之前还在描述 1.5.17 之前那套旧闸门——「30 秒等不到点击就放弃」「改走 confirm=direct」「点击后要换一个新的在途调用号」「手机端按钮点不动」。这些在 1.5.20 之后都已经不成立：现在是一次点击就能走通（手机、桌面都行），票据一次性、15 分钟、绑定那一版原文。§5.8 也改成实情：插件不再假装在轮末替你查语料（那条路在宿主规则下必然失败），改成把失败交给下一轮的 agent、由它用自己的在途调用去查。功能与上报流程没有任何变化。**从市场装的版本会自动更新；从 .cindy 文件装的不会**。版本号继续与官方通道错开。'
+    '这一版只改确认卡上的一句话（相对上一上架的 1.5.22）。原来那段说明逐项列出「哪些字段换成了什么占位符、哪些识别不了会原样保留」，那是实现细节，读起来啰嗦。现在只说两件事：这段**已经脱敏**，而且它就是**将要原样公开**的文本——过一眼、确认没问题再点「确认提交」。卡片正文没变：problem / error / what_tried 等全部字段照样完整披露，照样全字段脱敏、全字段绑定票据。**从市场装的版本会自动更新；从 .cindy 文件装的不会**。版本号继续与官方通道错开。'
 )
 
 #: The three substitutions, as (label, file, pattern, replacement).

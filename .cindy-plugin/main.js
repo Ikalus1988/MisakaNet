@@ -21,7 +21,7 @@ const FETCH_TIMEOUT_MS = 45000;
 // 它按不可逆外发处理，不确定态只能提示先核对远端状态。
 const READ_TIMEOUT_MS = 20000;
 const READ_RETRY_BACKOFF_MS = 400;
-const PLUGIN_VERSION = '1.6.12';
+const PLUGIN_VERSION = '1.6.13';
 
 /* 客户端标识：每台机器一个稳定 id。
  * 端点会把 X-MisakaNet-Client salt-hash 进 search_signals.client_hint，而 client_hint 是
@@ -533,9 +533,7 @@ function renderIntakeCard(args) {
     '<div style="font-weight:600;margin-bottom:4px">这条上报将要公开的内容</div>' +
     '<div style="color:var(--text-secondary, #6b6b6b);font-size:12px;margin-bottom:8px">' +
     '它会在公开仓库 Ikalus1988/MisakaNet 建一条<b>公开</b> issue，发出后不可撤回。' +
-    '下面是**已经机械脱敏、且将要原样发出去**的文本。能识别的令牌、私钥、邮箱、内网 IP、' +
-    '本机路径已经换成占位符；识别不了的（少见格式的密钥、主机名、人名等）会原样保留——' +
-    '**请逐项核对一遍**，确认没问题再点「确认提交」。' +
+    '下面这段**已经脱敏**，就是将要原样公开的文本；请过一眼，确认没问题再点「确认提交」。' +
     '</div>' +
     '<div>' + rows + '</div>' +
     '<div style="display:flex;gap:8px;margin-top:10px">' +
