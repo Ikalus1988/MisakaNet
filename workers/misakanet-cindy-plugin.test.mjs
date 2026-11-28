@@ -817,6 +817,10 @@ test('submit_intake: nothing leaves the machine before the user clicks the card'
   const card = String(load.sent.filter((m) => m.type === 'card-update')[0].html);
   assert.match(card, /data-ghost-action="intake-confirm"/, 'the card carries the confirm button');
   assert.match(card, /data-ghost-action="intake-cancel"/);
+  // 披露的措辞要短，但要保住两件事：这段已经脱敏、它就是将要原样公开的文本。
+  // （不写「哪些字段被换成了什么占位符」——那是实现细节，用户只需要知道能公开。）
+  assert.match(card, /已经脱敏/, 'the card says the text is redacted');
+  assert.match(card, /原样公开/, 'the card says this is exactly what will be published');
 });
 
 test('submit_intake: the click mints a ticket and asks for one agent turn', async () => {
