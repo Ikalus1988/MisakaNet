@@ -7,6 +7,53 @@ All notable changes to the Misaka Network project are documented here.
 
 ---
 
+## [3.24.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.23.0...v3.24.0) (2026-11-28)
+
+
+### Features
+
+* **cindy-plugin:** 1.5.23 —— 确认卡说明只说两句：已脱敏、就是将要公开的原文 ([#5915](https://github.com/Ikalus1988/MisakaNet/issues/5915)) ([7fb6f45](https://github.com/Ikalus1988/MisakaNet/commit/7fb6f45aee1a6a88946b12e39b145acb55a7f49e))
+* **lessons:** intake batch 2026-11-27 ([#5867](https://github.com/Ikalus1988/MisakaNet/issues/5867)) ([47f6293](https://github.com/Ikalus1988/MisakaNet/commit/47f6293b00bf7698ea7aaeb29c4b5d6a44e1247b))
+* **lessons:** intake batch 2026-11-27 ([#5870](https://github.com/Ikalus1988/MisakaNet/issues/5870)) ([8f566b8](https://github.com/Ikalus1988/MisakaNet/commit/8f566b831c8f78baf2eac88836e81ad27a163340))
+* **lessons:** intake batch 2026-11-27 ([#5875](https://github.com/Ikalus1988/MisakaNet/issues/5875)) ([472dcb6](https://github.com/Ikalus1988/MisakaNet/commit/472dcb6fc692e1456a385c7a56b9f21a9d6ac7be))
+* **lessons:** intake batch 2026-11-27 ([#5889](https://github.com/Ikalus1988/MisakaNet/issues/5889)) ([6406200](https://github.com/Ikalus1988/MisakaNet/commit/6406200f79915fafdc20ca10b62cccc8cea7224f))
+* **lessons:** intake batch 2026-11-27 ([#5909](https://github.com/Ikalus1988/MisakaNet/issues/5909)) ([0ca617d](https://github.com/Ikalus1988/MisakaNet/commit/0ca617d607b11263994fd11051bd84e08c90ffbe))
+* **lessons:** intake batch 2026-11-27 ([#5911](https://github.com/Ikalus1988/MisakaNet/issues/5911)) ([674a555](https://github.com/Ikalus1988/MisakaNet/commit/674a55591bf108c1e965e141f7c6dce480973215))
+* **lessons:** intake batch 2026-11-28 ([#5920](https://github.com/Ikalus1988/MisakaNet/issues/5920)) ([0b601da](https://github.com/Ikalus1988/MisakaNet/commit/0b601da624b45b850d836555fdea5cd17845a63a))
+* **lessons:** intake batch 2026-11-28 ([#5934](https://github.com/Ikalus1988/MisakaNet/issues/5934)) ([29ef64a](https://github.com/Ikalus1988/MisakaNet/commit/29ef64acb1e749f7455b806ef8cfbe8b88eb1274))
+
+
+### Bug Fixes
+
+* **auto-merge:** say "held awaiting approval", not "absent" ([#5618](https://github.com/Ikalus1988/MisakaNet/issues/5618)) ([#5858](https://github.com/Ikalus1988/MisakaNet/issues/5858)) ([6add695](https://github.com/Ikalus1988/MisakaNet/commit/6add695602e8b676dec0745c6ffb1b01c74fa9c5))
+* **ci,gate:** the already-mergeable guard never fired, and four data shapes read as CLIs ([#5933](https://github.com/Ikalus1988/MisakaNet/issues/5933)) ([2de240e](https://github.com/Ikalus1988/MisakaNet/commit/2de240eb6b8b242cea4828411c14b1329d9a3489))
+* **ci:** D1 cost watch 用 github.token 发 issue —— PAT 发不了，连续红了两天 ([#5850](https://github.com/Ikalus1988/MisakaNet/issues/5850)) ([e1d5de3](https://github.com/Ikalus1988/MisakaNet/commit/e1d5de30063d48646a71e484ff6354f8b4081648))
+* **ci:** pr-checks 加上 concurrency —— 被顶掉的 21 分钟审计还在烧 runner ([#5855](https://github.com/Ikalus1988/MisakaNet/issues/5855)) ([c2d1921](https://github.com/Ikalus1988/MisakaNet/commit/c2d19218dc7995830ee421e004b602a97eef0326))
+* **deploy-freshness:** a skipped probe could never close the issue it opened ([#5925](https://github.com/Ikalus1988/MisakaNet/issues/5925)) ([39ccb83](https://github.com/Ikalus1988/MisakaNet/commit/39ccb8373d3b616cd765d6b188c5ed52cf0bfdc5))
+* **deploy-freshness:** a stale production opens an issue, not just a red run ([#5857](https://github.com/Ikalus1988/MisakaNet/issues/5857)) ([c0b7a5f](https://github.com/Ikalus1988/MisakaNet/commit/c0b7a5f3eb2cd7891a5160a20d2b878975a89659))
+* **deps:** the wheel and uv.lock were both missing jsonschema and mcp ([#5864](https://github.com/Ikalus1988/MisakaNet/issues/5864)) ([449be47](https://github.com/Ikalus1988/MisakaNet/commit/449be47bb2a3becfc4c905eec61c47a45c7cd9b3))
+* **gate:** a units row and a SQL predicate are data, not command names ([#5926](https://github.com/Ikalus1988/MisakaNet/issues/5926)) ([f532ed7](https://github.com/Ikalus1988/MisakaNet/commit/f532ed711d25181f9f1b2c8501405a2a6344454e))
+* **gate:** allowlist the two names in [#5860](https://github.com/Ikalus1988/MisakaNet/issues/5860)'s list that really are public tools ([#5944](https://github.com/Ikalus1988/MisakaNet/issues/5944)) ([3ccdff8](https://github.com/Ikalus1988/MisakaNet/commit/3ccdff8d2ed1ac1a3a02530bea8eab4ce5d9f842))
+* **gates:** wire the hero check to CI, stop gating on a count that moves hourly, drop the fake 'no lockfile' claim ([#5873](https://github.com/Ikalus1988/MisakaNet/issues/5873)) ([e98fe5f](https://github.com/Ikalus1988/MisakaNet/commit/e98fe5f8006f66e88645ccfe6e62782136260475))
+* **health:** publish the counter memo count, so the fix is checkable from outside ([#5914](https://github.com/Ikalus1988/MisakaNet/issues/5914)) ([4508df2](https://github.com/Ikalus1988/MisakaNet/commit/4508df2ad0d05e7360e42e4102a3680db6585f59))
+* **intake:** read the Problem section under the heading an agent actually writes ([#5941](https://github.com/Ikalus1988/MisakaNet/issues/5941)) ([2ac7da8](https://github.com/Ikalus1988/MisakaNet/commit/2ac7da86cdd5948ee32637ed8013718bfedaeb6f))
+* **site:** nine English sentences outside the Quickstart block had no translation key ([#5921](https://github.com/Ikalus1988/MisakaNet/issues/5921)) ([27bd09b](https://github.com/Ikalus1988/MisakaNet/commit/27bd09bdb11874a60325051941520a84cc6bae8f))
+
+
+### Documentation
+
+* **hero:** label the latency as a round trip, because the bare number was read as service time ([#5923](https://github.com/Ikalus1988/MisakaNet/issues/5923)) ([5760069](https://github.com/Ikalus1988/MisakaNet/commit/57600693470a4e9da09b761711f8e19f177341a9)), closes [#5877](https://github.com/Ikalus1988/MisakaNet/issues/5877)
+* **readme:** one story on the first screen, and the CJK title fits its panel ([#5876](https://github.com/Ikalus1988/MisakaNet/issues/5876)) ([ccd2db0](https://github.com/Ikalus1988/MisakaNet/commit/ccd2db05c14d66ffbc38a2fb72f1d124f83c72e6))
+* **readme:** say which of the 668 open issues are actually work ([#5868](https://github.com/Ikalus1988/MisakaNet/issues/5868)) ([43afd7d](https://github.com/Ikalus1988/MisakaNet/commit/43afd7dc4f6e444f7d30a0888fd14c90cc2cd8c2))
+* **readme:** the hero is a recording, not a savings claim ([#5871](https://github.com/Ikalus1988/MisakaNet/issues/5871)) ([33c648d](https://github.com/Ikalus1988/MisakaNet/commit/33c648d4c141fe698988168f45d35074d614609c)), closes [#5883](https://github.com/Ikalus1988/MisakaNet/issues/5883)
+* **readme:** what it is before how to install it, and two audits out of the first page ([#5863](https://github.com/Ikalus1988/MisakaNet/issues/5863)) ([c62b0a9](https://github.com/Ikalus1988/MisakaNet/commit/c62b0a963885cb73b5f6ba26e9ba3dddf1fbf86c))
+* **scripts:** 没有 wrangler 登录态时怎么读遥测（导出 .cache/cf_api_token） ([#5854](https://github.com/Ikalus1988/MisakaNet/issues/5854)) ([49d6ffd](https://github.com/Ikalus1988/MisakaNet/commit/49d6ffd8215b42bde38a15c73323164f404ae5f2))
+
+
+### CI/CD
+
+* **intake:** the review band either finishes or goes red ([#5942](https://github.com/Ikalus1988/MisakaNet/issues/5942)) ([bcdfd32](https://github.com/Ikalus1988/MisakaNet/commit/bcdfd32b61fe9d12f1d74d68b659b9bcdc204bfb))
+
 ## [3.23.0](https://github.com/Ikalus1988/MisakaNet/compare/v3.22.0...v3.23.0) (2026-11-26)
 
 
