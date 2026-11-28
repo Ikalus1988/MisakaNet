@@ -191,3 +191,68 @@ def test_a_name_with_code_evidence_survives_the_derivation():
     assert "requires_openai_auth" in lesson_gate.unknown_surface_names(
         lesson, VOCAB, prose_source=lesson_gate._lesson_body(lesson))
     assert any("requires_openai_auth" in problem for problem in _gate(lesson))
+
+
+# ── Four more data shapes (2026-11-28, #5860) ─────────────────────────────────────────────────────
+#
+# Each was measured over the corpus before being added, and the measurement is what decides whether a
+# shape belongs here. `tests/test_public_surface_corpus_impact.py` re-runs it, so a future edit that
+# quietly widens one of these patterns fails there rather than passing review.
+
+def test_a_single_units_cell_is_not_a_command():
+    """`Tm [Nm]` — the inline form of #5844's table. Measured: 0 lessons changed, 0 names lost."""
+    assert lesson_gate._is_command_span("Tm [Nm]") is False
+    assert lesson_gate._is_command_span("L10 [h]") is False
+    # The comma form stays covered by the older rule; both must agree.
+    assert lesson_gate._is_command_span("Tm [Nm],Nm [rpm]") is False
+
+
+def test_a_comparison_is_not_a_command():
+    """`total == 0`, `role === 'assistant'` — a predicate head, not a CLI (intake #4737)."""
+    for span in ("total == 0", "role === 'assistant'", 'sys.platform == "win32"',
+                 "row.entry_valid !== 1", "err != null"):
+        assert lesson_gate._is_command_span(span) is False, span
+
+
+def test_an_approximation_is_not_a_command():
+    """`vy ≈ -190` — a measured value with a tolerance, not an invocation (intake #5893)."""
+    assert lesson_gate._is_command_span("vy ≈ -190") is False
+    assert lesson_gate._is_command_span("latency ⇒ 42ms") is False
+
+
+def test_an_alarm_code_is_not_a_command():
+    """`MEMO-128 parameters are different` — a controller alarm, not the tool `memo` (#3943, #5036)."""
+    assert lesson_gate._is_command_span("MEMO-128 parameters are different") is False
+    assert lesson_gate._is_command_span("OPTN-007 Unauthorized: 'R507 Ascii Upload'") is False
+    assert lesson_gate._is_command_span("HRTL-050 Network is down") is False
+
+
+def test_the_four_new_shapes_do_not_swallow_real_command_evidence():
+    """The trade this rule must not make, stated as the shapes a widening usually breaks.
+
+    Every span here is a real invocation with an argument, and each one is one character away from a
+    shape rejected above (`pytest -q` vs `total == 0`, `python -c 'x=1'` vs `role === 'assistant'`).
+    """
+    keep = (
+        "pytest -q",                                   # plain two-word command
+        'curl -H "a=b"',                               # `=` inside an argument
+        "python - <<'EOF'",                            # redirect
+        "python -c 'x = 1'",                           # assignment *inside* an argument
+        "UPDATE logs SET col = ?",                     # SQL that really is a statement, not a predicate
+        "RUN <prog>",                                  # FANUC TP
+        "git log --oneline",                           # flags
+        "pip install -q requests",                     # longer argc
+    )
+    for span in keep:
+        assert lesson_gate._is_command_span(span) is True, span
+
+
+def test_an_assignment_is_deliberately_still_a_command():
+    """#5171 / #5895 are not unblocked, and that is a decision recorded with its measurement.
+
+    Rejecting assignments (`BS = chr(92)`) changes 48 lessons and drops 51 names the allowlist does
+    not cover — `apisessionagenterror`, `authorizenaviappkey`, … — i.e. exactly the private
+    identifiers this check exists to find. Those two intakes need their spans rewritten.
+    """
+    assert lesson_gate._is_command_span("BS = chr(92)") is True
+    assert lesson_gate._is_command_span("process_mode = Node.PROCESS_MODE_DISABLED") is True

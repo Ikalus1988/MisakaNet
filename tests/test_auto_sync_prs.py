@@ -78,6 +78,60 @@ def mergeable_guard_problems(text: str) -> list[str]:
     ]
 
 
+def mergeable_is_asked_per_pr_problems(text: str) -> list[str]:
+    """Rule 4: `mergeable` must come from the single-PR endpoint, because the list never carries it.
+
+    Measured 2026-11-28: `GET /repos/{r}/pulls?state=open` returns `mergeable: null` for **every** row,
+    on three consecutive calls, across all 13 open PRs — GitHub does not compute it for list responses.
+    The guard "skip a PR that can already merge" reads `mergeable`, so while the list fed it, that
+    guard had never fired for anyone: #5851 was `mergeable=true / clean` at 08:0x and the 07:55 run
+    merged main into it anyway, which is exactly the churn the guard exists to prevent.
+
+    A silent guard is worse than a missing one: the file's own docstring claimed the protection, and
+    four months of green runs were read as evidence that it worked.
+    """
+    problems = []
+    # The call and its `--jq` are two lines, so the window is the whole list step: from the list
+    # endpoint to the `@tsv` that ends its projection.
+    window = re.search(
+        r'gh api "repos/\$\{\{ github\.repository \}\}/pulls\?state=open".*?@tsv', text, re.S)
+    if window is None:
+        problems.append("the PR list call moved; this rule needs a new anchor")
+    elif "mergeable" in window.group(0):
+        problems.append(
+            "`mergeable` is read from the list endpoint, which returns `null` for every PR: the "
+            "already-mergeable guard then never fires and every sync re-heads PRs that could merge")
+    if '/pulls/$NUM"' not in text:
+        problems.append(
+            "no per-PR `mergeable` lookup: the only endpoint that answers it is the single-PR one")
+    return problems
+
+
+def per_branch_failure_problems(text: str) -> list[str]:
+    """Rule 3: one unpushable branch must not end the sweep for every branch after it.
+
+    The step runs under `set -euo pipefail`, so an unguarded `git fetch`/`git push` that fails aborts
+    the whole loop. Measured 2026-11-27 → 11-28: **three consecutive six-hourly runs** failed on the
+    same branch — `dependabot/github_actions/…` (#5594), whose merge of main writes
+    `.github/workflows/pr-checks.yml` and is therefore refused by the PAT ("refusing to allow a
+    Personal Access Token to create or update workflow … without `workflow` scope"). Nothing in the
+    log said the rest of the queue had been skipped; the run only said `exit code 1`.
+    """
+    problems = []
+    fetch = re.search(r'^\s*git fetch origin "\$HEAD_REF".*$', text, re.M)
+    if fetch and "||" not in fetch.group(0):
+        problems.append(
+            "`git fetch origin \"$HEAD_REF\"` is unguarded: under `set -e` a branch that cannot be "
+            "fetched aborts the loop and every PR after it is silently never synced")
+    push = re.search(r'^\s*if git -c http\.extraheader=.*push origin "HEAD:\$HEAD_REF"; then\s*$', text, re.M)
+    if not push:
+        problems.append(
+            "the push is not guarded: a rejected push (e.g. a branch whose merge touches "
+            ".github/workflows/ and the PAT lacks `workflow` scope) aborts the loop instead of being "
+            "reported for that PR alone")
+    return problems
+
+
 def test_the_sync_is_scheduled_and_not_triggered_by_every_main_push():
     block = triggers(yaml.safe_load(source()))
     assert per_push_problems(source()) == [], (block, per_push_problems(source()))
@@ -116,3 +170,47 @@ def test_the_mergeable_guard_can_go_red():
     broken = source().replace('if [ "$MERGEABLE" = "true" ]; then', 'if [ "$MERGEABLE" = "never" ]; then')
     assert broken != source(), "the guard moved; this fixture needs the new anchor"
     assert mergeable_guard_problems(broken), "a missing mergeable guard must be a problem"
+
+
+def test_one_rejected_push_does_not_end_the_sweep():
+    assert per_branch_failure_problems(source()) == []
+
+
+def test_mergeable_comes_from_the_single_pr_endpoint():
+    assert mergeable_is_asked_per_pr_problems(source()) == []
+
+
+def test_the_mergeable_source_rule_can_go_red():
+    """The 2026-11-28 shape: `mergeable` taken from the list, where it is always null."""
+    # The shape the rule hunts for: the list projection carries `mergeable`. (Build it on the same
+    # statement so the window still ends at `@tsv` — a fixture that breaks the anchor proves nothing
+    # about the rule.)
+    list_reads_mergeable = source().replace(
+        "| [.number, .head.ref, .head.repo.full_name] | @tsv",
+        "| [.number, .head.ref, .head.repo.full_name, .mergeable] | @tsv")
+    assert list_reads_mergeable != source(), "the list jq moved; this fixture needs the new anchor"
+    assert any("list endpoint" in p for p in mergeable_is_asked_per_pr_problems(list_reads_mergeable))
+
+    # And the other half: no per-PR lookup at all is not a pass either.
+    without_per_pr = source().replace(
+        'gh api "repos/${{ github.repository }}/pulls/$NUM"',
+        'gh api "repos/${{ github.repository }}/pulls/all"')
+    assert without_per_pr != source(), "the per-PR call moved; this fixture needs the new anchor"
+    problems = mergeable_is_asked_per_pr_problems(without_per_pr)
+    assert any("per-PR" in p for p in problems), problems
+
+
+def test_the_per_branch_guard_can_go_red():
+    """The 2026-11-27 shape: bare `git push`, so the first refusal aborted everything after it."""
+    unguarded = source().replace(
+        'if git -c http.extraheader="$AUTH_HEADER" push origin "HEAD:$HEAD_REF"; then',
+        'git -c http.extraheader="$AUTH_HEADER" push origin "HEAD:$HEAD_REF"')
+    assert unguarded != source(), "the push line moved; this fixture needs the new anchor"
+    assert per_branch_failure_problems(unguarded), "an unguarded push must be a problem"
+
+    unguarded_fetch = source().replace(
+        'git fetch origin "$HEAD_REF" || { echo "::warning::PR #$NUM: could not fetch $HEAD_REF"; continue; }',
+        'git fetch origin "$HEAD_REF"')
+    assert unguarded_fetch != source(), "the fetch line moved; this fixture needs the new anchor"
+    problems = per_branch_failure_problems(unguarded_fetch)
+    assert any("fetch" in p for p in problems), problems

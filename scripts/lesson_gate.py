@@ -293,12 +293,51 @@ def _surface_head(raw: str) -> str | None:
 _UNITS_ROW = re.compile(r"^\$?\s*[A-Za-z_][\w.]*\s*\[[^\]]*\]\s*,")
 _SQL_NULL_PREDICATE = re.compile(r"\bIS\s+(?:NOT\s+)?NULL\b", re.IGNORECASE)
 
+#: Four more shapes that are data, each measured separately over the 1,226-lesson corpus before being
+#: added (2026-11-28). The tests pin the *shape* of each; the numbers below are what the corpus said.
+#:
+#:   units_cell  `Tm [Nm]` (a single table cell, no comma — #5844's inline form)
+#:               corpus: **0** lessons changed, 0 names lost → unblocks intake #5844
+#:   cmp         `total == 0`, `role === 'assistant'`, `sys.platform == "win32"`
+#:               corpus: 14 lessons, 16 names — every one a predicate head, none a CLI → #4737
+#:   approx      `vy ≈ -190`
+#:               corpus: 0 lessons changed → #5893
+#:   alarm_code  `MEMO-128 parameters are different`, `OPTN-007 Unauthorized: …`
+#:               corpus: 6 lessons, 6 names — all FANUC/robot alarm codes → #3943, #5036
+#:
+#: **What is deliberately NOT here.** `BS = chr(92)` (#5171) and
+#: `process_mode = Node.PROCESS_MODE_DISABLED` (#5895) are assignments, and the measured cost of
+#: rejecting assignments is 48 lessons changed / 51 names dropped that the allowlist does not cover
+#: (`apisessionagenterror`, `authorizenaviappkey`, `avail_frames`, …). Those are exactly the private
+#: identifiers this check exists to catch, so an assignment rule is a wider trade than "unblock four
+#: intakes" is worth: those two reports need their spans rewritten, not the gate relaxed.
+_UNITS_CELL = re.compile(r"^\$?\s*[A-Za-z_][\w.]*\s*\[[^\]]*\]\s*$")
+_COMPARISON = re.compile(
+    r"^\$?\s*[A-Za-z_][\w.\[\]]*\s*(?:===|!==|==|!=)\s*"
+    r"(?:\"[^\"]*\"|'[^']*'|-?\d+(?:\.\d+)?|true|false|null|undefined|nil)\s*$")
+_APPROXIMATION = re.compile(r"^\$?\s*[A-Za-z_][\w.\[\]]*\s*[≈⇒]\s*-?\S")
+#: An alarm/error code at line start followed by prose. Deliberately requires the numeric part and a
+#: space: `MEMO-128 parameters…` is a code, while `mico issue rerun` is a command and `rustup toolchain`
+#: has no digits.
+_ALARM_CODE = re.compile(
+    r"^\$?\s*(?:[A-Z][A-Z0-9]{1,9}-\d{2,4}|[A-Z]{2,6}\d{2,4})\s+[A-Za-z]")
+
+#: The data shapes, in one place so a reader can see the whole set and a test can assert it.
+_DATA_SPAN_PATTERNS = (
+    _UNITS_ROW,
+    _UNITS_CELL,
+    _SQL_NULL_PREDICATE,
+    _COMPARISON,
+    _APPROXIMATION,
+    _ALARM_CODE,
+)
+
 
 def _is_command_span(span: str) -> bool:
     text = span.strip()
     if text.startswith("$ "):
         return True
-    if _UNITS_ROW.search(text) or _SQL_NULL_PREDICATE.search(text):
+    if any(pattern.search(text) for pattern in _DATA_SPAN_PATTERNS):
         return False
     return len(text.split()) >= 2
 
