@@ -209,7 +209,11 @@ class _ProseOutsideSurfaces(HTMLParser):
     """
 
     VOID = {"br", "hr", "img", "input", "meta", "link", "source", "wbr", "area", "base", "col", "embed", "track"}
-    NEVER_COPY = {"style", "script"}
+    # `title` joins the never-copy set: the static English is deliberate there. `document.title` is
+    # set from `PAGE_COPY[lang].pageTitle` on language switch (index.html:2609), and the static value
+    # has to stay English for the crawler that never runs the script. Excluding it keeps the
+    # whole-page rule about *body copy*, which is where the nine missed sentences were.
+    NEVER_COPY = {"style", "script", "title"}
     COPYLESS = {"code", "pre"}
 
     def __init__(self) -> None:
@@ -268,6 +272,53 @@ def test_quickstart_ui_copy_is_not_hardcoded_in_the_html(page):
     assert quickstart_prose(page) == [], (
         "hardcoded UI copy in the Quickstart block — give it a data-i18n key and add that key to "
         f"both locale files instead: {quickstart_prose(page)}"
+    )
+
+
+#: What counts as "a sentence a visitor reads", for the whole-page rule below. Deliberately narrow:
+#: three Latin words in a row with no CJK. That skips identifiers (`BM25 + RRF`), versions, paths,
+#: sample JSON, and anything already Chinese — while still catching every English sentence.
+_ENGLISH_SENTENCE = re.compile(r"[A-Za-z]{3,}\s+[A-Za-z]{3,}\s+[A-Za-z]{3,}")
+_CJK = re.compile(r"[一-鿿]")
+
+
+def untagged_english_pagewide(page: str) -> list[str]:
+    """Visible English prose anywhere on the page that no `data-i18n` attribute reaches.
+
+    `test_quickstart_ui_copy_is_not_hardcoded_in_the_html` above covers the Quickstart block, because
+    that is where #1894 was filed. It is not where the defect lives: measured 2026-11-28, **nine**
+    English sentences outside that block shipped with no key at all — the drawer tagline, the safety
+    warnings, "View Worker source", and the three product-matrix cards. Chinese mode showed English
+    for every one of them, and no test noticed, because the only rule that could have was scoped to a
+    different part of the page.
+
+    A gate scoped to where a bug was *reported* is a gate that stops working the moment the bug moves.
+    """
+    parser = _ProseOutsideSurfaces()
+    parser.feed(page)
+    leftovers: list[str] = []
+    for raw in parser.chunks:
+        s = " ".join(raw.split())
+        if len(s) < 15 or _CJK.search(s):
+            continue
+        if not _ENGLISH_SENTENCE.search(s):
+            continue
+        if s[0] in "{[":  # sample response payload
+            continue
+        leftovers.append(s)
+    return leftovers
+
+
+def test_no_pagewide_english_prose_escapes_the_translation_surface(page):
+    """Every sentence a visitor can read must go through `data-i18n`, not only in Quickstart.
+
+    Verified red on the pre-fix markup: it reported the nine sentences this change keys.
+    """
+    leftovers = untagged_english_pagewide(page)
+    assert leftovers == [], (
+        "English prose with no data-i18n key, outside the Quickstart block. Chinese mode shows these "
+        "unchanged, and the Quickstart-only rule cannot see them: "
+        + "; ".join(repr(s) for s in leftovers)
     )
 
 
