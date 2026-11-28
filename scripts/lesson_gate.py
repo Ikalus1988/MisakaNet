@@ -277,10 +277,29 @@ def _surface_head(raw: str) -> str | None:
     return head if SURFACE_TOKEN_RE.match(head) else None
 
 
+#: A span that is a units row or a SQL predicate is data, not an invocation. Both shapes reach
+#: `_is_command_span` because they contain spaces, and both were being read as a command name:
+#:
+#: * `Tm [Nm],Nm [rpm],T0 [Nm],L10 [h],L10 [year]` → the "command" `tm` (intake #5844, a torque/life
+#:   table in a FANUC report);
+#: * `ship_weight IS NOT NULL AND ship_time IS NULL` → `ship_weight` (intake #5158, a SQL predicate).
+#:
+#: Deliberately narrower than "contains an operator". A first attempt rejected any span containing
+#: `=`, `<`, `>`, `≈` or a bracketed run, which also threw out `curl -H "a=b"`, `python - <<'EOF'`,
+#: `UPDATE … SET col=?` and `RUN <prog>` — 70 of 1,207 lessons changed what they were checked for,
+#: and 87 names stopped being checked at all, most of them real private identifiers
+#: (`apisessionagenterror`, `authorizenaviappkey`). Widening the gate to unblock six intakes is the
+#: wrong trade; these two shapes are unambiguous and were measured at **zero** impact on the corpus.
+_UNITS_ROW = re.compile(r"^\$?\s*[A-Za-z_][\w.]*\s*\[[^\]]*\]\s*,")
+_SQL_NULL_PREDICATE = re.compile(r"\bIS\s+(?:NOT\s+)?NULL\b", re.IGNORECASE)
+
+
 def _is_command_span(span: str) -> bool:
     text = span.strip()
     if text.startswith("$ "):
         return True
+    if _UNITS_ROW.search(text) or _SQL_NULL_PREDICATE.search(text):
+        return False
     return len(text.split()) >= 2
 
 
