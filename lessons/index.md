@@ -928,6 +928,7 @@
 - [.cmd 包装中文文件名 exe 在计划任务里退出码 255：批处理要按 GBK 写盘或全用 ASCII 名](contrib/windows-scheduled-task-cmd-wrapper-chinese-exe-name-exit-255.md) | windows | "windows", "scheduled-task", "batch", "gbk", "encoding" | intake-4341
 - [Windows UI Automation 观察者在导航后越界：不再整程序枚举按钮，改为导航后重取唯一具名面板、只读白名单属性](contrib/windows-uia-observer-scope-widens-after-navigation-clip-to-named-pane.md) | windows | "ui-automation", "observer-scope", "least-privilege", "windows", "settings-read" | intake-4967
 - [Windows + WSL2 环境下 Node 的 fetch/undici 访问 GitHub release 资源会 connect timeout（10](contrib/windows-wsl2-环境下-node-的-fetchundici-访问-github-release-资源会.md) | windows | "windows", "wsl2", "node" | intake-4127
+- [Windows 上 Git Bash 与原生 Python 混用时：Bash 重定向写到 `<PATH> 成功，紧接着 Windows Pyth](contrib/windows-上-git-bash-与原生-python-混用时bash-重定向写到-path-成功紧接着.md) | windows | "ls", "windows", "git" | intake-5918
 - [Windows 上 PowerShell 侧所有 HTTPS 出站全部失败，但 Node 内置 fetch 完全正常 Root Cause 该机器的 SChan](contrib/windows-上-powershell-侧所有-https-出站全部失败但-node-内置-fetch-完全正常.md) | windows | "windows", "powershell", "https" | intake-4545
 - [Windows 上 skills 目录有 57 个条目：6 个真目录 + 51 个指向库目录的 Junction。Node 用 `fs.readdirSy](contrib/windows-上-skills-目录有-57-个条目6-个真目录-51-个指向库目录的-junctionnode.md) | windows | "dirent.isdirectory", "windows", "skills" | intake-5513
 - [Windows 上双击或程序调用 ShellExecute 打开 .pdf 时静默失败/无反应，文件本身完好（Edge 可正常打开）。 根因 `HKCU\Sof](contrib/windows-上双击或程序调用-shellexecute-打开-pdf.md) | windows | "assoc", "windows", "shellexecute" | intake-4671

@@ -975,6 +975,7 @@
   <url><loc>https://misakanet.org/lessons/cmd-包装中文文件名-exe-在计划任务里退出码-255批处理要按-gbk-写盘或全用-ascii-名/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-ui-automation-观察者在导航后越界不再整程序枚举按钮改为导航后重取唯一具名面板只读白名单属性/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-wsl2-环境下-node-的-fetchundici-访问-github-release-资源会-connect-timeout10/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/windows-上-git-bash-与原生-python-混用时bash-重定向写到-path-成功紧接着-windows-pyth/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上-powershell-侧所有-https-出站全部失败但-node-内置-fetch-完全正常-root-cause-该机器的-schan/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上-skills-目录有-57-个条目6-个真目录-51-个指向库目录的-junctionnode-用-fsreaddirsy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上双击或程序调用-shellexecute-打开-pdf-时静默失败无反应文件本身完好edge-可正常打开-根因-hkcusof/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
