@@ -46,11 +46,53 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh api repos/${{ github.repository }}/pulls \
-            --jq '[.[] | select(.base.ref == "main" and .state == "open") | {number, headRef: .head.ref, headRepo: .head.repo.full_name, mergeable: .mergeable}]' \
-            > open_prs.json
+          # The list endpoint does **not** populate `mergeable` — it is `null` for every row, always
+          # (measured 2026-11-28, three consecutive calls, all 13 open PRs). Only the single-PR
+          # endpoint computes it. The guard downstream reads `mergeable`, so reading it from the list
+          # made the guard dead code: measured on 2026-11-28, PR #5851 was `mergeable=true /
+          # clean` at 08:0x and the 07:55 run merged main into it anyway.
+          #
+          # So the list gives the *set* of PRs, and each same-repo PR is then asked individually. The
+          # per-PR call is cheap (a handful of PRs) and it is the only form that answers the question.
+          gh api "repos/${{ github.repository }}/pulls?state=open" --paginate \
+            --jq '.[] | select(.base.ref == "main" and .state == "open") | [.number, .head.ref, .head.repo.full_name] | @tsv' \
+            > open_pr_numbers.txt
+          # Build one TSV row per PR, then let jq turn it into the array the loop reads. Writing JSON by
+          # hand with printf is how a branch name containing a quote becomes a broken payload.
+          : > open_prs.tsv
+          while IFS=$'\t' read -r NUM HEAD_REF HEAD_REPO; do
+            [ -z "${NUM:-}" ] && continue
+            # Fork PRs cannot be pushed to; their mergeable state is never asked and therefore never
+            # matters. Asking anyway would double the API calls to learn nothing.
+            if [ "$HEAD_REPO" = "${{ github.repository }}" ]; then
+              # `mergeable` is computed on demand and the **first** call for a PR whose state GitHub has
+              # not cached returns `null` ("still computing"). Reading that single null and moving on is
+              # how the guard becomes a coin flip, so ask up to three times — the second call normally
+              # has the answer. An answer that never arrives stays `null`, and the guard below then
+              # deliberately does *not* skip: not knowing is not the same as "cannot merge".
+              MERGEABLE=null
+              for attempt in 1 2 3; do
+                MERGEABLE=$(gh api "repos/${{ github.repository }}/pulls/$NUM" --jq '.mergeable // "null"' 2>/dev/null || echo null)
+                if [ "$MERGEABLE" != "null" ]; then
+                  break
+                fi
+                if [ "$attempt" -lt 3 ]; then
+                  sleep 2
+                fi
+              done
+            else
+              MERGEABLE=fork
+            fi
+            printf '%s\t%s\t%s\t%s\n' "$NUM" "$HEAD_REF" "$HEAD_REPO" "$MERGEABLE" >> open_prs.tsv
+          done < open_pr_numbers.txt
+          jq -R -s 'split("\n") | map(select(length > 0) | split("\t")
+                   | {number: (.[0] | tonumber), headRef: .[1], headRepo: .[2],
+                      mergeable: (if .[3] == "true" then true elif .[3] == "false" then false else null end)})' \
+            open_prs.tsv > open_prs.json
+          jq -e . open_prs.json > /dev/null          # a malformed payload must fail here, not mid-loop
           echo "count=$(jq length open_prs.json)" >> $GITHUB_OUTPUT
           echo "Found $(jq length open_prs.json) open PR(s)"
+          jq -r '.[] | "  #\(.number) mergeable=\(.mergeable) \(.headRef)"' open_prs.json
 
       - name: Merge main into each same-repo PR
         env:
@@ -113,7 +155,16 @@ jobs:
             fi
 
             # Attempt merge
-            git fetch origin "$HEAD_REF"
+            # The fetch is guarded rather than bare, and so is the push below. A branch this token
+            # cannot push to is a property of *that branch*, not of the sweep: with `set -e` the step
+            # ends at the first such branch and every PR behind it in this list is silently never
+            # synced, while the run only says "exit code 1".
+            # Measured 2026-11-27 → 11-28: three consecutive six-hourly runs died here, all on
+            # `dependabot/github_actions/…` (#5594), whose merge of main touches
+            # `.github/workflows/pr-checks.yml` — the PAT is refused with "refusing to allow a Personal
+            # Access Token to create or update workflow … without `workflow` scope". That is not
+            # fixable from this workflow, and it is not a reason to leave the other PRs unsynced.
+            git fetch origin "$HEAD_REF" || { echo "::warning::PR #$NUM: could not fetch $HEAD_REF"; continue; }
             if git checkout "$HEAD_REF" 2>/dev/null; then
               # `--signoff`: the merge commit this job creates lands on someone else's branch, and
               # this repository's DCO gate requires a `Signed-off-by:` on every commit — so a sync
@@ -124,9 +175,19 @@ jobs:
                 # `--force-with-lease`-free by design: this is a merge commit on top of the branch,
                 # so a fast-forward. With no persisted credentials in the checkout, this header is the
                 # only Authorization the push carries.
-                git -c http.extraheader="$AUTH_HEADER" push origin "HEAD:$HEAD_REF"
-                echo "$NUM:$(git rev-parse HEAD)" >> "$RUNNER_TEMP/synced.txt"
-                echo "  ✅ Merged main into #$NUM"
+                #
+                # The push is guarded, not bare: a rejected push must be reported for this PR and the
+                # sweep must continue to the next one (see the `git fetch` guard above for the
+                # measurement). "Remote rejected" is per-branch — the PAT's `workflow` scope is not
+                # something this job can acquire — so a red run every six hours would only teach
+                # people to ignore red.
+                if git -c http.extraheader="$AUTH_HEADER" push origin "HEAD:$HEAD_REF"; then
+                  echo "$NUM:$(git rev-parse HEAD)" >> "$RUNNER_TEMP/synced.txt"
+                  echo "  ✅ Merged main into #$NUM"
+                else
+                  echo "::warning::PR #$NUM: main was merged locally but the push to $HEAD_REF was rejected — this branch is left unsynced (a PAT scope limitation, e.g. `workflow` for a branch whose merge touches .github/workflows/). Re-run after fixing the token, or sync it by hand."
+                  echo "  ⚠️ Push rejected for #$NUM — continuing with the rest"
+                fi
               else
                 git merge --abort 2>/dev/null
                 echo "  ❌ Merge failed for #$NUM (may have conflicts now)"
