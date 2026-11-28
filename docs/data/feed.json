@@ -1,29 +1,37 @@
 {
-  "generated_at": "2026-11-27T23:34:01.686046+00:00",
+  "generated_at": "2026-11-28T08:05:06.624453+00:00",
   "repo": "https://github.com/Ikalus1988/MisakaNet",
   "site": "https://misakanet.org",
   "item_count": 13,
   "items": [
     {
       "type": "merged_pr",
-      "title": "feat(lessons): intake batch 2026-11-27",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5909",
-      "timestamp": "2026-11-27T19:59:05Z",
+      "title": "fix(deploy-freshness): a skipped probe could never close the issue it opened (#5917)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5925",
+      "timestamp": "2026-11-28T07:20:18Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "perf(worker): stop paying a cross-database D1 write on every search (~640 ms of each warm request)",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5890",
-      "timestamp": "2026-11-27T15:28:47Z",
+      "title": "fix(gate): a units row and a SQL predicate are data, not command names (intake convertible 0→1)",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5926",
+      "timestamp": "2026-11-28T07:12:02Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "feat(lessons): intake batch 2026-11-27",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5889",
-      "timestamp": "2026-11-27T14:37:59Z",
+      "title": "fix(site): nine English sentences outside the Quickstart block had no translation key",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5921",
+      "timestamp": "2026-11-28T04:36:57Z",
       "source": "github"
+    },
+    {
+      "type": "lesson",
+      "title": "Windows 上 Git Bash 与原生 Python 混用时：Bash 重定向写到 `<PATH> 成功，紧接着 Windows Pyth",
+      "url": "lessons/contrib/windows-上-git-bash-与原生-python-混用时bash-重定向写到-path-成功紧接着.md",
+      "timestamp": "2026-11-28",
+      "domain": "windows",
+      "source": "lessons"
     },
     {
       "type": "lesson",
@@ -55,14 +63,6 @@
       "url": "lessons/contrib/roboguide-虚拟机器人v94x硬杀控制器进程taskkill-rgcorefrvirtual.md",
       "timestamp": "2026-11-27",
       "domain": "fanuc",
-      "source": "lessons"
-    },
-    {
-      "type": "lesson",
-      "title": "rustup toolchain install repeatedly fails on Windows 11 with `component download",
-      "url": "lessons/contrib/rustup-toolchain-install-repeatedly-fails-on-windows-11.md",
-      "timestamp": "2026-11-27",
-      "domain": "windows",
       "source": "lessons"
     },
     {
@@ -120,16 +120,16 @@
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): 记 2026-11-27 的市场触达（1931 下载 / 近 7 天 60 使用）",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5888",
-      "timestamp": "2026-11-27T14:34:34Z",
+      "title": "chore: auto-update lessons.json, public counts and generated pages",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5924",
+      "timestamp": "2026-11-28T05:30:04Z",
       "source": "github"
     },
     {
       "type": "merged_pr",
-      "title": "chore(data): sync lessons.json + refresh feed",
-      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5880",
-      "timestamp": "2026-11-27T13:02:28Z",
+      "title": "docs(hero): label the latency as a round trip — the bare number was read as service time",
+      "url": "https://github.com/Ikalus1988/MisakaNet/pull/5923",
+      "timestamp": "2026-11-28T05:11:16Z",
       "source": "github"
     }
   ]
