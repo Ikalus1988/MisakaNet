@@ -14,13 +14,7 @@ All notable changes to the Misaka Network project are documented here.
 
 * **cindy-plugin:** 1.5.23 —— 确认卡说明只说两句：已脱敏、就是将要公开的原文 ([#5915](https://github.com/Ikalus1988/MisakaNet/issues/5915)) ([7fb6f45](https://github.com/Ikalus1988/MisakaNet/commit/7fb6f45aee1a6a88946b12e39b145acb55a7f49e))
 * **lessons:** intake batch 2026-11-27 ([#5867](https://github.com/Ikalus1988/MisakaNet/issues/5867)) ([47f6293](https://github.com/Ikalus1988/MisakaNet/commit/47f6293b00bf7698ea7aaeb29c4b5d6a44e1247b))
-* **lessons:** intake batch 2026-11-27 ([#5870](https://github.com/Ikalus1988/MisakaNet/issues/5870)) ([8f566b8](https://github.com/Ikalus1988/MisakaNet/commit/8f566b831c8f78baf2eac88836e81ad27a163340))
-* **lessons:** intake batch 2026-11-27 ([#5875](https://github.com/Ikalus1988/MisakaNet/issues/5875)) ([472dcb6](https://github.com/Ikalus1988/MisakaNet/commit/472dcb6fc692e1456a385c7a56b9f21a9d6ac7be))
-* **lessons:** intake batch 2026-11-27 ([#5889](https://github.com/Ikalus1988/MisakaNet/issues/5889)) ([6406200](https://github.com/Ikalus1988/MisakaNet/commit/6406200f79915fafdc20ca10b62cccc8cea7224f))
-* **lessons:** intake batch 2026-11-27 ([#5909](https://github.com/Ikalus1988/MisakaNet/issues/5909)) ([0ca617d](https://github.com/Ikalus1988/MisakaNet/commit/0ca617d607b11263994fd11051bd84e08c90ffbe))
-* **lessons:** intake batch 2026-11-27 ([#5911](https://github.com/Ikalus1988/MisakaNet/issues/5911)) ([674a555](https://github.com/Ikalus1988/MisakaNet/commit/674a55591bf108c1e965e141f7c6dce480973215))
 * **lessons:** intake batch 2026-11-28 ([#5920](https://github.com/Ikalus1988/MisakaNet/issues/5920)) ([0b601da](https://github.com/Ikalus1988/MisakaNet/commit/0b601da624b45b850d836555fdea5cd17845a63a))
-* **lessons:** intake batch 2026-11-28 ([#5934](https://github.com/Ikalus1988/MisakaNet/issues/5934)) ([29ef64a](https://github.com/Ikalus1988/MisakaNet/commit/29ef64acb1e749f7455b806ef8cfbe8b88eb1274))
 
 
 ### Bug Fixes
