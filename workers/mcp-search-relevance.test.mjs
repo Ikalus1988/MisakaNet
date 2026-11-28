@@ -12,8 +12,12 @@
 //
 // Run: node --test workers/mcp-search-relevance.test.mjs
 import assert from 'node:assert/strict';
-import test from 'node:test';
-import worker, { matchAnsweredQuestions } from './register-proxy-sw.js';
+import test, { beforeEach } from 'node:test';
+import worker, { resetFaqMemo, matchAnsweredQuestions } from './register-proxy-sw.js';
+
+// The FAQ memo is module scope, so one test's answered questions would otherwise answer the
+// next test's search. Reset it per test — the same reason `resetReadBurstMemo` exists.
+beforeEach(() => { resetFaqMemo(); });
 import { testToken } from './_test-token.mjs';
 
 const TOKEN = testToken('relevance-floor');
