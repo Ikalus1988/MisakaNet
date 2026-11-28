@@ -22,7 +22,7 @@ mcp-name: io.github.Ikalus1988/misakanet
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/hero-light.svg">
-  <img src="docs/assets/hero-light.svg" width="100%" alt="一次真实记录：查询 'database is locked' 命中一条 E1（已复核）课程，七次调用中位 3.3 秒。">
+  <img src="docs/assets/hero-light.svg" width="100%" alt="一次真实记录：查询 'database is locked' 命中一条 E1（已复核）课程。图中所标为从一台机器出发的 3.1 秒往返耗时，含网络。">
 </picture>
 </p>
 

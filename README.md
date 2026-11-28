@@ -22,7 +22,7 @@ mcp-name: io.github.Ikalus1988/misakanet
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/hero-light.svg">
-  <img src="docs/assets/hero-light.svg" width="100%" alt="One recorded search: the query 'database is locked' returns an E1 reviewed lesson in a median of 2.4 s across seven calls.">
+  <img src="docs/assets/hero-light.svg" width="100%" alt="One recorded search: the query 'database is locked' returns an E1 reviewed lesson. The figure shown is a 3.1 s round trip from one machine, network included.">
 </picture>
 </p>
 

@@ -198,7 +198,7 @@ def render(snapshot: dict, theme: str) -> str:
     add(f'<path d="M{left_x + col_w + 46} {arrow_y - 5} l8 5 l-8 5" fill="{p["border"]}"/>')
 
     # Right panel: the recorded answer.
-    rh = 210
+    rh = 224
     add(f'<rect x="{right_x}" y="{y}" width="{col_w}" height="{rh}" rx="10" '
         f'fill="{p["mono_bg"]}" stroke="{p["accent"]}"/>')
     add(f'<text x="{right_x + 18}" y="{y + 28}" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" '
@@ -216,8 +216,14 @@ def render(snapshot: dict, theme: str) -> str:
         add(f'<text x="{right_x + 18}" y="{y + 148 + index * 19}" '
             f'font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12.5" '
             f'fill="{p["fg"]}">{_esc(line)}</text>')
+    # The unit is spelled out because the bare number was read as "the service is slow". It is a
+    # round trip from one machine, and the sentence says so rather than leaving the reader to guess.
     add(f'<text x="{right_x + 18}" y="{y + rh - 16}" font-size="12" fill="{p["dim"]}">'
         f'p50 {p50} ms · {_esc(spread)}</text>')
+    # `round trip` on its own line: the sentence that stops "2.4 s" from reading as "the service is
+    # slow", and it does not fit beside the spread above (measured: 367 px in a 352 px panel).
+    add(f'<text x="{right_x + 18}" y="{y + rh - 3}" font-size="11" fill="{p["dim"]}">'
+        f'round trip from one machine, network included</text>')
 
     # `max`, not `lh`: the right panel is taller, and a strip placed after the *shorter* one
     # overlapped it by 34 px — visible at once in the render, invisible in the source.
