@@ -10176,7 +10176,13 @@ export default {
         // a total write outage).
         // Counters and timestamps only: the raw message is in the logs, not on an anonymous
         // endpoint (same reasoning as errorResponse).
+        // `memo` is the read-burst isolate memo (2026-11-27): the count of reads answered without a
+        // D1 round trip. It belongs here for the same reason `d1`/`kv` do — the whole point of the
+        // memo is that a request stops paying a cross-database write, and a number nobody can read is
+        // a claim nobody can check. A `memo` that stays at 0 while `d1` climbs means the memo is not
+        // working, which is exactly the regression this field exists to make visible.
         counters: { d1: COUNTERS_BACKEND_STATS.d1, kv: COUNTERS_BACKEND_STATS.kv,
+                    memo: COUNTERS_BACKEND_STATS.memo,
                     failures: COUNTERS_BACKEND_STATS.failures,
                     last_failure_at: COUNTERS_BACKEND_STATS.last_failure_at },
         kv_writes: { attempts: kvWriteStats.attempts, failures: kvWriteStats.failures,
