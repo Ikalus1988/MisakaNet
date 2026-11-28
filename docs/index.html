@@ -646,6 +646,19 @@
   /* A day whose counters could not be read (#3544). Empty with a dashed outline, because a
      zero-height solid bar is exactly what "no calls that day" draws — and the point is that those
      are different statements. */
+  /* The number above each bar, always visible.
+     A `title` tooltip is not a label: measured 2026-11-28, the seven bars rendered with no visible
+     value at all, so the section read as decoration and the "近 7 天" trend was unreadable without
+     hovering each bar. The review called this out as "有形无神" and was right about what a visitor
+     sees — the underlying numbers were real, they just were not shown. */
+  .activity-history-value {
+    font-family: var(--font-mono);
+    font-size: var(--fs-3xs);
+    color: var(--text-dim);
+    margin-top: 4px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
   .activity-history-bar.is-unreadable {
     background: transparent;
     border: 1px dashed rgba(148, 163, 184, 0.65);
@@ -3508,6 +3521,7 @@ function activityHistoryMarkup(series, generatedAt, live, source) {
         <div class="activity-history-slot">
           <div class="activity-history-bar${partial ? ' is-partial' : ''}${unreadable ? ' is-unreadable' : ''}"
                style="height:${unreadable ? '0' : height}" title="${escapeHTML(label)}"></div>
+          <div class="activity-history-value">${unreadable ? '—' : formatCount(total)}</div>
           <div class="activity-history-day">${escapeHTML(day.date.slice(5))}</div>
         </div>`;
   }).join("");
