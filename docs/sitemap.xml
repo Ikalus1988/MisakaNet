@@ -980,6 +980,7 @@
   <url><loc>https://misakanet.org/lessons/windows-上-skills-目录有-57-个条目6-个真目录-51-个指向库目录的-junctionnode-用-fsreaddirsy/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上双击或程序调用-shellexecute-打开-pdf-时静默失败无反应文件本身完好edge-可正常打开-根因-hkcusof/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上只有一个商店版-python-313windowsapps-别名时所有需要落盘的脚本都失败tempfile-抛-no-usable/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/windows-上启动-electron-桌面应用antigravity-2360升级安装后进程秒退exitcode9窗口一闪即没只有把-st/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上在没有-ffmpeg且商店版-python-无法写盘tempfile-报-no-usable-temporary-directory/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上把-deepseek-harness-工作区pathudocumentsdeepseek-harness搬到-d-盘后用-mk/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-上整仓-py-compile-语法闸偶发整个崩掉报-permissionerror-winerror-5-拒绝访问栈底是-i/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -988,6 +989,7 @@
   <url><loc>https://misakanet.org/lessons/windows-上跑虚拟控制器-gui-宿主类仿真宿主进程拉起-embedding-的短路径子进程时重启切换工位后出现网络端口的登/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-下-c-子进程经-stdout-向父进程传输二进制协议帧1b-kind4b-lenbodybody-为-pcm-音频静音/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-大目录清理迁移时被两类问题阻断-1-移动或删除腾讯模拟器-imageversion-目录内含-systemvhd报对路/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/windows-守护脚本-start-watchdogbatagy-watchdog直接双击命令行启动时报已在运行中-pid-28096跳/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-显示缩放-150-的机器上做-gui-自动化合成鼠标点击截屏定位点击系统性偏移到错误位置约-15检查点截图截到完全无关的窗口/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-机器上用-npm-安装-devdependenciestypescript-wrangler-等npm-输出-changed-1-p/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/windows-机器锁屏状态下做-gui-自动化真实输入sendinputmouse-eventkeybd-eventuia-clic/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
@@ -1073,6 +1075,7 @@
   <url><loc>https://misakanet.org/lessons/手写-comfyui-workflow-json-时-link-id-复用导致节点静默断连且加载不报错/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/手柄卡顿震动排查中用找不到-vid-2e8a推断-usb-桥接pico-2w-转发器未接入结论错误-root-cause-桥接固件伪装成真手柄上/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/扩展名声明表与收集白名单各写各的同类事故第三次复发下游必须同源派生双向契约测试/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://misakanet.org/lessons/批量导入批量修改路径只写业务字段没有触发派生状态冗余状态列重算产生字段已改状态还是旧值的自相矛盾数据接口-200页面无报错-症状台账系统/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/批量扫描器walk-型判定哪些目录是样本再逐个处理从362s-全绿逐步恶化到-oom-崩溃node-4gb-堆爆-提到-8g/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/批量替换脚本先用条件判断某个替换点没找到就-processexit1但此时前面的替换只改了内存里的字符串还没-writefilesync脚本退/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://misakanet.org/lessons/把答案是给-ppt-用的读成把答案做成-ppt交付形态要在开工前确认/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
