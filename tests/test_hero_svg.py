@@ -174,6 +174,28 @@ def test_the_hero_shows_the_call_the_grade_and_the_measured_latency():
         "the latency is a measurement of one day, so the picture must date it")
 
 
+def test_the_latency_is_labelled_as_a_round_trip_not_as_service_time():
+    """A bare "3.1 s" next to "one call" reads as "the service is slow" — and it was read that way.
+
+    Measured 2026-11-28 on the seven recorded calls: the worker's own `latency_ms` for the same
+    searches was 2,667 / 3,055 / 2,589 / 3,436 / 2,811 ms against a 3,312 ms round trip, so the
+    machine's network hop is ~19% of the number — not the majority of it, which is what the first
+    reading of that figure assumed. Moving the recording to a CI runner would therefore not fix the
+    reading; saying what the figure includes does.
+
+    The picture must name the unit, and the snapshot must say what kind of measurement it is, so a
+    later edit cannot restore an unlabelled number.
+    """
+    data = snapshot()
+    kind = str(data.get("latency_kind") or "")
+    assert "end-to-end" in kind and "network" in kind, (
+        "hero.json must say that latency_ms is end-to-end and includes the network — a bare number "
+        f"of ms reads as service time. Got: {kind!r}")
+    for theme in ("dark", "light"):
+        svg = hero.render(data, theme)
+        assert "round trip" in svg, f"the {theme} render states a latency without saying what it is"
+
+
 def test_the_hero_does_not_print_a_corpus_count():
     """A count in a picture is wrong within hours, so the picture points at the badge instead.
 

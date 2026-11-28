@@ -24,7 +24,7 @@ mcp-name: io.github.Ikalus1988/misakanet
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/hero-light.svg">
-  <img src="docs/assets/hero-light.svg" width="100%" alt="実測記録 1 件：'database is locked' の検索が E1（レビュー済み）レッスンを返し、7 回の呼び出しで中央値 3.3 秒。">
+  <img src="docs/assets/hero-light.svg" width="100%" alt="実測記録 1 件：'database is locked' の検索が E1（レビュー済み）レッスンを返します。図の数値は 1 台のマシンからの往復 3.1 秒で、ネットワークを含みます。">
 </picture>
 </p>
 

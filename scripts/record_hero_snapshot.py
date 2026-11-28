@@ -127,6 +127,17 @@ def record(query: str, samples: int) -> dict:
         "query": query,
         "latency_ms_samples": latencies,
         "latency_ms_p50": int(statistics.median(latencies)),
+        # What the number above actually is. A bare "2.4 s" beside the words "one call" reads as the
+        # service being slow; measured 2026-11-28 on these same seven calls, the worker's own
+        # `latency_ms` was 2,667 / 3,055 / 2,589 / 3,436 / 2,811 ms — so the network hop was ~600 ms
+        # of 3,312, i.e. 19%. Recording from a CI runner would not fix the reading; saying what the
+        # figure includes does.
+        "latency_kind": "end-to-end, including this machine's network hop to the endpoint",
+        "latency_server_note": (
+            "The worker records its own handler time in search_signals.latency_ms; it is not in this "
+            "file because reading it needs Cloudflare credentials and this recorder must stay runnable "
+            "without them."
+        ),
         "top_hit": {
             "id": top.get("id"),
             "title": top.get("title"),

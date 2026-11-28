@@ -24,7 +24,7 @@ Endpoint MCP alojado: **8 herramientas** en `https://misakanet.org/mcp`. El serv
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/hero-light.svg">
-  <img src="docs/assets/hero-light.svg" width="100%" alt="Un registro real: la consulta 'database is locked' devuelve una lección E1 (revisada) con una mediana de 3,3 s en siete llamadas.">
+  <img src="docs/assets/hero-light.svg" width="100%" alt="Un registro real: la consulta 'database is locked' devuelve una lección E1 (revisada). La cifra es un viaje de ida y vuelta de 3,1 s desde una máquina, red incluida.">
 </picture>
 </p>
 

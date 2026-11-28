@@ -1,17 +1,19 @@
 {
   "_comment": "Recorded by scripts/record_hero_snapshot.py against the live endpoint. Every number here is a measurement; nothing is illustrative. See that script's docstring for what is deliberately absent (token and turn counts) and why.",
-  "recorded_at": "2026-11-27T11:44:09Z",
+  "recorded_at": "2026-11-28T04:48:28Z",
   "query": "database is locked",
   "latency_ms_samples": [
-    3787,
-    4006,
-    2991,
-    3434,
-    996,
-    1274,
-    3312
+    3763,
+    2546,
+    3135,
+    3478,
+    3524,
+    3091,
+    546
   ],
-  "latency_ms_p50": 3312,
+  "latency_ms_p50": 3135,
+  "latency_kind": "end-to-end, including this machine's network hop to the endpoint",
+  "latency_server_note": "The worker records its own handler time in search_signals.latency_ms; it is not in this file because reading it needs Cloudflare credentials and this recorder must stay runnable without them.",
   "top_hit": {
     "id": "两个独立进程并发写同一个-sqlite-数据库wal",
     "title": "两个独立进程并发写同一个 SQLite 数据库（WAL 模式已开），一个进程写批量事务期间另一个进程 INSERT 报 `database is locked`",
@@ -20,10 +22,10 @@
   },
   "result_count": 3,
   "corpus": {
-    "lessons": 1171,
+    "lessons": 1183,
     "evidence": {
       "E0": 347,
-      "E1": 699,
+      "E1": 711,
       "E2": 98,
       "E3": 27
     }
