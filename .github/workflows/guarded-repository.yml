@@ -50,7 +50,7 @@ jobs:
     # between. The bound lives inside the called workflow (third-party, version-pinned above). The
     # timeouts rule now exempts reusable-workflow calls and the exemption is paired with
     # `tests/test_workflow_files_are_parseable.py`, which fails if this key comes back.
-    uses: hashgraph-online/hol-guard/.github/workflows/guarded-repository.yml@fc5f50cca519ccacfeae8edea4f0c4744d788d67  # v3.59.0
+    uses: hashgraph-online/hol-guard/.github/workflows/guarded-repository.yml@e3e98ad8970c974801c3a958bb1014e1882fd0bf  # v3.60.0
     with:
       profile: default
       fail_on_severity: critical
