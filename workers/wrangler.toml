@@ -37,9 +37,23 @@ COMMIT_SHA = "unknown"
 # Per-isolate memo for the unfiltered corpus, in ms; 0 (or absent) disables it. 2026-10-19 measured
 # 6.24M D1 rows read in one day against the free plan's 5M, and one search without a durable-cache
 # hit reads the whole corpus (516 rows): the cache is itself read through D1, so a hit bills rows too.
-# 30s is deliberately below the durable cache's 300s TTL — the memo can only be fresher than what the
-# cache would have served, never staler than where it came from.
-MISAKANET_LESSONS_MEMO_MS = "30000"
+#
+# **Raised from 30 s to 5 min on 2026-11-28**, because the 30 s was justified by a number that had
+# since moved, and the cost of re-reading was measurable:
+#
+#   * The old comment said "30 s is deliberately below the durable cache's 300 s TTL". The KV corpus
+#     cache is `CORPUS_KV_TTL_SECONDS = 3600` now (raised 2026-11-25 for its own reasons), so 30 s was
+#     120x shorter than the thing it was being kept below.
+#   * `lesson_sync_log` has one row per day (11-25, 11-26, 11-27): the corpus it memoises changes **once
+#     a day**, so a 30 s window expires 2,880 times per actual change.
+#   * Measured today: **45% of searches (434/963) took the cold path** (`phaseMs.lessons > 0`), p50
+#     1,798 ms / p95 3,754 ms against a warm 586 ms — and the cold path's 751 ms is a 5.36 MB KV read of
+#     a payload that had not changed.
+#
+# 5 min is still two orders of magnitude below the KV TTL and 288x below the real change rate, and it
+# cannot serve anything the KV cache would not have served: `readKvCorpus` re-checks `payload.ts`
+# against `CORPUS_KV_MAX_AGE_MS` on every call, and the memo only stores what that returned.
+MISAKANET_LESSONS_MEMO_MS = "300000"
 # After one counters read fails, stop asking D1 for counters for a minute. Measured 2026-10-19: with
 # the row quota spent, every page load still issued its 35 counters queries into a refusing database.
 # 60s covers a burst of page loads without hiding a recovery; a quota reset is a known instant.
